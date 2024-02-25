@@ -2,6 +2,5 @@
 
 int main()
 {
-    GLCore::print();
     return 0;
 }
