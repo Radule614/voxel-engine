@@ -1,6 +1,8 @@
 #include "GLCore.h"
+#include "VoxelEngine.h"
 
 int main()
 {
-    return 0;
+    std::unique_ptr<VoxelEngine> app = std::make_unique<VoxelEngine>();
+    app->Run();
 }
