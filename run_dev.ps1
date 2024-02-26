@@ -1,3 +1,5 @@
+Remove-Item .\build\Debug -Recurse
+
 cmake -S . -B .\build
 cmake --build .\build
 
