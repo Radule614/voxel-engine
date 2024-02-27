@@ -1,5 +1,5 @@
-#include "GLCore.h"
-#include "VoxelEngine.h"
+#include "GLCore.hpp"
+#include "VoxelEngine.hpp"
 
 int main()
 {

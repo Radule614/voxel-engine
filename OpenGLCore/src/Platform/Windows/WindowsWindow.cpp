@@ -1,7 +1,7 @@
-#include "glpch.h"
-#include "WindowsWindow.h"
+#include "glpch.hpp"
+#include "WindowsWindow.hpp"
 
-#include"GLCore/Events/ApplicationEvent.h"
+#include"GLCore/Events/ApplicationEvent.hpp"
 
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>

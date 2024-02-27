@@ -1,5 +1,5 @@
-#include "glpch.h"
-#include "LayerStack.h"
+#include "glpch.hpp"
+#include "LayerStack.hpp"
 
 namespace GLCore
 {

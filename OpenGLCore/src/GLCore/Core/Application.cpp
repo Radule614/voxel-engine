@@ -1,8 +1,8 @@
-#include "glpch.h"
-#include "Application.h"
+#include "glpch.hpp"
+#include "Application.hpp"
 
 #include <glfw/glfw3.h>
-#include "Timestep.h"
+#include "Timestep.hpp"
 
 namespace GLCore
 {
