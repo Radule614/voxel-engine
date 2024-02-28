@@ -4,13 +4,12 @@
 
 namespace GLCore::Utils
 {
-
-class OrthographicCamera
+class PerspectiveCamera
 {
 public:
-    OrthographicCamera(float left, float right, float bottom, float top);
+    PerspectiveCamera(float_t fov, float_t aspectRatio);
 
-    void SetProjection(float left, float right, float bottom, float top);
+    void SetProjection(float_t fov, float_t aspectRatio);
 
     const glm::vec3 &GetPosition() const
     {
@@ -54,7 +53,6 @@ private:
     glm::mat4 m_ViewProjectionMatrix;
 
     glm::vec3 m_Position = {0.0f, 0.0f, 0.0f};
-    float m_Rotation = 0.0f;
+    float_t m_Rotation = 0.0f;
 };
-
 } // namespace GLCore::Utils

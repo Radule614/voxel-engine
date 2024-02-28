@@ -1,24 +1,22 @@
-#include "glpch.hpp"
-#include "OrthographicCamera.hpp"
+#include "PerspectiveCamera.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace GLCore::Utils
 {
-
-OrthographicCamera::OrthographicCamera(float left, float right, float bottom, float top)
-    : m_ProjectionMatrix(glm::ortho(left, right, bottom, top, -1.0f, 1.0f)), m_ViewMatrix(1.0f)
+PerspectiveCamera::PerspectiveCamera(float_t fov, float_t aspectRatio)
+    : m_ProjectionMatrix(glm::perspective(fov, aspectRatio, 0.01f, 200.0f))
 {
     m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 }
 
-void OrthographicCamera::SetProjection(float left, float right, float bottom, float top)
+void PerspectiveCamera::SetProjection(float_t fov, float_t aspectRatio)
 {
-    m_ProjectionMatrix = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
+    m_ProjectionMatrix = glm::perspective(fov, aspectRatio, 0.01f, 200.0f);
     m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 }
 
-void OrthographicCamera::RecalculateViewMatrix()
+void PerspectiveCamera::RecalculateViewMatrix()
 {
     glm::mat4 transform = glm::translate(glm::mat4(1.0f), m_Position) *
                           glm::rotate(glm::mat4(1.0f), glm::radians(m_Rotation), glm::vec3(0, 0, 1));
@@ -26,5 +24,4 @@ void OrthographicCamera::RecalculateViewMatrix()
     m_ViewMatrix = glm::inverse(transform);
     m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 }
-
 } // namespace GLCore::Utils
