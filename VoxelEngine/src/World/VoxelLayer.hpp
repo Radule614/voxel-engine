@@ -17,4 +17,9 @@ public:
 
 private:
     GLCore::Utils::OrthographicCameraController m_CameraController;
+    GLCore::Utils::Shader *m_Shader;
+
+    GLuint m_VA, m_VB, m_IB, m_InstanceVB;
+    std::vector<uint32_t> m_Indices;
+    glm::vec4 m_Color = {0.8f, 0.2f, 0.3f, 1.0f};
 };

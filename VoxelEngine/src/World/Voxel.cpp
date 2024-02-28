@@ -17,3 +17,11 @@ bool Voxel::IsFaceVisible(VoxelFace face)
 {
     return m_VisibleFaces[face];
 }
+
+void Voxel::SetAllFacesVisible(bool visible)
+{
+    for (size_t i = 0; i < m_VisibleFaces.size(); i++)
+    {
+        m_VisibleFaces[i] = visible;
+    }
+}

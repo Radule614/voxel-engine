@@ -29,6 +29,7 @@ public:
 
     bool IsFaceVisible(VoxelFace face);
     void SetFaceVisible(VoxelFace face, bool visible);
+    void SetAllFacesVisible(bool visible);
 
 private:
     VoxelType m_VoxelType;

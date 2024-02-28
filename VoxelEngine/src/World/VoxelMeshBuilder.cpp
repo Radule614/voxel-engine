@@ -8,6 +8,7 @@ std::vector<glm::vec2> VoxelMeshBuilder::s_TextureCoordinates = {glm::vec2(0.0f,
 
 std::unordered_map<VoxelFace, std::vector<glm::vec3>> VoxelMeshBuilder::s_PositionMap = {};
 std::unordered_map<VoxelFace, glm::vec3> VoxelMeshBuilder::s_NormalMap = {};
+
 void VoxelMeshBuilder::Init()
 {
     s_PositionMap.insert({VoxelFace::TOP,
@@ -64,7 +65,7 @@ VoxelMeshBuilder::~VoxelMeshBuilder()
 std::vector<float_t> VoxelMeshBuilder::FromVoxel(Voxel &voxel)
 {
     std::vector<float_t> data = {};
-    for (uint16_t i = 0; i < 6; ++i)
+    for (size_t i = 0; i < 6; ++i)
     {
         VoxelFace face = static_cast<VoxelFace>(i);
         if (!voxel.IsFaceVisible(face))
@@ -73,7 +74,7 @@ std::vector<float_t> VoxelMeshBuilder::FromVoxel(Voxel &voxel)
         std::vector<glm::vec3> positions = s_PositionMap.at(face);
         glm::vec3 normal = s_NormalMap.at(face);
 
-        for (uint16_t p = 0; p < positions.size(); ++p)
+        for (size_t p = 0; p < positions.size(); ++p)
         {
             glm::vec3 pos = positions[p];
             glm::vec2 texCoord = s_TextureCoordinates[p];
