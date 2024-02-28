@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(OpenGLCore)
 
-file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
+file(GLOB_RECURSE SOURCE_FILES VoxelEngine/*.cpp)
 
 add_executable(VoxelEngine ${SOURCE_FILES})
 target_link_libraries(VoxelEngine PRIVATE OpenGLCore)

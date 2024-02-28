@@ -1,24 +1,24 @@
-#include "VoxelLayer.hpp"
+#include "ExampleLayer.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
 
-VoxelLayer::VoxelLayer() : m_CameraController(16.0f / 9.0f)
+ExampleLayer::ExampleLayer() : m_CameraController(16.0f / 9.0f)
 {
 }
 
-VoxelLayer::~VoxelLayer()
+ExampleLayer::~ExampleLayer()
 {
 }
 
-void VoxelLayer::OnAttach()
+void ExampleLayer::OnAttach()
 {
     EnableGLDebugging();
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    m_Shader = Shader::FromGLSLTextFiles("src/assets/default.vert.glsl", "src/assets/default.frag.glsl");
+    m_Shader = Shader::FromGLSLTextFiles("VoxelEngine/assets/default.vert.glsl", "VoxelEngine/assets/default.frag.glsl");
 
     glCreateVertexArrays(1, &m_QuadVA);
     glBindVertexArray(m_QuadVA);
@@ -37,7 +37,7 @@ void VoxelLayer::OnAttach()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 }
 
-void VoxelLayer::OnDetach()
+void ExampleLayer::OnDetach()
 {
     glDeleteVertexArrays(1, &m_QuadVA);
     glDeleteBuffers(1, &m_QuadVB);
@@ -45,7 +45,7 @@ void VoxelLayer::OnDetach()
 }
 
 
-void VoxelLayer::OnEvent(GLCore::Event &event)
+void ExampleLayer::OnEvent(GLCore::Event &event)
 {
     m_CameraController.OnEvent(event);
 
@@ -60,7 +60,7 @@ void VoxelLayer::OnEvent(GLCore::Event &event)
     });
 }
 
-void VoxelLayer::OnUpdate(Timestep ts)
+void ExampleLayer::OnUpdate(Timestep ts)
 {
     m_CameraController.OnUpdate(ts);
 
@@ -78,6 +78,6 @@ void VoxelLayer::OnUpdate(Timestep ts)
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 }
 
-void VoxelLayer::OnImGuiRender()
+void ExampleLayer::OnImGuiRender()
 {
 }

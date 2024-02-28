@@ -3,11 +3,11 @@
 #include "GLCore.hpp"
 #include "GLCoreUtils.hpp"
 
-class VoxelLayer : public GLCore::Layer
+class ExampleLayer : public GLCore::Layer
 {
 public:
-    VoxelLayer();
-    virtual ~VoxelLayer();
+    ExampleLayer();
+    virtual ~ExampleLayer();
     virtual void OnAttach() override;
     virtual void OnDetach() override;
     virtual void OnEvent(GLCore::Event &event) override;
