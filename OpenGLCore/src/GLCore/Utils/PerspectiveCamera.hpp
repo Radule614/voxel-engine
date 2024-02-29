@@ -21,14 +21,25 @@ public:
         RecalculateViewMatrix();
     }
 
-    float GetRotation() const
+    const glm::vec3 GetFront() const
     {
-        return m_Rotation;
+        return m_Front;
     }
-    void SetRotation(float rotation)
+
+    void SetFront(glm::vec3& front)
     {
-        m_Rotation = rotation;
+        m_Front = front;
         RecalculateViewMatrix();
+    }
+
+    const glm::vec3 &GetUp() const
+    {
+        return m_Up;
+    }
+
+    const glm::vec3 &GetRight() const
+    {
+        return m_Right;
     }
 
     const glm::mat4 &GetProjectionMatrix() const
@@ -53,6 +64,10 @@ private:
     glm::mat4 m_ViewProjectionMatrix;
 
     glm::vec3 m_Position = {0.0f, 0.0f, 0.0f};
-    float_t m_Rotation = 0.0f;
+
+    glm::vec3 m_WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 m_Front = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 m_Right;
+    glm::vec3 m_Up;
 };
 } // namespace GLCore::Utils

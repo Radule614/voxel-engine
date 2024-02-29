@@ -18,10 +18,10 @@ void PerspectiveCamera::SetProjection(float_t fov, float_t aspectRatio)
 
 void PerspectiveCamera::RecalculateViewMatrix()
 {
-    glm::mat4 transform = glm::translate(glm::mat4(1.0f), m_Position) *
-                          glm::rotate(glm::mat4(1.0f), glm::radians(m_Rotation), glm::vec3(0, 0, 1));
-
-    m_ViewMatrix = glm::inverse(transform);
+    m_Right = glm::normalize(glm::cross(m_Front, m_WorldUp));
+    m_Up = glm::normalize(glm::cross(m_Right, m_Front));
+    m_ViewMatrix = glm::lookAt(m_Position, m_Position + m_Front, m_Up);
     m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 }
+
 } // namespace GLCore::Utils

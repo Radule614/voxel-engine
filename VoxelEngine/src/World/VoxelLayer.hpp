@@ -16,7 +16,7 @@ public:
     virtual void OnImGuiRender() override;
 
 private:
-    GLCore::Utils::OrthographicCameraController m_CameraController;
+    GLCore::Utils::PerspectiveCameraController m_CameraController;
     GLCore::Utils::Shader *m_Shader;
 
     GLuint m_VA, m_VB, m_IB, m_InstanceVB;

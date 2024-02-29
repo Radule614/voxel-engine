@@ -5,7 +5,7 @@
 using namespace GLCore;
 using namespace GLCore::Utils;
 
-VoxelLayer::VoxelLayer() : m_CameraController(16.0f / 9.0f)
+VoxelLayer::VoxelLayer() : m_CameraController(16.0f / 9.0f, true)
 {
 }
 
