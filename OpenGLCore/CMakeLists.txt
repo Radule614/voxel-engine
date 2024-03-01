@@ -14,7 +14,7 @@ target_link_libraries(OpenGLCore glad)
 target_link_libraries(OpenGLCore spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_64>)
 target_link_libraries(OpenGLCore glm)
 
-target_include_directories(OpenGLCore PUBLIC src)
+target_include_directories(OpenGLCore PUBLIC src vendor/stb_image)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
