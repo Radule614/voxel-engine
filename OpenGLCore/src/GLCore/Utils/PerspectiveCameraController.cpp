@@ -9,7 +9,6 @@ namespace GLCore::Utils
 PerspectiveCameraController::PerspectiveCameraController(float_t fov, float_t aspectRatio)
     : m_AspectRatio(aspectRatio), m_Camera(fov, aspectRatio), m_Fov(fov)
 {
-
 }
 
 void PerspectiveCameraController::OnUpdate(Timestep ts)
@@ -57,6 +56,15 @@ bool PerspectiveCameraController::OnWindowResized(WindowResizeEvent &e)
 
 bool PerspectiveCameraController::OnMouseMoved(MouseMovedEvent &e)
 {
+    if (m_First)
+    {
+        m_LastX = e.GetX();
+        m_LastY = e.GetY();
+        glm::vec3 front = m_Camera.GetFront();
+        m_Yaw = glm::degrees(glm::atan(front.z, front.x));
+        m_Pitch = glm::degrees(glm::asin(-front.y));
+        m_First = false;
+    }
     float xoffset = (e.GetX() - m_LastX) * m_Sensitivity;
     float yoffset = (m_LastY - e.GetY()) * m_Sensitivity;
     m_LastX = e.GetX();

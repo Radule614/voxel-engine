@@ -26,7 +26,7 @@ public:
         return m_Front;
     }
 
-    void SetFront(glm::vec3& front)
+    void SetFront(glm::vec3 &front)
     {
         m_Front = front;
         RecalculateViewMatrix();
@@ -63,10 +63,10 @@ private:
     glm::mat4 m_ViewMatrix;
     glm::mat4 m_ViewProjectionMatrix;
 
-    glm::vec3 m_Position = {0.0f, 0.0f, 0.0f};
+    glm::vec3 m_Position = {0.0f, 0.0f, 5.0f};
 
     glm::vec3 m_WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 m_Front = glm::vec3(0.0f, 0.0f, -1.0f);
+    glm::vec3 m_Front = glm::normalize(glm::vec3(0.0f, 0.0f, -1.0f));
     glm::vec3 m_Right;
     glm::vec3 m_Up;
 };

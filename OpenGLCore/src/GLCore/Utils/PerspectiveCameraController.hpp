@@ -57,5 +57,7 @@ private:
     float_t m_LastY = 0.0f;
     float_t m_Yaw = 0.0f;
     float_t m_Pitch = 0.0f;
+
+    bool m_First = true;
 };
 } // namespace GLCore::Utils

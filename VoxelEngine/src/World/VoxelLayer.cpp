@@ -5,7 +5,7 @@
 using namespace GLCore;
 using namespace GLCore::Utils;
 
-VoxelLayer::VoxelLayer() : m_CameraController(16.0f / 9.0f, true)
+VoxelLayer::VoxelLayer() : m_CameraController(45.0f, 16.0f / 9.0f)
 {
 }
 
@@ -59,7 +59,7 @@ void VoxelLayer::OnAttach()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(uint32_t), &m_Indices[0], GL_STATIC_DRAW);
 
     // per instance data
-    std::vector<float_t> instanceData = {2.0f, -2.0f, -1.0f};
+    std::vector<float_t> instanceData = {0.0f, 0.0f, 0.0f};
     glGenBuffers(1, &m_InstanceVB);
     glBindBuffer(GL_ARRAY_BUFFER, m_InstanceVB);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float_t) * 3, &instanceData[0], GL_STATIC_DRAW);
