@@ -5,6 +5,7 @@ add_subdirectory(vendor/glfw)
 add_subdirectory(vendor/glad)
 add_subdirectory(vendor/spdlog)
 add_subdirectory(vendor/glm)
+add_subdirectory(vendor/stb_image)
 
 file(GLOB_RECURSE SOURCE_FILES src/*.cpp)
 
@@ -13,6 +14,7 @@ target_link_libraries(OpenGLCore glfw)
 target_link_libraries(OpenGLCore glad)
 target_link_libraries(OpenGLCore spdlog::spdlog $<$<BOOL:${MINGW}>:ws2_64>)
 target_link_libraries(OpenGLCore glm)
+target_link_libraries(OpenGLCore stb_image)
 
 target_include_directories(OpenGLCore PUBLIC src)
 

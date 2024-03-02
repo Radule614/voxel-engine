@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GLCore.hpp>
-#include "VoxelLayer.hpp"
+#include "World/VoxelLayer.hpp"
 
 using namespace GLCore;
 
