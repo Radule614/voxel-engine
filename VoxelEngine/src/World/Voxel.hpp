@@ -26,10 +26,15 @@ class Voxel
 public:
     Voxel();
     ~Voxel();
+    Voxel(VoxelType type);
 
-    bool IsFaceVisible(VoxelFace face);
+    bool IsFaceVisible(VoxelFace face) const;
     void SetFaceVisible(VoxelFace face, bool visible);
     void SetAllFacesVisible(bool visible);
+    inline VoxelType GetVoxelType() const
+    {
+        return m_VoxelType;
+    }
 
 private:
     VoxelType m_VoxelType;

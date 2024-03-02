@@ -20,6 +20,9 @@ public:
     static std::unordered_map<VoxelFace, std::vector<glm::vec3>> s_PositionMap;
     static std::unordered_map<VoxelFace, glm::vec3> s_NormalMap;
 
+    static std::unordered_map<VoxelType, std::vector<int32_t>> s_FaceTextureMap;
+
+
 private:
     static bool s_Initialized;
 };

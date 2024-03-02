@@ -8,12 +8,16 @@ Voxel::~Voxel()
 {
 }
 
+Voxel::Voxel(VoxelType type) : m_VoxelType(type), m_VisibleFaces(6, false)
+{
+}
+
 void Voxel::SetFaceVisible(VoxelFace face, bool visible)
 {
     m_VisibleFaces[face] = visible;
 }
 
-bool Voxel::IsFaceVisible(VoxelFace face)
+bool Voxel::IsFaceVisible(VoxelFace face) const
 {
     return m_VisibleFaces[face];
 }

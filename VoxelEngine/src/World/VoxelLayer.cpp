@@ -7,6 +7,8 @@ using namespace GLCore::Utils;
 
 VoxelLayer::VoxelLayer() : m_CameraController(45.0f, 16.0f / 9.0f)
 {
+    //TEMP
+    m_TextureManager = TextureManager();
 }
 
 VoxelLayer::~VoxelLayer()
@@ -16,17 +18,20 @@ VoxelLayer::~VoxelLayer()
 void VoxelLayer::OnAttach()
 {
     EnableGLDebugging();
+    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
+    glCullFace(GL_FRONT);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    m_Shader =
-        Shader::FromGLSLTextFiles("VoxelEngine/assets/default.vert.glsl", "VoxelEngine/assets/default.frag.glsl");
+    m_Shader = Shader::FromGLSLTextFiles("VoxelEngine/assets/shaders/default.vert.glsl",
+                                         "VoxelEngine/assets/shaders/default.frag.glsl");
+    m_TextureAtlas = m_TextureManager.LoadTexture("VoxelEngine/assets/textures/atlas.png", "texture_diffuse");
 
     glCreateVertexArrays(1, &m_VA);
     glBindVertexArray(m_VA);
 
-    Voxel voxel;
+    Voxel voxel(VoxelType::GRASS);
     voxel.SetAllFacesVisible(true);
 
     VoxelMeshBuilder meshBuilder;
@@ -97,6 +102,11 @@ void VoxelLayer::OnUpdate(Timestep ts)
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m_CameraController.GetCamera().GetViewProjectionMatrix()));
     location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
     glUniform4fv(location, 1, glm::value_ptr(m_Color));
+
+    glActiveTexture(GL_TEXTURE0);
+    location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Atlas");
+    glUniform1i(location, 0);
+    glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
 
     glBindVertexArray(m_VA);
     glDrawElementsInstanced(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0, 1);
