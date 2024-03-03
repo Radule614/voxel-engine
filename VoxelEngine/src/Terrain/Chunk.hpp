@@ -1,8 +1,6 @@
 #pragma once
 
 #include <vector>
-#include <map>
-#include <memory>
 
 #include "Vertex.hpp"
 #include "Voxel.hpp"
@@ -21,24 +19,6 @@ public:
     Chunk();
     Chunk(glm::vec3 position);
     ~Chunk();
-
-    struct VoxelPosition
-    {
-        glm::vec3 Vector;
-
-        bool operator<(const VoxelPosition &pos) const noexcept
-        {
-            if (this->Vector.y != pos.Vector.y)
-                return this->Vector.y < pos.Vector.y;
-            if (this->Vector.z != pos.Vector.z)
-                return this->Vector.z < pos.Vector.z;
-            return this->Vector.x < pos.Vector.x;
-        }
-
-        VoxelPosition(glm::vec3 pos) : Vector(pos)
-        {
-        }
-    };
 
     inline std::vector<Vertex> GetMesh() const
     {
@@ -60,13 +40,19 @@ public:
         return glm::translate(model, pos);
     }
 
+    std::vector<std::vector<std::vector<Voxel>>>& GetVoxelGrid()
+    {
+        return m_VoxelGrid;
+    }
+
+    void GenerateMesh();
+
 private:
     void Init();
-    void GenerateMesh(std::vector<std::vector<std::vector<Voxel>>> &voxelGrid);
 
 private:
     glm::vec3 m_Position;
     std::vector<Vertex> m_Mesh;
-    std::map<VoxelPosition, Voxel> m_VoxelMap;
+    std::vector<std::vector<std::vector<Voxel>>> m_VoxelGrid;
 };
 }; // namespace Terrain
