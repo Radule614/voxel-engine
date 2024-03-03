@@ -5,24 +5,25 @@
 #include <glm/glm.hpp>
 
 #include "Voxel.hpp"
+#include "Vertex.hpp"
 
+namespace Terrain
+{
 class VoxelMeshBuilder
 {
 public:
     VoxelMeshBuilder();
     ~VoxelMeshBuilder();
 
-    std::vector<float_t> FromVoxel(Voxel &voxel);
+    std::vector<Vertex> FromVoxel(Voxel &voxel);
 
     static void Init();
 
+private:
+    static bool s_Initialized;
     static std::vector<glm::vec2> s_TextureCoordinates;
     static std::unordered_map<VoxelFace, std::vector<glm::vec3>> s_PositionMap;
     static std::unordered_map<VoxelFace, glm::vec3> s_NormalMap;
-
     static std::unordered_map<VoxelType, std::vector<int32_t>> s_FaceTextureMap;
-
-
-private:
-    static bool s_Initialized;
 };
+}; // namespace Terrain

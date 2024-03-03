@@ -2,6 +2,8 @@
 
 #include <vector>
 
+namespace Terrain
+{
 class ChunkMeshGenerator
 {
 public:
@@ -11,3 +13,4 @@ public:
 private:
     std::vector<float> m_Mesh;
 };
+}; // namespace Terrain

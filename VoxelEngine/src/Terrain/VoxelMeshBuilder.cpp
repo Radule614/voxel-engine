@@ -1,5 +1,7 @@
 #include "VoxelMeshBuilder.hpp"
 
+namespace Terrain
+{
 bool VoxelMeshBuilder::s_Initialized = false;
 std::vector<glm::vec2> VoxelMeshBuilder::s_TextureCoordinates = {glm::vec2(0.0f, 0.0f),
                                                                  glm::vec2(0.0f, 1.0f),
@@ -66,9 +68,9 @@ VoxelMeshBuilder::~VoxelMeshBuilder()
 {
 }
 
-std::vector<float_t> VoxelMeshBuilder::FromVoxel(Voxel &voxel)
+std::vector<Vertex> VoxelMeshBuilder::FromVoxel(Voxel &voxel)
 {
-    std::vector<float_t> data = {};
+    std::vector<Vertex> data = {};
     std::vector<int32_t> &texMap = s_FaceTextureMap.at(voxel.GetVoxelType());
     float_t textureUnit = 1.0f / 16.0f;
     for (size_t i = 0; i < 6; ++i)
@@ -102,15 +104,13 @@ std::vector<float_t> VoxelMeshBuilder::FromVoxel(Voxel &voxel)
             if (texCoord.y == 1.0f)
                 atlasTexCoord.y += textureUnit;
 
-            data.push_back(pos.x);
-            data.push_back(pos.y);
-            data.push_back(pos.z);
-            data.push_back(normal.x);
-            data.push_back(normal.y);
-            data.push_back(normal.z);
-            data.push_back(atlasTexCoord.x);
-            data.push_back(atlasTexCoord.y);
+            Vertex v;
+            v.Position = pos + voxel.GetPosition();
+            v.Normal = normal;
+            v.Texture = atlasTexCoord;
+            data.push_back(v);
         }
     }
     return data;
 }
+}; // namespace Terrain

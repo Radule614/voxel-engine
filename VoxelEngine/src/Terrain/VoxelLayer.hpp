@@ -3,6 +3,8 @@
 #include "GLCore.hpp"
 #include "GLCoreUtils.hpp"
 
+namespace Terrain
+{
 class VoxelLayer : public GLCore::Layer
 {
 public:
@@ -18,11 +20,11 @@ public:
 private:
     GLCore::Utils::PerspectiveCameraController m_CameraController;
     GLCore::Utils::Shader *m_Shader;
-    GLCore::Utils::Texture m_TextureAtlas;
+    GLuint m_VA, m_VB, m_IB;
+    std::vector<uint32_t> m_Indices;
 
     //TEMP
-    GLuint m_VA, m_VB, m_IB, m_InstanceVB;
-    std::vector<uint32_t> m_Indices;
-    glm::vec4 m_Color = {0.8f, 0.2f, 0.3f, 1.0f};
     GLCore::Utils::TextureManager m_TextureManager;
+    GLCore::Utils::Texture m_TextureAtlas;
 };
+}; // namespace Terrain

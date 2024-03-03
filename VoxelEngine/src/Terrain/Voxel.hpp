@@ -2,6 +2,10 @@
 
 #include <vector>
 
+#include <glm/glm.hpp>
+
+namespace Terrain
+{
 enum VoxelType
 {
     AIR = 0,
@@ -27,16 +31,29 @@ public:
     Voxel();
     ~Voxel();
     Voxel(VoxelType type);
+    Voxel(VoxelType type, glm::vec3 position);
 
     bool IsFaceVisible(VoxelFace face) const;
     void SetFaceVisible(VoxelFace face, bool visible);
     void SetAllFacesVisible(bool visible);
+
     inline VoxelType GetVoxelType() const
     {
         return m_VoxelType;
+    }
+    inline void SetPosition(glm::vec3 pos)
+    {
+        m_Position = pos;
+    }
+
+    inline glm::vec3 GetPosition() const
+    {
+        return m_Position;
     }
 
 private:
     VoxelType m_VoxelType;
     std::vector<bool> m_VisibleFaces;
+    glm::vec3 m_Position;
 };
+}; // namespace Terrain
