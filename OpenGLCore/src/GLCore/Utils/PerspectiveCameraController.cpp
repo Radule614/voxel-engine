@@ -6,8 +6,8 @@
 
 namespace GLCore::Utils
 {
-PerspectiveCameraController::PerspectiveCameraController(float_t fov, float_t aspectRatio)
-    : m_AspectRatio(aspectRatio), m_Camera(fov, aspectRatio), m_Fov(fov)
+PerspectiveCameraController::PerspectiveCameraController(float_t fov, float_t aspectRatio, float_t speed)
+    : m_AspectRatio(aspectRatio), m_Camera(fov, aspectRatio), m_Fov(fov), m_CameraTranslationSpeed(speed)
 {
 }
 

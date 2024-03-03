@@ -11,7 +11,7 @@ namespace GLCore
 class Application
 {
 public:
-    Application(const std::string &name = "Voxel Engine", uint32_t width = 1600, uint32_t height = 900);
+    Application(const std::string &name = "Voxel Engine", uint32_t width = 1920, uint32_t height = 1080);
     virtual ~Application() = default;
 
     void Run();

@@ -1,10 +1,23 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "GLCore.hpp"
 #include "GLCoreUtils.hpp"
+#include "World.hpp"
 
 namespace Terrain
 {
+
+struct ChunkRenderMetadata
+{
+    GLuint VertexArray;
+    GLuint VertexBuffer;
+    GLuint IndexBuffer;
+    std::vector<uint32_t> Indices;
+    glm::mat4 ModelMatrix;
+};
+
 class VoxelLayer : public GLCore::Layer
 {
 public:
@@ -20,8 +33,11 @@ public:
 private:
     GLCore::Utils::PerspectiveCameraController m_CameraController;
     GLCore::Utils::Shader *m_Shader;
-    GLuint m_VA, m_VB, m_IB;
-    std::vector<uint32_t> m_Indices;
+    // GLuint m_VA, m_VB, m_IB;
+    // std::vector<uint32_t> m_Indices;
+
+    World m_World;
+    std::unordered_map<glm::vec3, ChunkRenderMetadata> m_RenderMetadata;
 
     //TEMP
     GLCore::Utils::TextureManager m_TextureManager;

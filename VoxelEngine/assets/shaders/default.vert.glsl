@@ -11,10 +11,11 @@ out o_Vertex {
 } o_VertexOut;
 
 uniform mat4 u_ViewProjection;
+uniform mat4 u_Model;
 
 void main() {
     o_VertexOut.FragNormal = i_Normal;
     o_VertexOut.FragTexCoords = i_TexCoord;
 
-    gl_Position = u_ViewProjection * vec4(i_Position, 1.0);
+    gl_Position = u_ViewProjection * u_Model * vec4(i_Position, 1.0);
 }
