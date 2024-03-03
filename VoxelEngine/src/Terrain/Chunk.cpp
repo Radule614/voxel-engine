@@ -73,4 +73,14 @@ void Chunk::GenerateMesh()
         }
     }
 }
+
+glm::mat4 Chunk::GetModelMatrix() const
+{
+    glm::mat4 model(1.0f);
+    glm::vec3 pos = m_Position;
+    pos.x *= CHUNK_WIDTH;
+    pos.y *= CHUNK_HEIGHT;
+    pos.z *= CHUNK_WIDTH;
+    return glm::translate(model, pos);
+}
 }; // namespace Terrain

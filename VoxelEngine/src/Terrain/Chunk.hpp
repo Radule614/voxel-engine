@@ -1,12 +1,11 @@
 #pragma once
 
 #include <vector>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "Vertex.hpp"
 #include "Voxel.hpp"
-
-#include "glm/glm.hpp"
-#include <glm/gtc/matrix_transform.hpp>
 
 #define CHUNK_WIDTH 16
 #define CHUNK_HEIGHT 64
@@ -30,17 +29,9 @@ public:
         return m_Position;
     }
 
-    glm::mat4 GetModelMatrix() const
-    {
-        glm::mat4 model(1.0f);
-        glm::vec3 pos = m_Position;
-        pos.x *= CHUNK_WIDTH;
-        pos.y *= CHUNK_HEIGHT;
-        pos.z *= CHUNK_WIDTH;
-        return glm::translate(model, pos);
-    }
+    glm::mat4 GetModelMatrix() const;
 
-    std::vector<std::vector<std::vector<Voxel>>>& GetVoxelGrid()
+    std::vector<std::vector<std::vector<Voxel>>> &GetVoxelGrid()
     {
         return m_VoxelGrid;
     }
