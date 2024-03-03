@@ -3,6 +3,8 @@
 #include "GLCore.hpp"
 #include "GLCoreUtils.hpp"
 
+#include "Chunk.hpp"
+
 namespace Terrain
 {
 class VoxelLayer : public GLCore::Layer
@@ -22,6 +24,8 @@ private:
     GLCore::Utils::Shader *m_Shader;
     GLuint m_VA, m_VB, m_IB;
     std::vector<uint32_t> m_Indices;
+
+    Chunk m_Chunk;
 
     //TEMP
     GLCore::Utils::TextureManager m_TextureManager;

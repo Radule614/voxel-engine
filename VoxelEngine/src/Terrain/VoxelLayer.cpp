@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Vertex.hpp"
+#include "Chunk.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -36,15 +37,9 @@ void VoxelLayer::OnAttach()
     glCreateVertexArrays(1, &m_VA);
     glBindVertexArray(m_VA);
 
-    Voxel voxel(VoxelType::GRASS);
-    voxel.SetAllFacesVisible(true);
-    Voxel voxel2(VoxelType::DIRT, glm::vec3(1, 0, 0));
-    voxel2.SetAllFacesVisible(true);
+    m_Chunk = Chunk(glm::vec3(0, -1, -1));
 
-    VoxelMeshBuilder meshBuilder;
-    std::vector<Vertex> vertices = meshBuilder.FromVoxel(voxel);
-    std::vector<Vertex> vertices2 = meshBuilder.FromVoxel(voxel2);
-    vertices.insert(vertices.begin(), vertices2.begin(), vertices2.end());
+    std::vector<Vertex> vertices = m_Chunk.GetMesh();
 
     glCreateBuffers(1, &m_VB);
     glBindBuffer(GL_ARRAY_BUFFER, m_VB);
@@ -98,6 +93,8 @@ void VoxelLayer::OnUpdate(Timestep ts)
 
     int location = glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewProjection");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m_CameraController.GetCamera().GetViewProjectionMatrix()));
+    location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Model");
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m_Chunk.GetModelMatrix()));
 
     glActiveTexture(GL_TEXTURE0);
     location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Atlas");

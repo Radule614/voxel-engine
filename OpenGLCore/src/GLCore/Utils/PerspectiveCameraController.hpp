@@ -50,7 +50,7 @@ private:
     PerspectiveCamera m_Camera;
     float_t m_Fov = 1.0f;
 
-    float_t m_CameraTranslationSpeed = 8.0f;
+    float_t m_CameraTranslationSpeed = 20.0f;
 
     float_t m_Sensitivity = 0.05f;
     float_t m_LastX = 0.0f;
