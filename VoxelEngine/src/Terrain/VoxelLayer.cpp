@@ -2,9 +2,13 @@
 #include "VoxelMeshBuilder.hpp"
 #include <vector>
 
+#include "Vertex.hpp"
+
 using namespace GLCore;
 using namespace GLCore::Utils;
 
+namespace Terrain
+{
 VoxelLayer::VoxelLayer() : m_CameraController(45.0f, 16.0f / 9.0f)
 {
     //TEMP
@@ -23,6 +27,7 @@ void VoxelLayer::OnAttach()
     glCullFace(GL_FRONT);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     m_Shader = Shader::FromGLSLTextFiles("VoxelEngine/assets/shaders/default.vert.glsl",
                                          "VoxelEngine/assets/shaders/default.frag.glsl");
@@ -33,22 +38,26 @@ void VoxelLayer::OnAttach()
 
     Voxel voxel(VoxelType::GRASS);
     voxel.SetAllFacesVisible(true);
+    Voxel voxel2(VoxelType::DIRT, glm::vec3(1, 0, 0));
+    voxel2.SetAllFacesVisible(true);
 
     VoxelMeshBuilder meshBuilder;
-    std::vector<float_t> vertices = meshBuilder.FromVoxel(voxel);
+    std::vector<Vertex> vertices = meshBuilder.FromVoxel(voxel);
+    std::vector<Vertex> vertices2 = meshBuilder.FromVoxel(voxel2);
+    vertices.insert(vertices.begin(), vertices2.begin(), vertices2.end());
 
     glCreateBuffers(1, &m_VB);
     glBindBuffer(GL_ARRAY_BUFFER, m_VB);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float_t), &vertices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float_t) * 8, 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(float_t) * 8, (void *)(sizeof(float_t) * 3));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offsetof(Vertex, Vertex::Normal)));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(float_t) * 8, (void *)(sizeof(float_t) * 6));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offsetof(Vertex, Vertex::Texture)));
 
     m_Indices = {};
-    size_t faceCount = vertices.size() / 8 / 4;
+    size_t faceCount = vertices.size() / 4;
     for (size_t i = 0; i < faceCount; ++i)
     {
         m_Indices.push_back(i * 4 + 0);
@@ -63,16 +72,6 @@ void VoxelLayer::OnAttach()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IB);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_Indices.size() * sizeof(uint32_t), &m_Indices[0], GL_STATIC_DRAW);
 
-    // per instance data
-    std::vector<float_t> instanceData = {0.0f, 0.0f, 0.0f};
-    glGenBuffers(1, &m_InstanceVB);
-    glBindBuffer(GL_ARRAY_BUFFER, m_InstanceVB);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float_t) * 3, &instanceData[0], GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(float_t) * 3, 0);
-    glVertexAttribDivisor(3, 1);
-
     glBindVertexArray(0);
 }
 
@@ -81,7 +80,6 @@ void VoxelLayer::OnDetach()
     glDeleteVertexArrays(1, &m_VA);
     glDeleteBuffers(1, &m_VB);
     glDeleteBuffers(1, &m_IB);
-    glDeleteBuffers(1, &m_InstanceVB);
 }
 
 
@@ -100,8 +98,6 @@ void VoxelLayer::OnUpdate(Timestep ts)
 
     int location = glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewProjection");
     glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m_CameraController.GetCamera().GetViewProjectionMatrix()));
-    location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
-    glUniform4fv(location, 1, glm::value_ptr(m_Color));
 
     glActiveTexture(GL_TEXTURE0);
     location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Atlas");
@@ -109,10 +105,11 @@ void VoxelLayer::OnUpdate(Timestep ts)
     glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
 
     glBindVertexArray(m_VA);
-    glDrawElementsInstanced(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0, 1);
+    glDrawElements(GL_TRIANGLES, m_Indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 
 void VoxelLayer::OnImGuiRender()
 {
 }
+}; // namespace Terrain
