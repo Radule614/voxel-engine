@@ -9,6 +9,7 @@ add_subdirectory(OpenGLCore)
 file(GLOB_RECURSE SOURCE_FILES VoxelEngine/*.cpp)
 
 add_executable(VoxelEngine ${SOURCE_FILES})
+target_include_directories(VoxelEngine PUBLIC VoxelEngine/vendor/PerlinNoise)
 target_link_libraries(VoxelEngine PRIVATE OpenGLCore)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
