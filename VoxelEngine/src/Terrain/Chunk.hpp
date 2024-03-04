@@ -3,20 +3,21 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "PerlinNoise.hpp"
 
 #include "Vertex.hpp"
 #include "Voxel.hpp"
 
-#define CHUNK_WIDTH 16
-#define CHUNK_HEIGHT 64
+#define CHUNK_WIDTH 24
+#define CHUNK_HEIGHT 32
 
 namespace Terrain
 {
 class Chunk
 {
 public:
-    Chunk();
-    Chunk(glm::vec3 position);
+    Chunk(const siv::PerlinNoise &perlin);
+    Chunk(glm::vec3 position, const siv::PerlinNoise &perlin);
     ~Chunk();
 
     inline std::vector<Vertex> GetMesh() const
@@ -36,14 +37,13 @@ public:
         return m_VoxelGrid;
     }
 
+    void Generate();
     void GenerateMesh();
-
-private:
-    void Init();
 
 private:
     glm::vec3 m_Position;
     std::vector<Vertex> m_Mesh;
     std::vector<std::vector<std::vector<Voxel>>> m_VoxelGrid;
+    const siv::PerlinNoise &m_Perlin;
 };
 }; // namespace Terrain
