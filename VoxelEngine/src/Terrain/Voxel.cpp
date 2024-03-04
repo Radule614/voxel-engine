@@ -35,4 +35,24 @@ void Voxel::SetAllFacesVisible(bool visible)
     for (size_t i = 0; i < m_VisibleFaces.size(); i++)
         m_VisibleFaces[i] = visible;
 }
+
+VoxelFace Voxel::GetOpositeFace(VoxelFace face)
+{
+    switch (face)
+    {
+    case VoxelFace::TOP:
+        return VoxelFace::BOTTOM;
+    case VoxelFace::BOTTOM:
+        return VoxelFace::TOP;
+    case VoxelFace::FRONT:
+        return VoxelFace::BACK;
+    case VoxelFace::BACK:
+        return VoxelFace::FRONT;
+    case VoxelFace::RIGHT:
+        return VoxelFace::LEFT;
+    case VoxelFace::LEFT:
+        return VoxelFace::RIGHT;
+    }
+    return face;
+}
 }; // namespace Terrain

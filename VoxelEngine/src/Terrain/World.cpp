@@ -36,61 +36,53 @@ void World::Generate()
 void World::CheckChunkEdges(Chunk &chunk)
 {
     glm::vec3 pos = chunk.GetPosition();
-    std::vector<std::vector<std::vector<Voxel>>> &voxelGrid = chunk.GetVoxelGrid();
+    auto &voxelGrid = chunk.GetVoxelGrid();
+
     auto zPositive = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z + 1)));
     auto zNegative = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z - 1)));
     auto xPositive = m_ChunkMap.find(MapPosition(glm::vec3(pos.x + 1, pos.y, pos.z)));
     auto xNegative = m_ChunkMap.find(MapPosition(glm::vec3(pos.x - 1, pos.y, pos.z)));
 
-    for (size_t x = 0; x < CHUNK_WIDTH; x++)
+    std::vector<std::vector<std::vector<Voxel>>> *zPositiveGrid = nullptr;
+    std::vector<std::vector<std::vector<Voxel>>> *zNegativeGrid = nullptr;
+    std::vector<std::vector<std::vector<Voxel>>> *xPositiveGrid = nullptr;
+    std::vector<std::vector<std::vector<Voxel>>> *xNegativeGrid = nullptr;
+
+    if (zPositive != m_ChunkMap.end())
+        zPositiveGrid = &zPositive->second.GetVoxelGrid();
+    if (zNegative != m_ChunkMap.end())
+        zNegativeGrid = &zNegative->second.GetVoxelGrid();
+    if (xPositive != m_ChunkMap.end())
+        xPositiveGrid = &xPositive->second.GetVoxelGrid();
+    if (xNegative != m_ChunkMap.end())
+        xNegativeGrid = &xNegative->second.GetVoxelGrid();
+
+    for (size_t y = 0; y < CHUNK_HEIGHT; y++)
     {
-        for (size_t y = 0; y < CHUNK_HEIGHT; y++)
+        for (size_t x = 0; x < CHUNK_WIDTH; x++)
         {
-            Voxel &front = voxelGrid[x][y][CHUNK_WIDTH - 1];
-            Voxel &back = voxelGrid[x][y][0];
-            Voxel &right = voxelGrid[CHUNK_WIDTH - 1][y][x];
-            Voxel &left = voxelGrid[0][y][x];
+            Voxel &front = voxelGrid[y][x][CHUNK_WIDTH - 1];
+            Voxel &back = voxelGrid[y][x][0];
+            Voxel &right = voxelGrid[y][CHUNK_WIDTH - 1][x];
+            Voxel &left = voxelGrid[y][0][x];
 
-            if (zPositive != m_ChunkMap.end())
-            {
-                auto &zPositiveVoxelGrid = zPositive->second.GetVoxelGrid();
-                Voxel &zPositiveBack = zPositiveVoxelGrid[x][y][0];
-                if (front.GetVoxelType() != VoxelType::AIR && zPositiveBack.GetVoxelType() == VoxelType::AIR)
-                    front.SetFaceVisible(VoxelFace::FRONT, true);
-                else if (front.GetVoxelType() == VoxelType::AIR && zPositiveBack.GetVoxelType() != VoxelType::AIR)
-                    zPositiveBack.SetFaceVisible(VoxelFace::BACK, true);
-            }
-
-            if (zNegative != m_ChunkMap.end())
-            {
-                auto &zNegativeVoxelGrid = zNegative->second.GetVoxelGrid();
-                Voxel &zNegativeFront = zNegativeVoxelGrid[x][y][CHUNK_WIDTH - 1];
-                if (back.GetVoxelType() != VoxelType::AIR && zNegativeFront.GetVoxelType() == VoxelType::AIR)
-                    back.SetFaceVisible(VoxelFace::BACK, true);
-                if (back.GetVoxelType() == VoxelType::AIR && zNegativeFront.GetVoxelType() != VoxelType::AIR)
-                    zNegativeFront.SetFaceVisible(VoxelFace::FRONT, true);
-            }
-
-            if (xPositive != m_ChunkMap.end())
-            {
-                auto &xPositiveVoxelGrid = xPositive->second.GetVoxelGrid();
-                Voxel &xPositiveLeft = xPositiveVoxelGrid[0][y][x];
-                if (right.GetVoxelType() != VoxelType::AIR && xPositiveLeft.GetVoxelType() == VoxelType::AIR)
-                    right.SetFaceVisible(VoxelFace::RIGHT, true);
-                else if (right.GetVoxelType() == VoxelType::AIR && xPositiveLeft.GetVoxelType() != VoxelType::AIR)
-                    xPositiveLeft.SetFaceVisible(VoxelFace::LEFT, true);
-            }
-
-            if (xNegative != m_ChunkMap.end())
-            {
-                auto &xNegativeVoxelGrid = xNegative->second.GetVoxelGrid();
-                Voxel &xNegativeFront = xNegativeVoxelGrid[CHUNK_WIDTH - 1][y][x];
-                if (left.GetVoxelType() != VoxelType::AIR && xNegativeFront.GetVoxelType() == VoxelType::AIR)
-                    left.SetFaceVisible(VoxelFace::LEFT, true);
-                if (left.GetVoxelType() == VoxelType::AIR && xNegativeFront.GetVoxelType() != VoxelType::AIR)
-                    xNegativeFront.SetFaceVisible(VoxelFace::RIGHT, true);
-            }
+            if (zPositiveGrid != nullptr)
+                CheckVoxelEdge(front, (*zPositiveGrid)[y][x][0], VoxelFace::FRONT);
+            if (zNegativeGrid != nullptr)
+                CheckVoxelEdge(back, (*zNegativeGrid)[y][x][CHUNK_WIDTH - 1], VoxelFace::BACK);
+            if (xPositiveGrid != nullptr)
+                CheckVoxelEdge(right, (*xPositiveGrid)[y][0][x], VoxelFace::RIGHT);
+            if (xNegativeGrid != nullptr)
+                CheckVoxelEdge(left, (*xNegativeGrid)[y][CHUNK_WIDTH - 1][x], VoxelFace::LEFT);
         }
     }
+}
+
+void World::CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face)
+{
+    if (v1.GetVoxelType() != VoxelType::AIR && v2.GetVoxelType() == VoxelType::AIR)
+        v1.SetFaceVisible(face, true);
+    else if (v1.GetVoxelType() == VoxelType::AIR && v2.GetVoxelType() != VoxelType::AIR)
+        v2.SetFaceVisible(Voxel::GetOpositeFace(face), true);
 }
 }; // namespace Terrain

@@ -51,6 +51,8 @@ public:
         return m_Position;
     }
 
+    static VoxelFace GetOpositeFace(VoxelFace face);
+
 private:
     VoxelType m_VoxelType;
     std::vector<bool> m_VisibleFaces;
