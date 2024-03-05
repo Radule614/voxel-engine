@@ -20,6 +20,13 @@ public:
     Chunk(glm::vec3 position, const siv::PerlinNoise &perlin);
     ~Chunk();
 
+    struct Neighbours {
+        Chunk* front = nullptr;
+        Chunk* back = nullptr;
+        Chunk* right = nullptr;
+        Chunk* left = nullptr;
+    };
+
     inline std::vector<Vertex> GetMesh() const
     {
         return m_Mesh;

@@ -31,10 +31,13 @@ public:
     virtual void OnImGuiRender() override;
 
 private:
+    void GenerateNewChunkMeshes();
+    void SetupRenderData(Chunk *);
+
+private:
     GLCore::Utils::PerspectiveCameraController m_CameraController;
     GLCore::Utils::Shader *m_Shader;
-    // GLuint m_VA, m_VB, m_IB;
-    // std::vector<uint32_t> m_Indices;
+
 
     World m_World;
     std::unordered_map<glm::vec3, ChunkRenderMetadata> m_RenderMetadata;

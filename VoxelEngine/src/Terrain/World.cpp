@@ -2,64 +2,53 @@
 
 #include <vector>
 #include <GLCoreUtils.hpp>
+#include <thread>
 
 namespace Terrain
 {
-World::World() : m_ChunkMap({})
+World::World()
+    : m_ChunkMap({}), m_ChunkGenerationQueue(), m_ShouldGenerationRun(std::make_shared<bool>(false)),
+      m_Mutex(std::mutex())
 {
 }
+
 World::~World()
 {
 }
+
 const std::map<MapPosition, Chunk> &World::GetChunkMap() const
 {
     return m_ChunkMap;
 }
-void World::Generate()
+
+std::queue<Chunk *> &World::GetChunkGenerationQueue()
 {
-    const siv::PerlinNoise::seed_type seed = 123456u;
-    const siv::PerlinNoise perlin{seed};
-
-    int32_t size = 4;
-    for (int32_t i = -size; i <= size; ++i)
-    {
-        for (int32_t j = -size; j <= size; ++j)
-        {
-            MapPosition pos(glm::vec3(i, -1, j));
-            Chunk chunk(pos.Vector, perlin);
-            chunk.Generate();
-            CheckChunkEdges(chunk);
-            m_ChunkMap.insert({pos, chunk});
-        }
-    }
-
-    for (auto it = m_ChunkMap.begin(); it != m_ChunkMap.end(); ++it)
-        it->second.GenerateMesh();
+    return m_ChunkGenerationQueue;
 }
 
-void World::CheckChunkEdges(Chunk &chunk)
+void World::StartGeneration()
 {
-    glm::vec3 pos = chunk.GetPosition();
-    auto &voxelGrid = chunk.GetVoxelGrid();
+    *m_ShouldGenerationRun = false;
+    m_GenerationThread = std::thread([this] { this->Generate(); });
+}
 
-    auto zPositive = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z + 1)));
-    auto zNegative = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z - 1)));
-    auto xPositive = m_ChunkMap.find(MapPosition(glm::vec3(pos.x + 1, pos.y, pos.z)));
-    auto xNegative = m_ChunkMap.find(MapPosition(glm::vec3(pos.x - 1, pos.y, pos.z)));
+void World::CheckChunkEdges(Chunk &chunk, Chunk::Neighbours &neighbours)
+{
+    auto &voxelGrid = chunk.GetVoxelGrid();
 
     std::vector<std::vector<std::vector<Voxel>>> *zPositiveGrid = nullptr;
     std::vector<std::vector<std::vector<Voxel>>> *zNegativeGrid = nullptr;
     std::vector<std::vector<std::vector<Voxel>>> *xPositiveGrid = nullptr;
     std::vector<std::vector<std::vector<Voxel>>> *xNegativeGrid = nullptr;
 
-    if (zPositive != m_ChunkMap.end())
-        zPositiveGrid = &zPositive->second.GetVoxelGrid();
-    if (zNegative != m_ChunkMap.end())
-        zNegativeGrid = &zNegative->second.GetVoxelGrid();
-    if (xPositive != m_ChunkMap.end())
-        xPositiveGrid = &xPositive->second.GetVoxelGrid();
-    if (xNegative != m_ChunkMap.end())
-        xNegativeGrid = &xNegative->second.GetVoxelGrid();
+    if (neighbours.front != nullptr)
+        zPositiveGrid = &neighbours.front->GetVoxelGrid();
+    if (neighbours.back != nullptr)
+        zNegativeGrid = &neighbours.back->GetVoxelGrid();
+    if (neighbours.right != nullptr)
+        xPositiveGrid = &neighbours.right->GetVoxelGrid();
+    if (neighbours.left != nullptr)
+        xNegativeGrid = &neighbours.left->GetVoxelGrid();
 
     for (size_t x = 0; x < CHUNK_WIDTH; x++)
     {
@@ -108,5 +97,83 @@ void World::CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face)
         v1.SetFaceVisible(face, true);
     else if (v1.GetVoxelType() == VoxelType::AIR && v2.GetVoxelType() != VoxelType::AIR)
         v2.SetFaceVisible(Voxel::GetOpositeFace(face), true);
+}
+
+void World::Generate()
+{
+    LOG_INFO("Generation thread started");
+    const siv::PerlinNoise::seed_type seed = 123456u;
+    const siv::PerlinNoise perlin{seed};
+    int32_t size = 4;
+
+    for (int32_t i = -size; i <= size; ++i)
+    {
+        for (int32_t j = -size; j <= size; ++j)
+        {
+            if (*m_ShouldGenerationRun)
+                return;
+            MapPosition pos(glm::vec3(i, -1, j));
+            Chunk chunk(pos.Vector, perlin);
+            chunk.Generate();
+            Chunk::Neighbours neighbours = GetNeighbours(chunk);
+            CheckChunkEdges(chunk, neighbours);
+            chunk.GenerateMesh();
+
+            m_Mutex.lock();
+            m_ChunkGenerationQueue.push(&chunk);
+            if (neighbours.front != nullptr)
+            {
+                neighbours.front->GenerateMesh();
+                m_ChunkGenerationQueue.push(neighbours.front);
+            }
+            if (neighbours.back != nullptr)
+            {
+                neighbours.back->GenerateMesh();
+                m_ChunkGenerationQueue.push(neighbours.back);
+            }
+            if (neighbours.right != nullptr)
+            {
+                neighbours.right->GenerateMesh();
+                m_ChunkGenerationQueue.push(neighbours.right);
+            }
+            if (neighbours.left != nullptr)
+            {
+                neighbours.left->GenerateMesh();
+                m_ChunkGenerationQueue.push(neighbours.left);
+            }
+            m_ChunkMap.insert({pos, chunk});
+            m_Mutex.unlock();
+
+            LOG_INFO("Generation thread running...");
+        }
+    }
+}
+void World::StopGeneration()
+{
+    *m_ShouldGenerationRun = false;
+    if (m_GenerationThread.joinable())
+        m_GenerationThread.join();
+}
+
+Chunk::Neighbours World::GetNeighbours(Chunk &chunk)
+{
+    glm::vec3 pos = chunk.GetPosition();
+    auto front = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z + 1)));
+    auto back = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z - 1)));
+    auto right = m_ChunkMap.find(MapPosition(glm::vec3(pos.x + 1, pos.y, pos.z)));
+    auto left = m_ChunkMap.find(MapPosition(glm::vec3(pos.x - 1, pos.y, pos.z)));
+
+    Chunk::Neighbours neighbours = {};
+
+    if (front != m_ChunkMap.end())
+        neighbours.front = &front->second;
+    if (back != m_ChunkMap.end())
+        neighbours.back = &back->second;
+    if (right != m_ChunkMap.end())
+        neighbours.right = &right->second;
+    if (left != m_ChunkMap.end())
+        neighbours.left = &left->second;
+
+    return neighbours;
 }
 }; // namespace Terrain
