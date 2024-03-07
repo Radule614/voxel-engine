@@ -40,19 +40,15 @@ public:
 
     glm::mat4 GetModelMatrix() const;
 
-    std::vector<std::vector<std::vector<Voxel>>> &GetVoxelGrid()
-    {
-        return m_VoxelGrid;
-    }
-
     void Generate();
     void GenerateMesh();
 
+public:
+    Voxel m_VoxelGrid[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
+
 private:
-    static Voxel m_CachedVoxelArray[CHUNK_HEIGHT];
     glm::vec3 m_Position;
     std::vector<Vertex> m_Mesh;
-    std::vector<std::vector<std::vector<Voxel>>> m_VoxelGrid;
     const siv::PerlinNoise &m_Perlin;
 };
 }; // namespace Terrain

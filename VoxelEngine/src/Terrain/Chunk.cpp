@@ -9,7 +9,7 @@ Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec3(0), perlin)
 }
 
 Chunk::Chunk(glm::vec3 position, const siv::PerlinNoise &perlin)
-    : m_Position(position), m_Mesh({}), m_VoxelGrid({}), m_Perlin(perlin)
+    : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin)
 {
 }
 
@@ -17,24 +17,15 @@ Chunk::~Chunk()
 {
 }
 
-Voxel Chunk::m_CachedVoxelArray[CHUNK_HEIGHT];
-
 void Chunk::Generate()
 {
-    m_VoxelGrid = {};
     for (size_t x = 0; x < CHUNK_WIDTH; ++x)
     {
-        m_VoxelGrid.push_back({});
         for (size_t z = 0; z < CHUNK_WIDTH; ++z)
         {
-            m_VoxelGrid[x].push_back({});
             const double noise = m_Perlin.octave2D_01((m_Position.x * CHUNK_WIDTH + x) * 0.02,
                                                       (m_Position.z * CHUNK_WIDTH + z) * 0.02,
                                                       4);
-            auto &vec = m_VoxelGrid[x][z];
-            vec.reserve(CHUNK_HEIGHT);
-            std::copy(std::begin(m_CachedVoxelArray), std::end(m_CachedVoxelArray), std::back_inserter(vec));
-
             for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
             {
                 VoxelType type = VoxelType::STONE;
@@ -43,8 +34,8 @@ void Chunk::Generate()
                     type = VoxelType::AIR;
                 else if (y > height - 1)
                     type = VoxelType::GRASS;
-                vec[y].SetPosition(glm::vec3(x, y, z));
-                vec[y].SetVoxelType(type);
+                m_VoxelGrid[x][z][y].SetPosition(glm::vec3(x, y, z));
+                m_VoxelGrid[x][z][y].SetVoxelType(type);
             }
         }
     }
@@ -60,7 +51,7 @@ void Chunk::GenerateMesh()
         {
             for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
             {
-                Voxel &v = m_VoxelGrid[x][z][y];
+                Voxel v = m_VoxelGrid[x][z][y];
                 if (v.GetVoxelType() == VoxelType::AIR)
                     continue;
 

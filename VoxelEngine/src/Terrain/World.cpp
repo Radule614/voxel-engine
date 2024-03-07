@@ -32,22 +32,7 @@ void World::StartGeneration()
 
 void World::CheckChunkEdges(Chunk &chunk, Chunk::Neighbours &neighbours)
 {
-    auto &voxelGrid = chunk.GetVoxelGrid();
-
-    std::vector<std::vector<std::vector<Voxel>>> *zPositiveGrid = nullptr;
-    std::vector<std::vector<std::vector<Voxel>>> *zNegativeGrid = nullptr;
-    std::vector<std::vector<std::vector<Voxel>>> *xPositiveGrid = nullptr;
-    std::vector<std::vector<std::vector<Voxel>>> *xNegativeGrid = nullptr;
-
-    if (neighbours.front != nullptr)
-        zPositiveGrid = &neighbours.front->GetVoxelGrid();
-    if (neighbours.back != nullptr)
-        zNegativeGrid = &neighbours.back->GetVoxelGrid();
-    if (neighbours.right != nullptr)
-        xPositiveGrid = &neighbours.right->GetVoxelGrid();
-    if (neighbours.left != nullptr)
-        xNegativeGrid = &neighbours.left->GetVoxelGrid();
-
+    auto &voxelGrid = chunk.m_VoxelGrid;
     for (size_t x = 0; x < CHUNK_WIDTH; x++)
     {
         for (size_t y = 0; y < CHUNK_HEIGHT; y++)
@@ -57,34 +42,14 @@ void World::CheckChunkEdges(Chunk &chunk, Chunk::Neighbours &neighbours)
             Voxel &right = voxelGrid[CHUNK_WIDTH - 1][x][y];
             Voxel &left = voxelGrid[0][x][y];
 
-            if (zPositiveGrid != nullptr)
-            {
-                if ((*zPositiveGrid)[x][0].size() > y)
-                    CheckVoxelEdge(front, (*zPositiveGrid)[x][0][y], VoxelFace::FRONT);
-                else
-                    front.SetFaceVisible(VoxelFace::FRONT, true);
-            }
-            if (zNegativeGrid != nullptr)
-            {
-                if ((*zNegativeGrid)[x][CHUNK_WIDTH - 1].size() > y)
-                    CheckVoxelEdge(back, (*zNegativeGrid)[x][CHUNK_WIDTH - 1][y], VoxelFace::BACK);
-                else
-                    back.SetFaceVisible(VoxelFace::BACK, true);
-            }
-            if (xPositiveGrid != nullptr)
-            {
-                if ((*xPositiveGrid)[0][x].size() > y)
-                    CheckVoxelEdge(right, (*xPositiveGrid)[0][x][y], VoxelFace::RIGHT);
-                else
-                    right.SetFaceVisible(VoxelFace::RIGHT, true);
-            }
-            if (xNegativeGrid != nullptr)
-            {
-                if ((*xNegativeGrid)[CHUNK_WIDTH - 1][x].size() > y)
-                    CheckVoxelEdge(left, (*xNegativeGrid)[CHUNK_WIDTH - 1][x][y], VoxelFace::LEFT);
-                else
-                    left.SetFaceVisible(VoxelFace::LEFT, true);
-            }
+            if (neighbours.front != nullptr)
+                CheckVoxelEdge(front, neighbours.front->m_VoxelGrid[x][0][y], VoxelFace::FRONT);
+            if (neighbours.back != nullptr)
+                CheckVoxelEdge(back, neighbours.back->m_VoxelGrid[x][CHUNK_WIDTH - 1][y], VoxelFace::BACK);
+            if (neighbours.right != nullptr)
+                CheckVoxelEdge(right, neighbours.right->m_VoxelGrid[0][x][y], VoxelFace::RIGHT);
+            if (neighbours.left != nullptr)
+                CheckVoxelEdge(left, neighbours.left->m_VoxelGrid[CHUNK_WIDTH - 1][x][y], VoxelFace::LEFT);
         }
     }
 }
@@ -117,6 +82,7 @@ void World::Generate()
         chunk->GenerateMesh();
 
         m_Mutex.lock();
+        m_ChunkGenerationQueue.push(chunk);
         if (neighbours.front != nullptr)
         {
             neighbours.front->GenerateMesh();
@@ -137,7 +103,6 @@ void World::Generate()
             neighbours.left->GenerateMesh();
             m_ChunkGenerationQueue.push(neighbours.left);
         }
-        m_ChunkGenerationQueue.push(chunk);
         LOG_INFO("CHUNKS: " + std::to_string(m_ChunkMap.size()));
         m_Mutex.unlock();
     }
