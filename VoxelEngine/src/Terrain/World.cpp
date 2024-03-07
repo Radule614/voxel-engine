@@ -1,14 +1,12 @@
 #include "World.hpp"
 
 #include <vector>
-#include <GLCoreUtils.hpp>
-#include <thread>
 
 namespace Terrain
 {
-World::World()
+World::World(GLCore::Utils::PerspectiveCameraController &cameraController)
     : m_ChunkMap({}), m_ChunkGenerationQueue(), m_ShouldGenerationRun(std::make_shared<bool>(false)),
-      m_Mutex(std::mutex())
+      m_Mutex(std::mutex()), m_CameraController(cameraController)
 {
 }
 
@@ -28,7 +26,7 @@ std::queue<std::shared_ptr<Chunk>> &World::GetChunkGenerationQueue()
 
 void World::StartGeneration()
 {
-    *m_ShouldGenerationRun = false;
+    *m_ShouldGenerationRun = true;
     m_GenerationThread = std::thread([this] { this->Generate(); });
 }
 
@@ -101,52 +99,47 @@ void World::CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face)
 
 void World::Generate()
 {
-    // LOG_INFO("Generation thread started");
     const siv::PerlinNoise::seed_type seed = 123456u;
     const siv::PerlinNoise perlin{seed};
-    int32_t size = 4;
 
-    for (int32_t i = -size; i <= size; ++i)
+    while (*m_ShouldGenerationRun)
     {
-        for (int32_t j = -size; j <= size; ++j)
+        std::tuple<bool, MapPosition> tuple = FindNextChunkLocation();
+        if (!std::get<0>(tuple))
+            continue;
+        MapPosition &pos = std::get<1>(tuple);
+
+        auto chunk = std::make_shared<Chunk>(pos.Vector, perlin);
+        m_ChunkMap.insert({pos, chunk});
+        chunk->Generate();
+        Chunk::Neighbours neighbours = GetNeighbours(*chunk);
+        CheckChunkEdges(*chunk, neighbours);
+        chunk->GenerateMesh();
+
+        m_Mutex.lock();
+        if (neighbours.front != nullptr)
         {
-            if (*m_ShouldGenerationRun)
-                return;
-            MapPosition pos(glm::vec3(i, -1, j));
-            auto chunk = std::make_shared<Chunk>(pos.Vector, perlin);
-            m_ChunkMap.insert({pos, chunk});
-            chunk->Generate();
-            Chunk::Neighbours neighbours = GetNeighbours(*chunk);
-            CheckChunkEdges(*chunk, neighbours);
-            chunk->GenerateMesh();
-
-            m_Mutex.lock();
-            if (neighbours.front != nullptr)
-            {
-                neighbours.front->GenerateMesh();
-                m_ChunkGenerationQueue.push(neighbours.front);
-            }
-            if (neighbours.back != nullptr)
-            {
-                neighbours.back->GenerateMesh();
-                m_ChunkGenerationQueue.push(neighbours.back);
-            }
-            if (neighbours.right != nullptr)
-            {
-                neighbours.right->GenerateMesh();
-                m_ChunkGenerationQueue.push(neighbours.right);
-            }
-            if (neighbours.left != nullptr)
-            {
-                neighbours.left->GenerateMesh();
-                m_ChunkGenerationQueue.push(neighbours.left);
-            }
-            m_ChunkGenerationQueue.push(chunk);
-            m_Mutex.unlock();
-
-            // LOG_INFO("Generation thread running...");
-            // std::this_thread::sleep_for(std::chrono::seconds(1));
+            neighbours.front->GenerateMesh();
+            m_ChunkGenerationQueue.push(neighbours.front);
         }
+        if (neighbours.back != nullptr)
+        {
+            neighbours.back->GenerateMesh();
+            m_ChunkGenerationQueue.push(neighbours.back);
+        }
+        if (neighbours.right != nullptr)
+        {
+            neighbours.right->GenerateMesh();
+            m_ChunkGenerationQueue.push(neighbours.right);
+        }
+        if (neighbours.left != nullptr)
+        {
+            neighbours.left->GenerateMesh();
+            m_ChunkGenerationQueue.push(neighbours.left);
+        }
+        m_ChunkGenerationQueue.push(chunk);
+        LOG_INFO("CHUNKS: " + std::to_string(m_ChunkMap.size()));
+        m_Mutex.unlock();
     }
 }
 void World::StopGeneration()
@@ -178,21 +171,27 @@ Chunk::Neighbours World::GetNeighbours(Chunk &chunk)
     return neighbours;
 }
 
-MapPosition World::FindNextChunkLocation()
+std::tuple<bool, MapPosition> World::FindNextChunkLocation()
 {
-    int32_t size = 0;
-    int32_t maxDistance = 5;
-    for (size_t r = 0; r < maxDistance; ++r)
+    int32_t maxDistance = 12;
+    glm::vec3 cameraPosition = m_CameraController.GetCamera().GetPosition();
+    glm::vec2 offset =
+        glm::vec2(glm::floor(cameraPosition.x / CHUNK_WIDTH), glm::floor(cameraPosition.z / CHUNK_WIDTH));
+    for (int32_t r = 0; r < maxDistance; ++r)
     {
-        for(size_t x = -r; x <= r; ++x ){
-            for(size_t z = -r; z <= r; ++z ){
-                MapPosition pos = MapPosition(glm::vec3(x, -1, z));
+        for (int32_t x = -r; x <= r; ++x)
+        {
+            for (int32_t z = -r; z <= r; ++z)
+            {
+                MapPosition pos = MapPosition(glm::vec3(x + offset.x, -1, z + offset.y));
                 auto chunk = m_ChunkMap.find(pos);
-                if(chunk == m_ChunkMap.end())
-                    return pos;
+                if (chunk == m_ChunkMap.end())
+                {
+                    return std::tuple<bool, MapPosition>(true, pos);
+                }
             }
         }
     }
-    return glm::vec3(0, 0, 0);
+    return std::tuple<bool, MapPosition>(false, MapPosition(glm::vec3(0)));
 }
 }; // namespace Terrain

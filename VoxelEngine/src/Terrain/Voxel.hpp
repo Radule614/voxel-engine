@@ -37,6 +37,11 @@ public:
     void SetFaceVisible(VoxelFace face, bool visible);
     void SetAllFacesVisible(bool visible);
 
+    inline void SetVoxelType(VoxelType type)
+    {
+        m_VoxelType = type;
+    }
+
     inline VoxelType GetVoxelType() const
     {
         return m_VoxelType;
@@ -55,7 +60,7 @@ public:
 
 private:
     VoxelType m_VoxelType;
-    std::vector<bool> m_VisibleFaces;
+    bool m_VisibleFaces[6];
     glm::vec3 m_Position;
 };
 }; // namespace Terrain

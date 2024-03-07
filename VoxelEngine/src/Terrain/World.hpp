@@ -2,20 +2,21 @@
 
 #include <map>
 #include <queue>
+#include <mutex>
+#include <thread>
 #include <glm/glm.hpp>
+#include <GLCoreUtils.hpp>
 
 #include "Chunk.hpp"
 #include "MapPosition.hpp"
 
-#include <mutex>
-#include <thread>
 
 namespace Terrain
 {
 class World
 {
 public:
-    World();
+    World(GLCore::Utils::PerspectiveCameraController &cameraController);
     ~World();
 
     const std::map<MapPosition, std::shared_ptr<Chunk>> &GetChunkMap() const;
@@ -34,12 +35,13 @@ private:
     void CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face);
     Chunk::Neighbours GetNeighbours(Chunk &chunk);
     void Generate();
-    MapPosition FindNextChunkLocation();
+    std::tuple<bool, MapPosition> FindNextChunkLocation();
 
 
 private:
     std::map<MapPosition, std::shared_ptr<Chunk>> m_ChunkMap;
     std::queue<std::shared_ptr<Chunk>> m_ChunkGenerationQueue;
+    GLCore::Utils::PerspectiveCameraController &m_CameraController;
 
     std::thread m_GenerationThread;
     std::shared_ptr<bool> m_ShouldGenerationRun;

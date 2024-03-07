@@ -9,7 +9,7 @@
 #include "Voxel.hpp"
 
 #define CHUNK_WIDTH 24
-#define CHUNK_HEIGHT 32
+#define CHUNK_HEIGHT 64
 
 namespace Terrain
 {
@@ -20,7 +20,8 @@ public:
     Chunk(glm::vec3 position, const siv::PerlinNoise &perlin);
     ~Chunk();
 
-    struct Neighbours {
+    struct Neighbours
+    {
         std::shared_ptr<Chunk> front = nullptr;
         std::shared_ptr<Chunk> back = nullptr;
         std::shared_ptr<Chunk> right = nullptr;
@@ -48,6 +49,7 @@ public:
     void GenerateMesh();
 
 private:
+    static Voxel m_CachedVoxelArray[CHUNK_HEIGHT];
     glm::vec3 m_Position;
     std::vector<Vertex> m_Mesh;
     std::vector<std::vector<std::vector<Voxel>>> m_VoxelGrid;
