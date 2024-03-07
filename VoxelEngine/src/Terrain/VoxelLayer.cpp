@@ -100,31 +100,30 @@ void VoxelLayer::GenerateNewChunkMeshes()
         return;
     while (!queue.empty())
     {
-        Chunk *chunk = queue.front();
+        std::shared_ptr<Chunk> chunk = queue.front();
         SetupRenderData(chunk);
         queue.pop();
     }
     m.unlock();
 }
 
-void VoxelLayer::SetupRenderData(Chunk *chunk)
+void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
 {
     glm::vec3 p = chunk->GetPosition();
-    LOG_INFO(std::to_string(p.x) + ", " + std::to_string(p.y) + ", " + std::to_string(p.z));
-
-    ChunkRenderMetadata m = {};
-    ChunkRenderMetadata &metadata = m;
+    // LOG_INFO(std::to_string(p.x) + ", " + std::to_string(p.y) + ", " + std::to_string(p.z));
+    ChunkRenderMetadata metadata = {};
     auto renderData = m_RenderMetadata.find(chunk->GetPosition());
     if (renderData != m_RenderMetadata.end())
     {
-        metadata = renderData->second;
-        glDeleteVertexArrays(1, &metadata.VertexArray);
-        glDeleteBuffers(1, &metadata.VertexBuffer);
-        glDeleteBuffers(1, &metadata.IndexBuffer);
-        metadata.Indices.clear();
+        ChunkRenderMetadata &m = renderData->second;
+        glDeleteVertexArrays(1, &m.VertexArray);
+        glDeleteBuffers(1, &m.VertexBuffer);
+        glDeleteBuffers(1, &m.IndexBuffer);
+        m.Indices.clear();
+        m_RenderMetadata.erase(chunk->GetPosition());
     }
 
-    std::vector<Vertex> vertices = chunk->GetMesh();
+    const std::vector<Vertex> &vertices = chunk->GetMesh();
 
     glCreateVertexArrays(1, &metadata.VertexArray);
     glBindVertexArray(metadata.VertexArray);
@@ -159,7 +158,6 @@ void VoxelLayer::SetupRenderData(Chunk *chunk)
     metadata.Indices = indices;
     metadata.ModelMatrix = chunk->GetModelMatrix();
 
-    if (renderData == m_RenderMetadata.end())
-        m_RenderMetadata.insert({chunk->GetPosition(), metadata});
+    m_RenderMetadata.insert({chunk->GetPosition(), metadata});
 }
 }; // namespace Terrain

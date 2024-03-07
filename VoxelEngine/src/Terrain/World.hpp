@@ -18,8 +18,8 @@ public:
     World();
     ~World();
 
-    const std::map<MapPosition, Chunk> &GetChunkMap() const;
-    std::queue<Chunk *> &GetChunkGenerationQueue();
+    const std::map<MapPosition, std::shared_ptr<Chunk>> &GetChunkMap() const;
+    std::queue<std::shared_ptr<Chunk>> &GetChunkGenerationQueue();
 
     void StartGeneration();
     void StopGeneration();
@@ -34,11 +34,12 @@ private:
     void CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face);
     Chunk::Neighbours GetNeighbours(Chunk &chunk);
     void Generate();
+    MapPosition FindNextChunkLocation();
 
 
 private:
-    std::map<MapPosition, Chunk> m_ChunkMap;
-    std::queue<Chunk *> m_ChunkGenerationQueue;
+    std::map<MapPosition, std::shared_ptr<Chunk>> m_ChunkMap;
+    std::queue<std::shared_ptr<Chunk>> m_ChunkGenerationQueue;
 
     std::thread m_GenerationThread;
     std::shared_ptr<bool> m_ShouldGenerationRun;

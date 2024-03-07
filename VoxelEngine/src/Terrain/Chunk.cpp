@@ -45,7 +45,7 @@ void Chunk::Generate()
 
 void Chunk::GenerateMesh()
 {
-    m_Mesh = {};
+    m_Mesh.clear();
     VoxelMeshBuilder meshBuilder;
     for (size_t x = 0; x < CHUNK_WIDTH; ++x)
     {

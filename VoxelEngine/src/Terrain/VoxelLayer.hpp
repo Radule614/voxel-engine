@@ -32,7 +32,7 @@ public:
 
 private:
     void GenerateNewChunkMeshes();
-    void SetupRenderData(Chunk *);
+    void SetupRenderData(std::shared_ptr<Chunk> chunk);
 
 private:
     GLCore::Utils::PerspectiveCameraController m_CameraController;

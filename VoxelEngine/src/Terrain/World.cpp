@@ -16,12 +16,12 @@ World::~World()
 {
 }
 
-const std::map<MapPosition, Chunk> &World::GetChunkMap() const
+const std::map<MapPosition, std::shared_ptr<Chunk>> &World::GetChunkMap() const
 {
     return m_ChunkMap;
 }
 
-std::queue<Chunk *> &World::GetChunkGenerationQueue()
+std::queue<std::shared_ptr<Chunk>> &World::GetChunkGenerationQueue()
 {
     return m_ChunkGenerationQueue;
 }
@@ -101,7 +101,7 @@ void World::CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face)
 
 void World::Generate()
 {
-    LOG_INFO("Generation thread started");
+    // LOG_INFO("Generation thread started");
     const siv::PerlinNoise::seed_type seed = 123456u;
     const siv::PerlinNoise perlin{seed};
     int32_t size = 4;
@@ -113,14 +113,14 @@ void World::Generate()
             if (*m_ShouldGenerationRun)
                 return;
             MapPosition pos(glm::vec3(i, -1, j));
-            Chunk chunk(pos.Vector, perlin);
-            chunk.Generate();
-            Chunk::Neighbours neighbours = GetNeighbours(chunk);
-            CheckChunkEdges(chunk, neighbours);
-            chunk.GenerateMesh();
+            auto chunk = std::make_shared<Chunk>(pos.Vector, perlin);
+            m_ChunkMap.insert({pos, chunk});
+            chunk->Generate();
+            Chunk::Neighbours neighbours = GetNeighbours(*chunk);
+            CheckChunkEdges(*chunk, neighbours);
+            chunk->GenerateMesh();
 
             m_Mutex.lock();
-            m_ChunkGenerationQueue.push(&chunk);
             if (neighbours.front != nullptr)
             {
                 neighbours.front->GenerateMesh();
@@ -141,10 +141,11 @@ void World::Generate()
                 neighbours.left->GenerateMesh();
                 m_ChunkGenerationQueue.push(neighbours.left);
             }
-            m_ChunkMap.insert({pos, chunk});
+            m_ChunkGenerationQueue.push(chunk);
             m_Mutex.unlock();
 
-            LOG_INFO("Generation thread running...");
+            // LOG_INFO("Generation thread running...");
+            // std::this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
 }
@@ -166,14 +167,32 @@ Chunk::Neighbours World::GetNeighbours(Chunk &chunk)
     Chunk::Neighbours neighbours = {};
 
     if (front != m_ChunkMap.end())
-        neighbours.front = &front->second;
+        neighbours.front = front->second;
     if (back != m_ChunkMap.end())
-        neighbours.back = &back->second;
+        neighbours.back = back->second;
     if (right != m_ChunkMap.end())
-        neighbours.right = &right->second;
+        neighbours.right = right->second;
     if (left != m_ChunkMap.end())
-        neighbours.left = &left->second;
+        neighbours.left = left->second;
 
     return neighbours;
+}
+
+MapPosition World::FindNextChunkLocation()
+{
+    int32_t size = 0;
+    int32_t maxDistance = 5;
+    for (size_t r = 0; r < maxDistance; ++r)
+    {
+        for(size_t x = -r; x <= r; ++x ){
+            for(size_t z = -r; z <= r; ++z ){
+                MapPosition pos = MapPosition(glm::vec3(x, -1, z));
+                auto chunk = m_ChunkMap.find(pos);
+                if(chunk == m_ChunkMap.end())
+                    return pos;
+            }
+        }
+    }
+    return glm::vec3(0, 0, 0);
 }
 }; // namespace Terrain

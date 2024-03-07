@@ -21,10 +21,10 @@ public:
     ~Chunk();
 
     struct Neighbours {
-        Chunk* front = nullptr;
-        Chunk* back = nullptr;
-        Chunk* right = nullptr;
-        Chunk* left = nullptr;
+        std::shared_ptr<Chunk> front = nullptr;
+        std::shared_ptr<Chunk> back = nullptr;
+        std::shared_ptr<Chunk> right = nullptr;
+        std::shared_ptr<Chunk> left = nullptr;
     };
 
     inline std::vector<Vertex> GetMesh() const
