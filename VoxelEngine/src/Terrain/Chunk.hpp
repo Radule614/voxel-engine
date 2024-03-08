@@ -11,7 +11,7 @@
 #include "VoxelMeshBuilder.hpp"
 
 #define CHUNK_WIDTH 16
-#define CHUNK_HEIGHT 96
+#define CHUNK_HEIGHT 128
 
 namespace Terrain
 {
@@ -54,6 +54,7 @@ private:
     void DetermineEdgeMeshes(VoxelMeshBuilder &meshBuilder, Voxel &v, size_t x, size_t z);
     void AddEdgeMesh(VoxelMeshBuilder &meshBuilder, Voxel &v, VoxelFace f);
     void AddEdgeMesh(VoxelMeshBuilder &meshBuilder, Voxel &v, VoxelFace f1, VoxelFace f2);
+    void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h);
 
 public:
     Voxel m_VoxelGrid[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];

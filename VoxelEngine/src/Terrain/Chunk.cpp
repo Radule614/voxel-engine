@@ -2,6 +2,9 @@
 #include "GLCoreUtils.hpp"
 #include "VoxelMeshBuilder.hpp"
 
+#include <chrono>
+#include <execution>
+
 namespace Terrain
 {
 Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec3(0), perlin)
@@ -27,30 +30,14 @@ void Chunk::Generate()
     {
         for (size_t z = 0; z < CHUNK_WIDTH; ++z)
         {
-            const double height_bias = m_Perlin.octave2D_01((m_Position.x * CHUNK_WIDTH + x) * 0.02,
-                                                            (m_Position.z * CHUNK_WIDTH + z) * 0.02,
-                                                            4);
+            const double_t height_bias = m_Perlin.octave2D_01((m_Position.x * CHUNK_WIDTH + x) * 0.02,
+                                                              (m_Position.z * CHUNK_WIDTH + z) * 0.02,
+                                                              4);
             size_t h = 2 * CHUNK_HEIGHT / 3 + glm::floor(height_bias * CHUNK_HEIGHT / 3);
-            for (size_t y = 0; y < h; ++y)
-            {
-                double density = m_Perlin.octave3D((m_Position.x * CHUNK_WIDTH + x) * 0.02,
-                                                   (m_Position.z * CHUNK_WIDTH + z) * 0.02,
-                                                   y * 0.02,
-                                                   5);
-
-                VoxelType type = VoxelType::AIR;
-                density += (1.0 / CHUNK_HEIGHT) * (CHUNK_HEIGHT - h / 1.1);
-                if (density >= 0 || y == 0)
-                    type = VoxelType::STONE;
-
-                if (density >= 0 && y > h - 3)
-                    type = VoxelType::DIRT;
-                if (density >= 0 && y == h - 1)
-                    type = VoxelType::GRASS;
-
-                m_VoxelGrid[x][z][y].SetPosition(glm::vec3(x, y, z));
-                m_VoxelGrid[x][z][y].SetVoxelType(type);
-            }
+            std::for_each(std::execution::par,
+                          std::begin(m_VoxelGrid[x][z]),
+                          std::end(m_VoxelGrid[x][z]),
+                          [&](Voxel &v) { this->DetermineVoxelFeatures(v, x, z, h); });
         }
     }
 }
@@ -172,6 +159,30 @@ void Chunk::AddEdgeMesh(VoxelMeshBuilder &meshBuilder, Voxel &v, VoxelFace f1, V
     faces[f1] = true;
     data = meshBuilder.FromVoxelExceptFaces(v, faces);
     m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
+}
+
+void Chunk::DetermineVoxelFeatures(Voxel &v, size_t x, size_t z, size_t h)
+{
+    int y = &v - &m_VoxelGrid[x][z][0];
+    if (y >= h)
+        return;
+    double density = m_Perlin.octave3D((m_Position.x * CHUNK_WIDTH + x) * 0.02,
+                                       (m_Position.z * CHUNK_WIDTH + z) * 0.02,
+                                       y * 0.02,
+                                       5);
+    VoxelType type = VoxelType::AIR;
+    density += (1.0 / CHUNK_HEIGHT) * (CHUNK_HEIGHT - h / 1.1);
+    if (density >= 0 || y == 0)
+        type = VoxelType::STONE;
+
+    if (density >= 0 && y > h - 3)
+        type = VoxelType::DIRT;
+    if (density >= 0 && y == h - 1)
+        type = VoxelType::GRASS;
+
+    v.SetPosition(glm::vec3(x, y, z));
+    v.SetVoxelType(type);
+    ++y;
 }
 
 glm::mat4 Chunk::GetModelMatrix() const
