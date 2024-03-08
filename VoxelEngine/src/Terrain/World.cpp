@@ -144,16 +144,25 @@ std::tuple<bool, MapPosition> World::FindNextChunkLocation()
         glm::vec2(glm::floor(cameraPosition.x / CHUNK_WIDTH), glm::floor(cameraPosition.z / CHUNK_WIDTH));
     for (int32_t r = 0; r < maxDistance; ++r)
     {
-        for (int32_t x = -r; x <= r; ++x)
+        for (int32_t x = 0; x <= r; ++x)
         {
-            for (int32_t z = -r; z <= r; ++z)
+            glm::vec2 locations[8] = {glm::vec2(x, -r),
+                                      glm::vec2(x, r),
+                                      glm::vec2(-r, x),
+                                      glm::vec2(r, x),
+                                      glm::vec2(-x, -r),
+                                      glm::vec2(-x, r),
+                                      glm::vec2(-r, -x),
+                                      glm::vec2(r, -x)};
+            for (size_t i = 0; i < 8; ++i)
             {
-                MapPosition pos = MapPosition(glm::vec3(x + offset.x, -1, z + offset.y));
+                if (glm::length(locations[i]) > maxDistance)
+                    continue;
+                glm::vec2 p = locations[i] + offset;
+                MapPosition pos = MapPosition(glm::vec3(p.x, -1, p.y));
                 auto chunk = m_ChunkMap.find(pos);
                 if (chunk == m_ChunkMap.end())
-                {
                     return std::tuple<bool, MapPosition>(true, pos);
-                }
             }
         }
     }

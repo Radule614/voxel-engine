@@ -9,7 +9,7 @@
 #include "Voxel.hpp"
 
 #define CHUNK_WIDTH 24
-#define CHUNK_HEIGHT 64
+#define CHUNK_HEIGHT 48
 
 namespace Terrain
 {
