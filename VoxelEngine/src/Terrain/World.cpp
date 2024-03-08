@@ -64,7 +64,7 @@ void World::CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face)
 
 void World::Generate()
 {
-    const siv::PerlinNoise::seed_type seed = 678u;
+    const siv::PerlinNoise::seed_type seed = 6512u;
     const siv::PerlinNoise perlin{seed};
 
     while (*m_ShouldGenerationRun)

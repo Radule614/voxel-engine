@@ -139,6 +139,9 @@ void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
                     chunk->GetBorderMesh(VoxelFace::LEFT).begin(),
                     chunk->GetBorderMesh(VoxelFace::LEFT).end());
 
+    if (vertices.empty())
+        return;
+
     glCreateVertexArrays(1, &metadata.VertexArray);
     glBindVertexArray(metadata.VertexArray);
 

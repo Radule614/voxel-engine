@@ -27,17 +27,27 @@ void Chunk::Generate()
     {
         for (size_t z = 0; z < CHUNK_WIDTH; ++z)
         {
-            const double noise = m_Perlin.octave2D_01((m_Position.x * CHUNK_WIDTH + x) * 0.02,
-                                                      (m_Position.z * CHUNK_WIDTH + z) * 0.02,
-                                                      4);
-            for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
+            const double height_bias = m_Perlin.octave2D_01((m_Position.x * CHUNK_WIDTH + x) * 0.02,
+                                                            (m_Position.z * CHUNK_WIDTH + z) * 0.02,
+                                                            4);
+            size_t h = 2 * CHUNK_HEIGHT / 3 + glm::floor(height_bias * CHUNK_HEIGHT / 3);
+            for (size_t y = 0; y < h; ++y)
             {
-                VoxelType type = VoxelType::STONE;
-                size_t height = (size_t)(noise * CHUNK_HEIGHT);
-                if (y > height)
-                    type = VoxelType::AIR;
-                else if (y > height - 1)
+                double density = m_Perlin.octave3D((m_Position.x * CHUNK_WIDTH + x) * 0.02,
+                                                   (m_Position.z * CHUNK_WIDTH + z) * 0.02,
+                                                   y * 0.02,
+                                                   5);
+
+                VoxelType type = VoxelType::AIR;
+                density += (1.0 / CHUNK_HEIGHT) * (CHUNK_HEIGHT - h / 1.1);
+                if (density >= 0 || y == 0)
+                    type = VoxelType::STONE;
+
+                if (density >= 0 && y > h - 3)
+                    type = VoxelType::DIRT;
+                if (density >= 0 && y == h - 1)
                     type = VoxelType::GRASS;
+
                 m_VoxelGrid[x][z][y].SetPosition(glm::vec3(x, y, z));
                 m_VoxelGrid[x][z][y].SetVoxelType(type);
             }
