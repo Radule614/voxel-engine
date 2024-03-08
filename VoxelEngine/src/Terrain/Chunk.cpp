@@ -11,6 +11,10 @@ Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec3(0), perlin)
 Chunk::Chunk(glm::vec3 position, const siv::PerlinNoise &perlin)
     : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin)
 {
+    m_BorderMeshes.insert({VoxelFace::FRONT, {}});
+    m_BorderMeshes.insert({VoxelFace::RIGHT, {}});
+    m_BorderMeshes.insert({VoxelFace::BACK, {}});
+    m_BorderMeshes.insert({VoxelFace::LEFT, {}});
 }
 
 Chunk::~Chunk()
@@ -70,11 +74,94 @@ void Chunk::GenerateMesh()
                 if (x > 0 && m_VoxelGrid[x - 1][z][y].GetVoxelType() == VoxelType::AIR)
                     v.SetFaceVisible(VoxelFace::LEFT, true);
 
-                std::vector<Vertex> data = meshBuilder.FromVoxel(v);
-                m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
+                if (x == 0 || z == 0 || x == CHUNK_WIDTH - 1 || z == CHUNK_WIDTH - 1)
+                    DetermineEdgeMeshes(meshBuilder, v, x, z);
+                else
+                {
+                    std::vector<Vertex> data = meshBuilder.FromVoxel(v);
+                    m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
+                }
             }
         }
     }
+}
+
+void Chunk::GenerateEdgeMesh(VoxelFace face)
+{
+    std::vector<Vertex> &mesh = m_BorderMeshes.at(face);
+    mesh.clear();
+    VoxelMeshBuilder meshBuilder;
+    for (size_t x = 0; x < CHUNK_WIDTH; x++)
+    {
+        for (size_t y = 0; y < CHUNK_HEIGHT; y++)
+        {
+            Voxel v = m_VoxelGrid[x][x][y];
+            if (face == VoxelFace::FRONT)
+                v = m_VoxelGrid[x][CHUNK_WIDTH - 1][y];
+            else if (face == VoxelFace::BACK)
+                v = m_VoxelGrid[x][0][y];
+            else if (face == VoxelFace::RIGHT)
+                v = m_VoxelGrid[CHUNK_WIDTH - 1][x][y];
+            else if (face == VoxelFace::LEFT)
+                v = m_VoxelGrid[0][x][y];
+            if (!v.IsFaceVisible(face))
+                continue;
+            std::vector<Vertex> data = meshBuilder.FromVoxel(v, face);
+            mesh.insert(mesh.end(), data.begin(), data.end());
+        }
+    }
+}
+
+void Chunk::DetermineEdgeMeshes(VoxelMeshBuilder &meshBuilder, Voxel &v, size_t x, size_t z)
+{
+    if (x > 0 && x < CHUNK_WIDTH - 1)
+    {
+        if (z == CHUNK_WIDTH - 1)
+            AddEdgeMesh(meshBuilder, v, VoxelFace::FRONT);
+        else if (z == 0)
+            AddEdgeMesh(meshBuilder, v, VoxelFace::BACK);
+    }
+    if (z > 0 && z < CHUNK_WIDTH - 1)
+    {
+        if (x == CHUNK_WIDTH - 1)
+            AddEdgeMesh(meshBuilder, v, VoxelFace::RIGHT);
+        else if (x == 0)
+            AddEdgeMesh(meshBuilder, v, VoxelFace::LEFT);
+    }
+    if (x == 0 && z == 0)
+        AddEdgeMesh(meshBuilder, v, VoxelFace::BACK, VoxelFace::LEFT);
+    if (x == 0 && z == CHUNK_WIDTH - 1)
+        AddEdgeMesh(meshBuilder, v, VoxelFace::FRONT, VoxelFace::LEFT);
+    if (x == CHUNK_WIDTH - 1 && z == 0)
+        AddEdgeMesh(meshBuilder, v, VoxelFace::BACK, VoxelFace::RIGHT);
+    if (x == CHUNK_WIDTH - 1 && z == CHUNK_WIDTH - 1)
+        AddEdgeMesh(meshBuilder, v, VoxelFace::FRONT, VoxelFace::RIGHT);
+}
+
+void Chunk::AddEdgeMesh(VoxelMeshBuilder &meshBuilder, Voxel &v, VoxelFace f)
+{
+    bool faces[6] = {false, false, false, false, false, false};
+    faces[f] = true;
+    std::vector<Vertex> data = meshBuilder.FromVoxelFaces(v, faces);
+    m_BorderMeshes.at(f).insert(m_BorderMeshes.at(f).begin(), data.begin(), data.end());
+    data = meshBuilder.FromVoxelExceptFaces(v, faces);
+    m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
+}
+
+void Chunk::AddEdgeMesh(VoxelMeshBuilder &meshBuilder, Voxel &v, VoxelFace f1, VoxelFace f2)
+{
+    std::vector<Vertex> data;
+    bool faces[6] = {false, false, false, false, false, false};
+    faces[f1] = true;
+    data = meshBuilder.FromVoxelFaces(v, faces);
+    m_BorderMeshes.at(f1).insert(m_BorderMeshes.at(f1).begin(), data.begin(), data.end());
+    faces[f1] = false;
+    faces[f2] = true;
+    data = meshBuilder.FromVoxelFaces(v, faces);
+    m_BorderMeshes.at(f2).insert(m_BorderMeshes.at(f2).begin(), data.begin(), data.end());
+    faces[f1] = true;
+    data = meshBuilder.FromVoxelExceptFaces(v, faces);
+    m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
 }
 
 glm::mat4 Chunk::GetModelMatrix() const

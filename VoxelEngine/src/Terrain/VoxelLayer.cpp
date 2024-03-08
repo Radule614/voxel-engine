@@ -124,7 +124,20 @@ void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
         m_RenderMetadata.erase(chunk->GetPosition());
     }
 
-    const std::vector<Vertex> &vertices = chunk->GetMesh();
+    std::vector<Vertex> vertices = {};
+    vertices.insert(vertices.end(), chunk->GetMesh().begin(), chunk->GetMesh().end());
+    vertices.insert(vertices.end(),
+                    chunk->GetBorderMesh(VoxelFace::FRONT).begin(),
+                    chunk->GetBorderMesh(VoxelFace::FRONT).end());
+    vertices.insert(vertices.end(),
+                    chunk->GetBorderMesh(VoxelFace::RIGHT).begin(),
+                    chunk->GetBorderMesh(VoxelFace::RIGHT).end());
+    vertices.insert(vertices.end(),
+                    chunk->GetBorderMesh(VoxelFace::BACK).begin(),
+                    chunk->GetBorderMesh(VoxelFace::BACK).end());
+    vertices.insert(vertices.end(),
+                    chunk->GetBorderMesh(VoxelFace::LEFT).begin(),
+                    chunk->GetBorderMesh(VoxelFace::LEFT).end());
 
     glCreateVertexArrays(1, &metadata.VertexArray);
     glBindVertexArray(metadata.VertexArray);

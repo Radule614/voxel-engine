@@ -71,13 +71,33 @@ VoxelMeshBuilder::~VoxelMeshBuilder()
 
 std::vector<Vertex> VoxelMeshBuilder::FromVoxel(Voxel &voxel)
 {
+    bool faces[6] = {true, true, true, true, true, true};
+    return FromVoxelFaces(voxel, faces);
+}
+
+std::vector<Vertex> VoxelMeshBuilder::FromVoxel(Voxel &voxel, VoxelFace f)
+{
+    bool faces[6] = {false, false, false, false, false, false};
+    faces[f] = true;
+    return FromVoxelFaces(voxel, faces);
+}
+
+std::vector<Vertex> VoxelMeshBuilder::FromVoxelExceptFaces(Voxel &voxel, bool faces[6])
+{
+    for (size_t i = 0; i < 6; ++i)
+        faces[i] = !faces[i];
+    return FromVoxelFaces(voxel, faces);
+}
+
+std::vector<Vertex> VoxelMeshBuilder::FromVoxelFaces(Voxel &voxel, bool faces[6])
+{
     std::vector<Vertex> data = {};
     std::vector<int32_t> &texMap = s_FaceTextureMap.at(voxel.GetVoxelType());
     float_t textureUnit = 1.0f / 16.0f;
     for (size_t i = 0; i < 6; ++i)
     {
         VoxelFace face = static_cast<VoxelFace>(i);
-        if (!voxel.IsFaceVisible(face))
+        if (!voxel.IsFaceVisible(face) || !faces[face])
             continue;
 
         std::vector<glm::vec3> positions = s_PositionMap.at(face);

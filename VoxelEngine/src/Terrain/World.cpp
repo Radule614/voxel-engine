@@ -64,7 +64,7 @@ void World::CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face)
 
 void World::Generate()
 {
-    const siv::PerlinNoise::seed_type seed = 123456u;
+    const siv::PerlinNoise::seed_type seed = 678u;
     const siv::PerlinNoise perlin{seed};
 
     while (*m_ShouldGenerationRun)
@@ -79,30 +79,28 @@ void World::Generate()
         chunk->Generate();
         Chunk::Neighbours neighbours = GetNeighbours(*chunk);
         CheckChunkEdges(*chunk, neighbours);
+
         chunk->GenerateMesh();
+        if (neighbours.front != nullptr)
+            neighbours.front->GenerateEdgeMesh(VoxelFace::BACK);
+        if (neighbours.back != nullptr)
+            neighbours.back->GenerateEdgeMesh(VoxelFace::FRONT);
+        if (neighbours.right != nullptr)
+            neighbours.right->GenerateEdgeMesh(VoxelFace::LEFT);
+        if (neighbours.left != nullptr)
+            neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
 
         m_Mutex.lock();
         m_ChunkGenerationQueue.push(chunk);
         if (neighbours.front != nullptr)
-        {
-            neighbours.front->GenerateMesh();
             m_ChunkGenerationQueue.push(neighbours.front);
-        }
         if (neighbours.back != nullptr)
-        {
-            neighbours.back->GenerateMesh();
             m_ChunkGenerationQueue.push(neighbours.back);
-        }
         if (neighbours.right != nullptr)
-        {
-            neighbours.right->GenerateMesh();
             m_ChunkGenerationQueue.push(neighbours.right);
-        }
         if (neighbours.left != nullptr)
-        {
-            neighbours.left->GenerateMesh();
             m_ChunkGenerationQueue.push(neighbours.left);
-        }
+
         LOG_INFO("CHUNKS: " + std::to_string(m_ChunkMap.size()));
         m_Mutex.unlock();
     }
@@ -138,7 +136,7 @@ Chunk::Neighbours World::GetNeighbours(Chunk &chunk)
 
 std::tuple<bool, MapPosition> World::FindNextChunkLocation()
 {
-    int32_t maxDistance = 12;
+    int32_t maxDistance = 20;
     glm::vec3 cameraPosition = m_CameraController.GetCamera().GetPosition();
     glm::vec2 offset =
         glm::vec2(glm::floor(cameraPosition.x / CHUNK_WIDTH), glm::floor(cameraPosition.z / CHUNK_WIDTH));

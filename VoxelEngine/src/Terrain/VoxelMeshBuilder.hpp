@@ -16,7 +16,11 @@ public:
     ~VoxelMeshBuilder();
 
     std::vector<Vertex> FromVoxel(Voxel &voxel);
+    std::vector<Vertex> FromVoxel(Voxel &voxel, VoxelFace f);
+    std::vector<Vertex> FromVoxelFaces(Voxel &voxel, bool faces[6]);
+    std::vector<Vertex> FromVoxelExceptFaces(Voxel &voxel, bool faces[6]);
 
+private:
     static void Init();
 
 private:
