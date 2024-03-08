@@ -1,66 +1,38 @@
 #include "World.hpp"
 
 #include <vector>
-#include <GLCoreUtils.hpp>
 
 namespace Terrain
 {
-World::World() : m_ChunkMap({})
+World::World(GLCore::Utils::PerspectiveCameraController &cameraController)
+    : m_ChunkMap({}), m_ChunkGenerationQueue(), m_ShouldGenerationRun(std::make_shared<bool>(false)),
+      m_Mutex(std::mutex()), m_CameraController(cameraController)
 {
 }
+
 World::~World()
 {
 }
-const std::map<MapPosition, Chunk> &World::GetChunkMap() const
+
+const std::map<MapPosition, std::shared_ptr<Chunk>> &World::GetChunkMap() const
 {
     return m_ChunkMap;
 }
-void World::Generate()
+
+std::queue<std::shared_ptr<Chunk>> &World::GetChunkGenerationQueue()
 {
-    const siv::PerlinNoise::seed_type seed = 123456u;
-    const siv::PerlinNoise perlin{seed};
-
-    int32_t size = 4;
-    for (int32_t i = -size; i <= size; ++i)
-    {
-        for (int32_t j = -size; j <= size; ++j)
-        {
-            MapPosition pos(glm::vec3(i, -1, j));
-            Chunk chunk(pos.Vector, perlin);
-            chunk.Generate();
-            CheckChunkEdges(chunk);
-            m_ChunkMap.insert({pos, chunk});
-        }
-    }
-
-    for (auto it = m_ChunkMap.begin(); it != m_ChunkMap.end(); ++it)
-        it->second.GenerateMesh();
+    return m_ChunkGenerationQueue;
 }
 
-void World::CheckChunkEdges(Chunk &chunk)
+void World::StartGeneration()
 {
-    glm::vec3 pos = chunk.GetPosition();
-    auto &voxelGrid = chunk.GetVoxelGrid();
+    *m_ShouldGenerationRun = true;
+    m_GenerationThread = std::thread([this] { this->Generate(); });
+}
 
-    auto zPositive = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z + 1)));
-    auto zNegative = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z - 1)));
-    auto xPositive = m_ChunkMap.find(MapPosition(glm::vec3(pos.x + 1, pos.y, pos.z)));
-    auto xNegative = m_ChunkMap.find(MapPosition(glm::vec3(pos.x - 1, pos.y, pos.z)));
-
-    std::vector<std::vector<std::vector<Voxel>>> *zPositiveGrid = nullptr;
-    std::vector<std::vector<std::vector<Voxel>>> *zNegativeGrid = nullptr;
-    std::vector<std::vector<std::vector<Voxel>>> *xPositiveGrid = nullptr;
-    std::vector<std::vector<std::vector<Voxel>>> *xNegativeGrid = nullptr;
-
-    if (zPositive != m_ChunkMap.end())
-        zPositiveGrid = &zPositive->second.GetVoxelGrid();
-    if (zNegative != m_ChunkMap.end())
-        zNegativeGrid = &zNegative->second.GetVoxelGrid();
-    if (xPositive != m_ChunkMap.end())
-        xPositiveGrid = &xPositive->second.GetVoxelGrid();
-    if (xNegative != m_ChunkMap.end())
-        xNegativeGrid = &xNegative->second.GetVoxelGrid();
-
+void World::CheckChunkEdges(Chunk &chunk, Chunk::Neighbours &neighbours)
+{
+    auto &voxelGrid = chunk.m_VoxelGrid;
     for (size_t x = 0; x < CHUNK_WIDTH; x++)
     {
         for (size_t y = 0; y < CHUNK_HEIGHT; y++)
@@ -70,34 +42,14 @@ void World::CheckChunkEdges(Chunk &chunk)
             Voxel &right = voxelGrid[CHUNK_WIDTH - 1][x][y];
             Voxel &left = voxelGrid[0][x][y];
 
-            if (zPositiveGrid != nullptr)
-            {
-                if ((*zPositiveGrid)[x][0].size() > y)
-                    CheckVoxelEdge(front, (*zPositiveGrid)[x][0][y], VoxelFace::FRONT);
-                else
-                    front.SetFaceVisible(VoxelFace::FRONT, true);
-            }
-            if (zNegativeGrid != nullptr)
-            {
-                if ((*zNegativeGrid)[x][CHUNK_WIDTH - 1].size() > y)
-                    CheckVoxelEdge(back, (*zNegativeGrid)[x][CHUNK_WIDTH - 1][y], VoxelFace::BACK);
-                else
-                    back.SetFaceVisible(VoxelFace::BACK, true);
-            }
-            if (xPositiveGrid != nullptr)
-            {
-                if ((*xPositiveGrid)[0][x].size() > y)
-                    CheckVoxelEdge(right, (*xPositiveGrid)[0][x][y], VoxelFace::RIGHT);
-                else
-                    right.SetFaceVisible(VoxelFace::RIGHT, true);
-            }
-            if (xNegativeGrid != nullptr)
-            {
-                if ((*xNegativeGrid)[CHUNK_WIDTH - 1][x].size() > y)
-                    CheckVoxelEdge(left, (*xNegativeGrid)[CHUNK_WIDTH - 1][x][y], VoxelFace::LEFT);
-                else
-                    left.SetFaceVisible(VoxelFace::LEFT, true);
-            }
+            if (neighbours.front != nullptr)
+                CheckVoxelEdge(front, neighbours.front->m_VoxelGrid[x][0][y], VoxelFace::FRONT);
+            if (neighbours.back != nullptr)
+                CheckVoxelEdge(back, neighbours.back->m_VoxelGrid[x][CHUNK_WIDTH - 1][y], VoxelFace::BACK);
+            if (neighbours.right != nullptr)
+                CheckVoxelEdge(right, neighbours.right->m_VoxelGrid[0][x][y], VoxelFace::RIGHT);
+            if (neighbours.left != nullptr)
+                CheckVoxelEdge(left, neighbours.left->m_VoxelGrid[CHUNK_WIDTH - 1][x][y], VoxelFace::LEFT);
         }
     }
 }
@@ -108,5 +60,110 @@ void World::CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face)
         v1.SetFaceVisible(face, true);
     else if (v1.GetVoxelType() == VoxelType::AIR && v2.GetVoxelType() != VoxelType::AIR)
         v2.SetFaceVisible(Voxel::GetOpositeFace(face), true);
+}
+
+void World::Generate()
+{
+    const siv::PerlinNoise::seed_type seed = 6512u;
+    const siv::PerlinNoise perlin{seed};
+
+    while (*m_ShouldGenerationRun)
+    {
+        std::tuple<bool, MapPosition> tuple = FindNextChunkLocation();
+        if (!std::get<0>(tuple))
+            continue;
+        MapPosition &pos = std::get<1>(tuple);
+
+        auto chunk = std::make_shared<Chunk>(pos.Vector, perlin);
+        m_ChunkMap.insert({pos, chunk});
+        chunk->Generate();
+        Chunk::Neighbours neighbours = GetNeighbours(*chunk);
+        CheckChunkEdges(*chunk, neighbours);
+
+        chunk->GenerateMesh();
+        if (neighbours.front != nullptr)
+            neighbours.front->GenerateEdgeMesh(VoxelFace::BACK);
+        if (neighbours.back != nullptr)
+            neighbours.back->GenerateEdgeMesh(VoxelFace::FRONT);
+        if (neighbours.right != nullptr)
+            neighbours.right->GenerateEdgeMesh(VoxelFace::LEFT);
+        if (neighbours.left != nullptr)
+            neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
+
+        m_Mutex.lock();
+        m_ChunkGenerationQueue.push(chunk);
+        if (neighbours.front != nullptr)
+            m_ChunkGenerationQueue.push(neighbours.front);
+        if (neighbours.back != nullptr)
+            m_ChunkGenerationQueue.push(neighbours.back);
+        if (neighbours.right != nullptr)
+            m_ChunkGenerationQueue.push(neighbours.right);
+        if (neighbours.left != nullptr)
+            m_ChunkGenerationQueue.push(neighbours.left);
+
+        LOG_INFO("CHUNKS: " + std::to_string(m_ChunkMap.size()));
+        m_Mutex.unlock();
+    }
+}
+void World::StopGeneration()
+{
+    *m_ShouldGenerationRun = false;
+    if (m_GenerationThread.joinable())
+        m_GenerationThread.join();
+}
+
+Chunk::Neighbours World::GetNeighbours(Chunk &chunk)
+{
+    glm::vec3 pos = chunk.GetPosition();
+    auto front = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z + 1)));
+    auto back = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z - 1)));
+    auto right = m_ChunkMap.find(MapPosition(glm::vec3(pos.x + 1, pos.y, pos.z)));
+    auto left = m_ChunkMap.find(MapPosition(glm::vec3(pos.x - 1, pos.y, pos.z)));
+
+    Chunk::Neighbours neighbours = {};
+
+    if (front != m_ChunkMap.end())
+        neighbours.front = front->second;
+    if (back != m_ChunkMap.end())
+        neighbours.back = back->second;
+    if (right != m_ChunkMap.end())
+        neighbours.right = right->second;
+    if (left != m_ChunkMap.end())
+        neighbours.left = left->second;
+
+    return neighbours;
+}
+
+std::tuple<bool, MapPosition> World::FindNextChunkLocation()
+{
+    int32_t maxDistance = 20;
+    glm::vec3 cameraPosition = m_CameraController.GetCamera().GetPosition();
+    glm::vec2 offset =
+        glm::vec2(glm::floor(cameraPosition.x / CHUNK_WIDTH), glm::floor(cameraPosition.z / CHUNK_WIDTH));
+    for (int32_t r = 0; r < maxDistance; ++r)
+    {
+        for (int32_t x = 0; x <= r; ++x)
+        {
+            glm::vec2 locations[8] = {glm::vec2(x, -r),
+                                      glm::vec2(x, r),
+                                      glm::vec2(-r, x),
+                                      glm::vec2(r, x),
+                                      glm::vec2(-x, -r),
+                                      glm::vec2(-x, r),
+                                      glm::vec2(-r, -x),
+                                      glm::vec2(r, -x)};
+            for (size_t i = 0; i < 8; ++i)
+            {
+                if (glm::length(locations[i]) > maxDistance)
+                    continue;
+                glm::vec2 p = locations[i] + offset;
+                MapPosition pos = MapPosition(glm::vec3(p.x, -1, p.y));
+                auto chunk = m_ChunkMap.find(pos);
+                if (chunk == m_ChunkMap.end())
+                    return std::tuple<bool, MapPosition>(true, pos);
+            }
+        }
+    }
+    return std::tuple<bool, MapPosition>(false, MapPosition(glm::vec3(0)));
 }
 }; // namespace Terrain

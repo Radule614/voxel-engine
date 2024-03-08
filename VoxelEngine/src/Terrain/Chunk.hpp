@@ -1,15 +1,17 @@
 #pragma once
 
 #include <vector>
+#include <unordered_map>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerlinNoise.hpp"
 
 #include "Vertex.hpp"
 #include "Voxel.hpp"
+#include "VoxelMeshBuilder.hpp"
 
-#define CHUNK_WIDTH 24
-#define CHUNK_HEIGHT 32
+#define CHUNK_WIDTH 16
+#define CHUNK_HEIGHT 128
 
 namespace Terrain
 {
@@ -20,9 +22,21 @@ public:
     Chunk(glm::vec3 position, const siv::PerlinNoise &perlin);
     ~Chunk();
 
-    inline std::vector<Vertex> GetMesh() const
+    struct Neighbours
+    {
+        std::shared_ptr<Chunk> front = nullptr;
+        std::shared_ptr<Chunk> back = nullptr;
+        std::shared_ptr<Chunk> right = nullptr;
+        std::shared_ptr<Chunk> left = nullptr;
+    };
+
+    inline const std::vector<Vertex> &GetMesh() const
     {
         return m_Mesh;
+    }
+    inline const std::vector<Vertex> &GetBorderMesh(VoxelFace face) const
+    {
+        return m_BorderMeshes.at(face);
     }
 
     inline glm::vec3 GetPosition() const
@@ -32,18 +46,23 @@ public:
 
     glm::mat4 GetModelMatrix() const;
 
-    std::vector<std::vector<std::vector<Voxel>>> &GetVoxelGrid()
-    {
-        return m_VoxelGrid;
-    }
-
     void Generate();
     void GenerateMesh();
+    void GenerateEdgeMesh(VoxelFace face);
+
+private:
+    void DetermineEdgeMeshes(VoxelMeshBuilder &meshBuilder, Voxel &v, size_t x, size_t z);
+    void AddEdgeMesh(VoxelMeshBuilder &meshBuilder, Voxel &v, VoxelFace f);
+    void AddEdgeMesh(VoxelMeshBuilder &meshBuilder, Voxel &v, VoxelFace f1, VoxelFace f2);
+    void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h);
+
+public:
+    Voxel m_VoxelGrid[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
 
 private:
     glm::vec3 m_Position;
     std::vector<Vertex> m_Mesh;
-    std::vector<std::vector<std::vector<Voxel>>> m_VoxelGrid;
+    std::unordered_map<VoxelFace, std::vector<Vertex>> m_BorderMeshes;
     const siv::PerlinNoise &m_Perlin;
 };
 }; // namespace Terrain

@@ -1,6 +1,3 @@
-Remove-Item .\build\Debug -Recurse
-
-cmake -S . -B .\build
-cmake --build .\build
+.\build_dev.ps1
 
 .\build\Debug\VoxelEngine.exe

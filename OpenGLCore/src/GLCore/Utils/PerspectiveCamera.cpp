@@ -5,14 +5,14 @@
 namespace GLCore::Utils
 {
 PerspectiveCamera::PerspectiveCamera(float_t fov, float_t aspectRatio)
-    : m_ProjectionMatrix(glm::perspective(fov, aspectRatio, 0.01f, 200.0f))
+    : m_ProjectionMatrix(glm::perspective(fov, aspectRatio, 0.001f, 2000.0f))
 {
     RecalculateViewMatrix();
 }
 
 void PerspectiveCamera::SetProjection(float_t fov, float_t aspectRatio)
 {
-    m_ProjectionMatrix = glm::perspective(fov, aspectRatio, 0.01f, 200.0f);
+    m_ProjectionMatrix = glm::perspective(fov, aspectRatio, 0.001f, 2000.0f);
     RecalculateViewMatrix();
 }
 

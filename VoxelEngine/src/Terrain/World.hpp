@@ -1,27 +1,50 @@
 #pragma once
 
 #include <map>
+#include <queue>
+#include <mutex>
+#include <thread>
 #include <glm/glm.hpp>
+#include <GLCoreUtils.hpp>
 
 #include "Chunk.hpp"
 #include "MapPosition.hpp"
+
 
 namespace Terrain
 {
 class World
 {
 public:
-    World();
+    World(GLCore::Utils::PerspectiveCameraController &cameraController);
     ~World();
 
-    const std::map<MapPosition, Chunk> &GetChunkMap() const;
+    const std::map<MapPosition, std::shared_ptr<Chunk>> &GetChunkMap() const;
+    std::queue<std::shared_ptr<Chunk>> &GetChunkGenerationQueue();
+
+    void StartGeneration();
+    void StopGeneration();
+
+    std::mutex &GetLock()
+    {
+        return m_Mutex;
+    }
+
+private:
+    void CheckChunkEdges(Chunk &chunk, Chunk::Neighbours &neighbours);
+    void CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face);
+    Chunk::Neighbours GetNeighbours(Chunk &chunk);
     void Generate();
+    std::tuple<bool, MapPosition> FindNextChunkLocation();
+
 
 private:
-    void CheckChunkEdges(Chunk &chunk);
-    void CheckVoxelEdge(Voxel& v1, Voxel& v2, VoxelFace face);
+    std::map<MapPosition, std::shared_ptr<Chunk>> m_ChunkMap;
+    std::queue<std::shared_ptr<Chunk>> m_ChunkGenerationQueue;
+    GLCore::Utils::PerspectiveCameraController &m_CameraController;
 
-private:
-    std::map<MapPosition, Chunk> m_ChunkMap;
+    std::thread m_GenerationThread;
+    std::shared_ptr<bool> m_ShouldGenerationRun;
+    std::mutex m_Mutex;
 };
 }; // namespace Terrain
