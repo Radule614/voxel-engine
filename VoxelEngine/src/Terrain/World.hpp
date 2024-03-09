@@ -2,6 +2,7 @@
 
 #include <map>
 #include <queue>
+#include <unordered_set>
 #include <mutex>
 #include <thread>
 #include <glm/glm.hpp>
@@ -34,14 +35,19 @@ private:
     void CheckChunkEdges(Chunk &chunk, Chunk::Neighbours &neighbours);
     void CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face);
     Chunk::Neighbours GetNeighbours(Chunk &chunk);
-    void Generate();
-    std::tuple<bool, MapPosition> FindNextChunkLocation();
+
+    void GenerateWorld();
+    void GenerateChunk(MapPosition position);
+    std::vector<MapPosition> FindNextChunkLocations();
+    bool IsPositionValid(std::unordered_set<glm::vec2>& existing, glm::vec2 p);
 
 
 private:
     std::map<MapPosition, std::shared_ptr<Chunk>> m_ChunkMap;
     std::queue<std::shared_ptr<Chunk>> m_ChunkGenerationQueue;
     GLCore::Utils::PerspectiveCameraController &m_CameraController;
+
+    siv::PerlinNoise m_Perlin;
 
     std::thread m_GenerationThread;
     std::shared_ptr<bool> m_ShouldGenerationRun;

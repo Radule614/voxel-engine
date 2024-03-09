@@ -55,6 +55,8 @@ void VoxelLayer::OnDetach()
 void VoxelLayer::OnEvent(GLCore::Event &event)
 {
     m_CameraController.OnEvent(event);
+    if (event.GetEventType() == EventType::WindowClose)
+        m_World.StopGeneration();
 }
 
 void VoxelLayer::OnUpdate(Timestep ts)
