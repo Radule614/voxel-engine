@@ -1,12 +1,13 @@
 #include "World.hpp"
 
+#include <GLCore.hpp>
 #include <vector>
 
 namespace Terrain
 {
 World::World(GLCore::Utils::PerspectiveCameraController &cameraController)
     : m_ChunkMap({}), m_ChunkGenerationQueue(), m_ShouldGenerationRun(std::make_shared<bool>(false)),
-      m_Mutex(std::mutex()), m_CameraController(cameraController)
+      m_Mutex(std::mutex()), m_CameraController(cameraController), m_Perlin(6512u)
 {
 }
 
@@ -27,7 +28,7 @@ std::queue<std::shared_ptr<Chunk>> &World::GetChunkGenerationQueue()
 void World::StartGeneration()
 {
     *m_ShouldGenerationRun = true;
-    m_GenerationThread = std::thread([this] { this->Generate(); });
+    m_GenerationThread = std::thread([this] { this->GenerateWorld(); });
 }
 
 void World::CheckChunkEdges(Chunk &chunk, Chunk::Neighbours &neighbours)
@@ -62,49 +63,6 @@ void World::CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face)
         v2.SetFaceVisible(Voxel::GetOpositeFace(face), true);
 }
 
-void World::Generate()
-{
-    const siv::PerlinNoise::seed_type seed = 6512u;
-    const siv::PerlinNoise perlin{seed};
-
-    while (*m_ShouldGenerationRun)
-    {
-        std::tuple<bool, MapPosition> tuple = FindNextChunkLocation();
-        if (!std::get<0>(tuple))
-            continue;
-        MapPosition &pos = std::get<1>(tuple);
-
-        auto chunk = std::make_shared<Chunk>(pos.Vector, perlin);
-        m_ChunkMap.insert({pos, chunk});
-        chunk->Generate();
-        Chunk::Neighbours neighbours = GetNeighbours(*chunk);
-        CheckChunkEdges(*chunk, neighbours);
-
-        chunk->GenerateMesh();
-        if (neighbours.front != nullptr)
-            neighbours.front->GenerateEdgeMesh(VoxelFace::BACK);
-        if (neighbours.back != nullptr)
-            neighbours.back->GenerateEdgeMesh(VoxelFace::FRONT);
-        if (neighbours.right != nullptr)
-            neighbours.right->GenerateEdgeMesh(VoxelFace::LEFT);
-        if (neighbours.left != nullptr)
-            neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
-
-        m_Mutex.lock();
-        m_ChunkGenerationQueue.push(chunk);
-        if (neighbours.front != nullptr)
-            m_ChunkGenerationQueue.push(neighbours.front);
-        if (neighbours.back != nullptr)
-            m_ChunkGenerationQueue.push(neighbours.back);
-        if (neighbours.right != nullptr)
-            m_ChunkGenerationQueue.push(neighbours.right);
-        if (neighbours.left != nullptr)
-            m_ChunkGenerationQueue.push(neighbours.left);
-
-        LOG_INFO("CHUNKS: " + std::to_string(m_ChunkMap.size()));
-        m_Mutex.unlock();
-    }
-}
 void World::StopGeneration()
 {
     *m_ShouldGenerationRun = false;
@@ -134,12 +92,66 @@ Chunk::Neighbours World::GetNeighbours(Chunk &chunk)
     return neighbours;
 }
 
-std::tuple<bool, MapPosition> World::FindNextChunkLocation()
+void World::GenerateWorld()
+{
+    while (*m_ShouldGenerationRun)
+    {
+        std::vector<MapPosition> locations = FindNextChunkLocations();
+        std::vector<std::thread> threads = {};
+        for (size_t i = 0; i < locations.size(); ++i)
+        {
+            MapPosition pos = locations[i];
+            threads.push_back(std::thread([this, pos] { this->GenerateChunk(pos); }));
+        }
+        for (size_t i = 0; i < locations.size(); ++i)
+        {
+            if (threads[i].joinable())
+                threads[i].join();
+        }
+        LOG_INFO("Chunk size -> " + std::to_string(m_ChunkMap.size()));
+    }
+}
+
+void World::GenerateChunk(MapPosition position)
+{
+    auto chunk = std::make_shared<Chunk>(position.Vector, m_Perlin);
+    m_ChunkMap.insert({position, chunk});
+    chunk->Generate();
+
+    Chunk::Neighbours neighbours = GetNeighbours(*chunk);
+    CheckChunkEdges(*chunk, neighbours);
+    chunk->GenerateMesh();
+    if (neighbours.front != nullptr)
+        neighbours.front->GenerateEdgeMesh(VoxelFace::BACK);
+    if (neighbours.back != nullptr)
+        neighbours.back->GenerateEdgeMesh(VoxelFace::FRONT);
+    if (neighbours.right != nullptr)
+        neighbours.right->GenerateEdgeMesh(VoxelFace::LEFT);
+    if (neighbours.left != nullptr)
+        neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
+
+
+    m_Mutex.lock();
+    m_ChunkGenerationQueue.push(chunk);
+    if (neighbours.front != nullptr)
+        m_ChunkGenerationQueue.push(neighbours.front);
+    if (neighbours.back != nullptr)
+        m_ChunkGenerationQueue.push(neighbours.back);
+    if (neighbours.right != nullptr)
+        m_ChunkGenerationQueue.push(neighbours.right);
+    if (neighbours.left != nullptr)
+        m_ChunkGenerationQueue.push(neighbours.left);
+    m_Mutex.unlock();
+}
+
+std::vector<MapPosition> World::FindNextChunkLocations()
 {
     int32_t maxDistance = 20;
     glm::vec3 cameraPosition = m_CameraController.GetCamera().GetPosition();
     glm::vec2 offset =
         glm::vec2(glm::floor(cameraPosition.x / CHUNK_WIDTH), glm::floor(cameraPosition.z / CHUNK_WIDTH));
+    std::vector<MapPosition> positions = {};
+    std::unordered_set<glm::vec2> existing = {};
     for (int32_t r = 0; r < maxDistance; ++r)
     {
         for (int32_t x = 0; x <= r; ++x)
@@ -157,13 +169,40 @@ std::tuple<bool, MapPosition> World::FindNextChunkLocation()
                 if (glm::length(locations[i]) > maxDistance)
                     continue;
                 glm::vec2 p = locations[i] + offset;
+                if (!IsPositionValid(existing, p))
+                    continue;
                 MapPosition pos = MapPosition(glm::vec3(p.x, -1, p.y));
                 auto chunk = m_ChunkMap.find(pos);
-                if (chunk == m_ChunkMap.end())
-                    return std::tuple<bool, MapPosition>(true, pos);
+                if (chunk == m_ChunkMap.end() && std::find(positions.begin(), positions.end(), pos) == positions.end())
+                {
+                    existing.insert(p);
+                    positions.push_back(pos);
+                }
+                if (positions.size() == THREADS)
+                    return positions;
             }
         }
     }
-    return std::tuple<bool, MapPosition>(false, MapPosition(glm::vec3(0)));
+    return positions;
+}
+
+bool World::IsPositionValid(std::unordered_set<glm::vec2> &existing, glm::vec2 p)
+{
+    glm::vec2 locations[12] = {glm::vec2(p.x, p.y + 2),
+                               glm::vec2(p.x, p.y + 1),
+                               glm::vec2(p.x, p.y - 1),
+                               glm::vec2(p.x, p.y - 2),
+                               glm::vec2(p.x + 2, p.y),
+                               glm::vec2(p.x + 1, p.y),
+                               glm::vec2(p.x - 1, p.y),
+                               glm::vec2(p.x - 2, p.y),
+                               glm::vec2(p.x + 1, p.y + 1),
+                               glm::vec2(p.x + 1, p.y - 1),
+                               glm::vec2(p.x - 1, p.y + 1),
+                               glm::vec2(p.x - 1, p.y - 1)};
+    for (size_t i = 0; i < 12; ++i)
+        if (existing.find(locations[i]) != existing.end())
+            return false;
+    return true;
 }
 }; // namespace Terrain

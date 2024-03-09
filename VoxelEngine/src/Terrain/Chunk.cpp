@@ -2,7 +2,6 @@
 #include "GLCoreUtils.hpp"
 #include "VoxelMeshBuilder.hpp"
 
-#include <chrono>
 #include <execution>
 
 namespace Terrain

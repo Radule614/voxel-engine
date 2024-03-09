@@ -17,6 +17,11 @@ struct MapPosition
         return this->Vector.x < pos.Vector.x;
     }
 
+    bool operator==(const MapPosition &pos) const noexcept
+    {
+        return this->Vector == pos.Vector;
+    }
+
     MapPosition(glm::vec3 pos) : Vector(pos)
     {
     }
