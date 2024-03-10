@@ -72,11 +72,11 @@ void World::StopGeneration()
 
 Chunk::Neighbours World::GetNeighbours(Chunk &chunk)
 {
-    glm::vec3 pos = chunk.GetPosition();
-    auto front = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z + 1)));
-    auto back = m_ChunkMap.find(MapPosition(glm::vec3(pos.x, pos.y, pos.z - 1)));
-    auto right = m_ChunkMap.find(MapPosition(glm::vec3(pos.x + 1, pos.y, pos.z)));
-    auto left = m_ChunkMap.find(MapPosition(glm::vec3(pos.x - 1, pos.y, pos.z)));
+    glm::vec2 pos = chunk.GetPosition();
+    auto front = m_ChunkMap.find(MapPosition(glm::vec2(pos.x, pos.y + 1)));
+    auto back = m_ChunkMap.find(MapPosition(glm::vec2(pos.x, pos.y - 1)));
+    auto right = m_ChunkMap.find(MapPosition(glm::vec2(pos.x + 1, pos.y)));
+    auto left = m_ChunkMap.find(MapPosition(glm::vec2(pos.x - 1, pos.y)));
 
     Chunk::Neighbours neighbours = {};
 
@@ -171,7 +171,7 @@ std::vector<MapPosition> World::FindNextChunkLocations()
                 glm::vec2 p = locations[i] + offset;
                 if (!IsPositionValid(existing, p))
                     continue;
-                MapPosition pos = MapPosition(glm::vec3(p.x, -1, p.y));
+                MapPosition pos = MapPosition(p);
                 auto chunk = m_ChunkMap.find(pos);
                 if (chunk == m_ChunkMap.end() && std::find(positions.begin(), positions.end(), pos) == positions.end())
                 {

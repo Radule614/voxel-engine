@@ -6,14 +6,12 @@ namespace Terrain
 {
 struct MapPosition
 {
-    glm::vec3 Vector;
+    glm::vec2 Vector;
 
     bool operator<(const MapPosition &pos) const noexcept
     {
         if (this->Vector.y != pos.Vector.y)
             return this->Vector.y < pos.Vector.y;
-        if (this->Vector.z != pos.Vector.z)
-            return this->Vector.z < pos.Vector.z;
         return this->Vector.x < pos.Vector.x;
     }
 
@@ -22,7 +20,7 @@ struct MapPosition
         return this->Vector == pos.Vector;
     }
 
-    MapPosition(glm::vec3 pos) : Vector(pos)
+    MapPosition(glm::vec2 pos) : Vector(pos)
     {
     }
 };

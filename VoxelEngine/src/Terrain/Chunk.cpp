@@ -6,11 +6,11 @@
 
 namespace Terrain
 {
-Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec3(0), perlin)
+Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec2(0), perlin)
 {
 }
 
-Chunk::Chunk(glm::vec3 position, const siv::PerlinNoise &perlin)
+Chunk::Chunk(glm::vec2 position, const siv::PerlinNoise &perlin)
     : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin)
 {
     m_BorderMeshes.insert({VoxelFace::FRONT, {}});
@@ -30,7 +30,7 @@ void Chunk::Generate()
         for (size_t z = 0; z < CHUNK_WIDTH; ++z)
         {
             const double_t height_bias = m_Perlin.octave2D_01((m_Position.x * CHUNK_WIDTH + x) * 0.02,
-                                                              (m_Position.z * CHUNK_WIDTH + z) * 0.02,
+                                                              (m_Position.y * CHUNK_WIDTH + z) * 0.02,
                                                               4);
             size_t h = 2 * CHUNK_HEIGHT / 3 + glm::floor(height_bias * CHUNK_HEIGHT / 3);
             std::for_each(std::execution::par,
@@ -166,7 +166,7 @@ void Chunk::DetermineVoxelFeatures(Voxel &v, size_t x, size_t z, size_t h)
     if (y >= h)
         return;
     double density = m_Perlin.octave3D((m_Position.x * CHUNK_WIDTH + x) * 0.02,
-                                       (m_Position.z * CHUNK_WIDTH + z) * 0.02,
+                                       (m_Position.y * CHUNK_WIDTH + z) * 0.02,
                                        y * 0.02,
                                        5);
     VoxelType type = VoxelType::AIR;
@@ -187,7 +187,7 @@ void Chunk::DetermineVoxelFeatures(Voxel &v, size_t x, size_t z, size_t h)
 glm::mat4 Chunk::GetModelMatrix() const
 {
     glm::mat4 model(1.0f);
-    glm::vec3 pos = m_Position;
+    glm::vec3 pos = glm::vec3(m_Position.x, 0, m_Position.y);
     pos.x *= CHUNK_WIDTH;
     pos.y *= CHUNK_HEIGHT;
     pos.z *= CHUNK_WIDTH;
