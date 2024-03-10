@@ -40,7 +40,7 @@ private:
 
 
     World m_World;
-    std::unordered_map<glm::vec3, ChunkRenderMetadata> m_RenderMetadata;
+    std::unordered_map<glm::vec2, ChunkRenderMetadata> m_RenderMetadata;
 
     //TEMP
     GLCore::Utils::TextureManager m_TextureManager;

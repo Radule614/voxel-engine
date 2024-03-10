@@ -11,7 +11,7 @@
 #include "VoxelMeshBuilder.hpp"
 
 #define CHUNK_WIDTH 16
-#define CHUNK_HEIGHT 128
+#define CHUNK_HEIGHT 96
 #define THREADS 2
 
 namespace Terrain
@@ -20,7 +20,7 @@ class Chunk
 {
 public:
     Chunk(const siv::PerlinNoise &perlin);
-    Chunk(glm::vec3 position, const siv::PerlinNoise &perlin);
+    Chunk(glm::vec2 position, const siv::PerlinNoise &perlin);
     ~Chunk();
 
     struct Neighbours
@@ -40,7 +40,7 @@ public:
         return m_BorderMeshes.at(face);
     }
 
-    inline glm::vec3 GetPosition() const
+    inline glm::vec2 GetPosition() const
     {
         return m_Position;
     }
@@ -61,7 +61,7 @@ public:
     Voxel m_VoxelGrid[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
 
 private:
-    glm::vec3 m_Position;
+    glm::vec2 m_Position;
     std::vector<Vertex> m_Mesh;
     std::unordered_map<VoxelFace, std::vector<Vertex>> m_BorderMeshes;
     const siv::PerlinNoise &m_Perlin;

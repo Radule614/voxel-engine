@@ -14,6 +14,7 @@ VoxelLayer::VoxelLayer()
     : m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)),
       m_TextureManager()
 {
+    m_CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
 }
 
 VoxelLayer::~VoxelLayer()
@@ -100,7 +101,7 @@ void VoxelLayer::GenerateNewChunkMeshes()
     auto &m = m_World.GetLock();
     if (!m.try_lock())
         return;
-    while (!queue.empty())
+    if (!queue.empty())
     {
         std::shared_ptr<Chunk> chunk = queue.front();
         SetupRenderData(chunk);
