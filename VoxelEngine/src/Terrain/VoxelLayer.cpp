@@ -97,16 +97,13 @@ void VoxelLayer::OnImGuiRender()
 
 void VoxelLayer::GenerateNewChunkMeshes()
 {
-    auto &queue = m_World.GetChunkGenerationQueue();
     auto &m = m_World.GetLock();
-    if (!m.try_lock())
+    auto &set = m_World.GetChangedChunks();
+    if (set.empty() || !m.try_lock())
         return;
-    if (!queue.empty())
-    {
-        std::shared_ptr<Chunk> chunk = queue.front();
-        SetupRenderData(chunk);
-        queue.pop();
-    }
+    for (auto it = set.begin(); it != set.end(); ++it)
+        SetupRenderData(*it);
+    set.clear();
     m.unlock();
 }
 

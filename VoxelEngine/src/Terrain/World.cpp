@@ -6,8 +6,8 @@
 namespace Terrain
 {
 World::World(GLCore::Utils::PerspectiveCameraController &cameraController)
-    : m_ChunkMap({}), m_ChunkGenerationQueue(), m_ShouldGenerationRun(std::make_shared<bool>(false)),
-      m_Mutex(std::mutex()), m_CameraController(cameraController), m_Perlin(6512u)
+    : m_ChunkMap({}), m_ChangedChunks(), m_ShouldGenerationRun(std::make_shared<bool>(false)), m_Mutex(std::mutex()),
+      m_CameraController(cameraController), m_Perlin(6512u)
 {
 }
 
@@ -20,9 +20,9 @@ const std::map<MapPosition, std::shared_ptr<Chunk>> &World::GetChunkMap() const
     return m_ChunkMap;
 }
 
-std::queue<std::shared_ptr<Chunk>> &World::GetChunkGenerationQueue()
+std::unordered_set<std::shared_ptr<Chunk>> &World::GetChangedChunks()
 {
-    return m_ChunkGenerationQueue;
+    return m_ChangedChunks;
 }
 
 void World::StartGeneration()
@@ -108,7 +108,6 @@ void World::GenerateWorld()
             if (threads[i].joinable())
                 threads[i].join();
         }
-        LOG_INFO("Chunk size -> " + std::to_string(m_ChunkMap.size()));
     }
 }
 
@@ -130,17 +129,16 @@ void World::GenerateChunk(MapPosition position)
     if (neighbours.left != nullptr)
         neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
 
-
     m_Mutex.lock();
-    m_ChunkGenerationQueue.push(chunk);
+    m_ChangedChunks.insert(chunk);
     if (neighbours.front != nullptr)
-        m_ChunkGenerationQueue.push(neighbours.front);
+        m_ChangedChunks.insert(neighbours.front);
     if (neighbours.back != nullptr)
-        m_ChunkGenerationQueue.push(neighbours.back);
+        m_ChangedChunks.insert(neighbours.back);
     if (neighbours.right != nullptr)
-        m_ChunkGenerationQueue.push(neighbours.right);
+        m_ChangedChunks.insert(neighbours.right);
     if (neighbours.left != nullptr)
-        m_ChunkGenerationQueue.push(neighbours.left);
+        m_ChangedChunks.insert(neighbours.left);
     m_Mutex.unlock();
 }
 

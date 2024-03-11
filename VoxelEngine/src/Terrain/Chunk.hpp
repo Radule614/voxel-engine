@@ -11,7 +11,7 @@
 #include "VoxelMeshBuilder.hpp"
 
 #define CHUNK_WIDTH 16
-#define CHUNK_HEIGHT 96
+#define CHUNK_HEIGHT 48
 #define THREADS 2
 
 namespace Terrain
