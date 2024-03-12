@@ -98,12 +98,14 @@ void VoxelLayer::OnImGuiRender()
 void VoxelLayer::GenerateNewChunkMeshes()
 {
     auto &m = m_World.GetLock();
-    auto &set = m_World.GetChangedChunks();
-    if (set.empty() || !m.try_lock())
+    auto &queue = m_World.GetChangedChunks();
+    if (queue.empty() || !m.try_lock())
         return;
-    for (auto it = set.begin(); it != set.end(); ++it)
-        SetupRenderData(*it);
-    set.clear();
+    while (!queue.empty())
+    {
+        SetupRenderData(queue.front());
+        queue.pop();
+    }
     m.unlock();
 }
 

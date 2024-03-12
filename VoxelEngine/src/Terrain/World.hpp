@@ -21,7 +21,7 @@ public:
     ~World();
 
     const std::map<MapPosition, std::shared_ptr<Chunk>> &GetChunkMap() const;
-    std::unordered_set<std::shared_ptr<Chunk>> &GetChangedChunks();
+    std::queue<std::shared_ptr<Chunk>> &GetChangedChunks();
 
     void StartGeneration();
     void StopGeneration();
@@ -44,7 +44,7 @@ private:
 
 private:
     std::map<MapPosition, std::shared_ptr<Chunk>> m_ChunkMap;
-    std::unordered_set<std::shared_ptr<Chunk>> m_ChangedChunks;
+    std::queue<std::shared_ptr<Chunk>> m_ChangedChunks;
     GLCore::Utils::PerspectiveCameraController &m_CameraController;
 
     siv::PerlinNoise m_Perlin;

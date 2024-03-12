@@ -20,7 +20,7 @@ const std::map<MapPosition, std::shared_ptr<Chunk>> &World::GetChunkMap() const
     return m_ChunkMap;
 }
 
-std::unordered_set<std::shared_ptr<Chunk>> &World::GetChangedChunks()
+std::queue<std::shared_ptr<Chunk>> &World::GetChangedChunks()
 {
     return m_ChangedChunks;
 }
@@ -130,15 +130,15 @@ void World::GenerateChunk(MapPosition position)
         neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
 
     m_Mutex.lock();
-    m_ChangedChunks.insert(chunk);
+    m_ChangedChunks.push(chunk);
     if (neighbours.front != nullptr)
-        m_ChangedChunks.insert(neighbours.front);
+        m_ChangedChunks.push(neighbours.front);
     if (neighbours.back != nullptr)
-        m_ChangedChunks.insert(neighbours.back);
+        m_ChangedChunks.push(neighbours.back);
     if (neighbours.right != nullptr)
-        m_ChangedChunks.insert(neighbours.right);
+        m_ChangedChunks.push(neighbours.right);
     if (neighbours.left != nullptr)
-        m_ChangedChunks.insert(neighbours.left);
+        m_ChangedChunks.push(neighbours.left);
     m_Mutex.unlock();
 }
 
