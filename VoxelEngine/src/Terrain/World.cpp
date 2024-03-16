@@ -20,7 +20,7 @@ const std::map<MapPosition, std::shared_ptr<Chunk>> &World::GetChunkMap() const
     return m_ChunkMap;
 }
 
-std::queue<std::shared_ptr<Chunk>> &World::GetChangedChunks()
+std::unordered_set<std::shared_ptr<Chunk>> &World::GetChangedChunks()
 {
     return m_ChangedChunks;
 }
@@ -96,14 +96,18 @@ void World::GenerateWorld()
 {
     while (*m_ShouldGenerationRun)
     {
-        std::vector<MapPosition> locations = FindNextChunkLocations();
+        glm::vec2 center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());
+        std::queue<MapPosition> chunkLocations = FindNextChunkLocations(center, THREADS);
         std::vector<std::thread> threads = {};
-        for (size_t i = 0; i < locations.size(); ++i)
+
+        while (!chunkLocations.empty())
         {
-            MapPosition pos = locations[i];
+            MapPosition pos = chunkLocations.front();
             threads.push_back(std::thread([this, pos] { this->GenerateChunk(pos); }));
+            chunkLocations.pop();
         }
-        for (size_t i = 0; i < locations.size(); ++i)
+
+        for (size_t i = 0; i < threads.size(); ++i)
         {
             if (threads[i].joinable())
                 threads[i].join();
@@ -114,41 +118,62 @@ void World::GenerateWorld()
 void World::GenerateChunk(MapPosition position)
 {
     auto chunk = std::make_shared<Chunk>(position.Vector, m_Perlin);
+    chunk->GetLock().lock();
     m_ChunkMap.insert({position, chunk});
     chunk->Generate();
 
     Chunk::Neighbours neighbours = GetNeighbours(*chunk);
+    if (neighbours.front != nullptr)
+        neighbours.front->GetLock().lock();
+    if (neighbours.back != nullptr)
+        neighbours.back->GetLock().lock();
+    if (neighbours.right != nullptr)
+        neighbours.right->GetLock().lock();
+    if (neighbours.left != nullptr)
+        neighbours.left->GetLock().lock();
+
     CheckChunkEdges(*chunk, neighbours);
     chunk->GenerateMesh();
     if (neighbours.front != nullptr)
+    {
         neighbours.front->GenerateEdgeMesh(VoxelFace::BACK);
+        neighbours.front->GetLock().unlock();
+    }
     if (neighbours.back != nullptr)
+    {
+        neighbours.back->GetLock().unlock();
         neighbours.back->GenerateEdgeMesh(VoxelFace::FRONT);
+    }
     if (neighbours.right != nullptr)
+    {
+        neighbours.right->GetLock().unlock();
         neighbours.right->GenerateEdgeMesh(VoxelFace::LEFT);
+    }
     if (neighbours.left != nullptr)
+    {
+        neighbours.left->GetLock().unlock();
         neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
+    }
+    chunk->GetLock().unlock();
 
     m_Mutex.lock();
-    m_ChangedChunks.push(chunk);
+    m_ChangedChunks.insert(chunk);
     if (neighbours.front != nullptr)
-        m_ChangedChunks.push(neighbours.front);
+        m_ChangedChunks.insert(neighbours.front);
     if (neighbours.back != nullptr)
-        m_ChangedChunks.push(neighbours.back);
+        m_ChangedChunks.insert(neighbours.back);
     if (neighbours.right != nullptr)
-        m_ChangedChunks.push(neighbours.right);
+        m_ChangedChunks.insert(neighbours.right);
     if (neighbours.left != nullptr)
-        m_ChangedChunks.push(neighbours.left);
+        m_ChangedChunks.insert(neighbours.left);
     m_Mutex.unlock();
 }
 
-std::vector<MapPosition> World::FindNextChunkLocations()
+std::queue<MapPosition> World::FindNextChunkLocations(glm::vec2 center, size_t count)
 {
     int32_t maxDistance = 20;
     glm::vec3 cameraPosition = m_CameraController.GetCamera().GetPosition();
-    glm::vec2 offset =
-        glm::vec2(glm::floor(cameraPosition.x / CHUNK_WIDTH), glm::floor(cameraPosition.z / CHUNK_WIDTH));
-    std::vector<MapPosition> positions = {};
+    std::queue<MapPosition> positions = {};
     std::unordered_set<glm::vec2> existing = {};
     for (int32_t r = 0; r < maxDistance; ++r)
     {
@@ -166,17 +191,17 @@ std::vector<MapPosition> World::FindNextChunkLocations()
             {
                 if (glm::length(locations[i]) > maxDistance)
                     continue;
-                glm::vec2 p = locations[i] + offset;
+                glm::vec2 p = locations[i] + center;
                 if (!IsPositionValid(existing, p))
                     continue;
                 MapPosition pos = MapPosition(p);
                 auto chunk = m_ChunkMap.find(pos);
-                if (chunk == m_ChunkMap.end() && std::find(positions.begin(), positions.end(), pos) == positions.end())
+                if (chunk == m_ChunkMap.end() && std::find(existing.begin(), existing.end(), pos) == existing.end())
                 {
                     existing.insert(p);
-                    positions.push_back(pos);
+                    positions.push(pos);
                 }
-                if (positions.size() == THREADS)
+                if (existing.size() == count)
                     return positions;
             }
         }
@@ -202,5 +227,10 @@ bool World::IsPositionValid(std::unordered_set<glm::vec2> &existing, glm::vec2 p
         if (existing.find(locations[i]) != existing.end())
             return false;
     return true;
+}
+
+glm::vec2 World::WorldToChunkSpace(const glm::vec3 &pos)
+{
+    return glm::vec2(glm::floor(pos.x / CHUNK_WIDTH), glm::floor(pos.z / CHUNK_WIDTH));
 }
 }; // namespace Terrain

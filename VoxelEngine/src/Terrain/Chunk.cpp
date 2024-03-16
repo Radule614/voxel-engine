@@ -11,7 +11,7 @@ Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec2(0), perlin)
 }
 
 Chunk::Chunk(glm::vec2 position, const siv::PerlinNoise &perlin)
-    : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin)
+    : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin), m_Mutex(std::mutex())
 {
     m_BorderMeshes.insert({VoxelFace::FRONT, {}});
     m_BorderMeshes.insert({VoxelFace::RIGHT, {}});

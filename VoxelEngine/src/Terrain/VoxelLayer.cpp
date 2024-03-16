@@ -98,13 +98,22 @@ void VoxelLayer::OnImGuiRender()
 void VoxelLayer::GenerateNewChunkMeshes()
 {
     auto &m = m_World.GetLock();
-    auto &queue = m_World.GetChangedChunks();
-    if (queue.empty() || !m.try_lock())
+    auto &changedChunks = m_World.GetChangedChunks();
+    if (changedChunks.empty() || !m.try_lock())
         return;
-    while (!queue.empty())
+    auto it = changedChunks.begin();
+    while (it != changedChunks.end())
     {
-        SetupRenderData(queue.front());
-        queue.pop();
+        std::shared_ptr<Chunk> chunk = *it;
+        auto &chunkLock = chunk->GetLock();
+        if (!chunkLock.try_lock())
+        {
+            ++it;
+            continue;
+        }
+        SetupRenderData(chunk);
+        it = changedChunks.erase(it);
+        chunkLock.unlock();
     }
     m.unlock();
 }
@@ -158,8 +167,8 @@ void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offsetof(Vertex, Vertex::Texture)));
 
     std::vector<uint32_t> indices = {};
-    size_t faceCount = vertices.size() / 4;
-    for (size_t i = 0; i < faceCount; ++i)
+    uint32_t faceCount = vertices.size() / 4;
+    for (uint32_t i = 0; i < faceCount; ++i)
     {
         indices.push_back(i * 4 + 0);
         indices.push_back(i * 4 + 1);
