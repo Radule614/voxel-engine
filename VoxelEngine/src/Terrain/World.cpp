@@ -135,38 +135,38 @@ void World::GenerateChunk(MapPosition position)
     CheckChunkEdges(*chunk, neighbours);
     chunk->GenerateMesh();
     if (neighbours.front != nullptr)
-    {
         neighbours.front->GenerateEdgeMesh(VoxelFace::BACK);
-        neighbours.front->GetLock().unlock();
-    }
     if (neighbours.back != nullptr)
-    {
         neighbours.back->GenerateEdgeMesh(VoxelFace::FRONT);
-        neighbours.back->GetLock().unlock();
-    }
     if (neighbours.right != nullptr)
-    {
         neighbours.right->GenerateEdgeMesh(VoxelFace::LEFT);
-        neighbours.right->GetLock().unlock();
-    }
     if (neighbours.left != nullptr)
-    {
         neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
-        neighbours.left->GetLock().unlock();
-    }
-    chunk->GetLock().unlock();
 
     m_Mutex.lock();
     m_ChangedChunks.insert(chunk);
     if (neighbours.front != nullptr)
+    {
         m_ChangedChunks.insert(neighbours.front);
+        neighbours.front->GetLock().unlock();
+    }
     if (neighbours.back != nullptr)
+    {
         m_ChangedChunks.insert(neighbours.back);
+        neighbours.back->GetLock().unlock();
+    }
     if (neighbours.right != nullptr)
+    {
         m_ChangedChunks.insert(neighbours.right);
+        neighbours.right->GetLock().unlock();
+    }
     if (neighbours.left != nullptr)
+    {
         m_ChangedChunks.insert(neighbours.left);
+        neighbours.left->GetLock().unlock();
+    }
     m_Mutex.unlock();
+    chunk->GetLock().unlock();
 }
 
 std::queue<MapPosition> World::FindNextChunkLocations(glm::vec2 center, size_t count)
