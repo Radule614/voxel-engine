@@ -13,7 +13,7 @@
 
 #define CHUNK_WIDTH 16
 #define CHUNK_HEIGHT 48
-#define THREADS 3
+#define THREADS 2
 
 namespace Terrain
 {

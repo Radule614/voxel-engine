@@ -141,18 +141,18 @@ void World::GenerateChunk(MapPosition position)
     }
     if (neighbours.back != nullptr)
     {
-        neighbours.back->GetLock().unlock();
         neighbours.back->GenerateEdgeMesh(VoxelFace::FRONT);
+        neighbours.back->GetLock().unlock();
     }
     if (neighbours.right != nullptr)
     {
-        neighbours.right->GetLock().unlock();
         neighbours.right->GenerateEdgeMesh(VoxelFace::LEFT);
+        neighbours.right->GetLock().unlock();
     }
     if (neighbours.left != nullptr)
     {
-        neighbours.left->GetLock().unlock();
         neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
+        neighbours.left->GetLock().unlock();
     }
     chunk->GetLock().unlock();
 

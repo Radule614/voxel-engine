@@ -68,7 +68,7 @@ void VoxelLayer::OnUpdate(Timestep ts)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(m_Shader->GetRendererID());
 
-    GenerateNewChunkMeshes();
+    CheckChunkRenderQueue();
 
     for (auto it = m_RenderMetadata.cbegin(); it != m_RenderMetadata.cend(); ++it)
     {
@@ -95,14 +95,14 @@ void VoxelLayer::OnImGuiRender()
 {
 }
 
-void VoxelLayer::GenerateNewChunkMeshes()
+void VoxelLayer::CheckChunkRenderQueue()
 {
-    auto &m = m_World.GetLock();
-    auto &changedChunks = m_World.GetChangedChunks();
-    if (changedChunks.empty() || !m.try_lock())
+    auto &worldLock = m_World.GetLock();
+    auto &chunks = m_World.GetChangedChunks();
+    if (chunks.empty() || !worldLock.try_lock())
         return;
-    auto it = changedChunks.begin();
-    while (it != changedChunks.end())
+    auto it = chunks.begin();
+    while (it != chunks.end())
     {
         std::shared_ptr<Chunk> chunk = *it;
         auto &chunkLock = chunk->GetLock();
@@ -112,10 +112,10 @@ void VoxelLayer::GenerateNewChunkMeshes()
             continue;
         }
         SetupRenderData(chunk);
-        it = changedChunks.erase(it);
+        it = chunks.erase(it);
         chunkLock.unlock();
     }
-    m.unlock();
+    worldLock.unlock();
 }
 
 void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
