@@ -7,6 +7,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerlinNoise.hpp"
 
+#include "Neighbours.hpp"
+#include "Position2D.hpp"
 #include "Vertex.hpp"
 #include "Voxel.hpp"
 #include "VoxelMeshBuilder.hpp"
@@ -17,20 +19,14 @@
 
 namespace Terrain
 {
+class World;
+
 class Chunk
 {
 public:
-    Chunk(const siv::PerlinNoise &perlin);
-    Chunk(glm::vec2 position, const siv::PerlinNoise &perlin);
+    Chunk(const World &world, const siv::PerlinNoise &perlin);
+    Chunk(const World &world, Position2D position, const siv::PerlinNoise &perlin);
     ~Chunk();
-
-    struct Neighbours
-    {
-        std::shared_ptr<Chunk> front = nullptr;
-        std::shared_ptr<Chunk> back = nullptr;
-        std::shared_ptr<Chunk> right = nullptr;
-        std::shared_ptr<Chunk> left = nullptr;
-    };
 
     inline const std::vector<Vertex> &GetMesh() const
     {
@@ -41,7 +37,7 @@ public:
         return m_BorderMeshes.at(face);
     }
 
-    inline glm::vec2 GetPosition() const
+    inline Position2D GetPosition() const
     {
         return m_Position;
     }
@@ -67,10 +63,11 @@ public:
     Voxel m_VoxelGrid[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
 
 private:
-    glm::vec2 m_Position;
+    Position2D m_Position;
     std::vector<Vertex> m_Mesh;
     std::unordered_map<VoxelFace, std::vector<Vertex>> m_BorderMeshes;
     const siv::PerlinNoise &m_Perlin;
     std::mutex m_Mutex;
+    const World &m_World;
 };
 }; // namespace Terrain

@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <glm/glm.hpp>
+#include "Position3D.hpp"
 
 namespace Terrain
 {
@@ -31,7 +31,7 @@ public:
     Voxel();
     ~Voxel();
     Voxel(VoxelType type);
-    Voxel(VoxelType type, glm::vec3 position);
+    Voxel(VoxelType type, Position3D position);
 
     bool IsFaceVisible(VoxelFace face) const;
     void SetFaceVisible(VoxelFace face, bool visible);
@@ -46,12 +46,12 @@ public:
     {
         return m_VoxelType;
     }
-    inline void SetPosition(glm::vec3 pos)
+    inline void SetPosition(Position3D pos)
     {
         m_Position = pos;
     }
 
-    inline glm::vec3 GetPosition() const
+    inline Position3D GetPosition() const
     {
         return m_Position;
     }
@@ -61,6 +61,6 @@ public:
 private:
     VoxelType m_VoxelType;
     bool m_VisibleFaces[6];
-    glm::vec3 m_Position;
+    Position3D m_Position;
 };
 }; // namespace Terrain

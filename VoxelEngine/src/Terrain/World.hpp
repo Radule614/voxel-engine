@@ -9,7 +9,7 @@
 #include <GLCoreUtils.hpp>
 
 #include "Chunk.hpp"
-#include "MapPosition.hpp"
+#include "Position2D.hpp"
 
 
 namespace Terrain
@@ -20,7 +20,7 @@ public:
     World(GLCore::Utils::PerspectiveCameraController &cameraController);
     ~World();
 
-    const std::map<MapPosition, std::shared_ptr<Chunk>> &GetChunkMap() const;
+    const std::map<Position2D, std::shared_ptr<Chunk>> &GetChunkMap() const;
     std::unordered_set<std::shared_ptr<Chunk>> &GetChangedChunks();
 
     void StartGeneration();
@@ -32,18 +32,18 @@ public:
     }
 
 private:
-    void CheckChunkEdges(Chunk &chunk, Chunk::Neighbours &neighbours);
+    void CheckChunkEdges(Chunk &chunk, Neighbours &neighbours);
     void CheckVoxelEdge(Voxel &v1, Voxel &v2, VoxelFace face);
-    Chunk::Neighbours GetNeighbours(Chunk &chunk);
+    Neighbours GetNeighbours(Chunk &chunk);
 
     void GenerateWorld();
-    void GenerateChunk(MapPosition position);
-    std::queue<MapPosition> FindNextChunkLocations(glm::vec2 center, size_t count);
+    void GenerateChunk(Position2D position);
+    std::queue<Position2D> FindNextChunkLocations(glm::vec2 center, size_t count);
     bool IsPositionValid(std::unordered_set<glm::vec2> &existing, glm::vec2 p);
-    glm::vec2 WorldToChunkSpace(const glm::vec3& pos);
+    glm::vec2 WorldToChunkSpace(const glm::vec3 &pos);
 
 private:
-    std::map<MapPosition, std::shared_ptr<Chunk>> m_ChunkMap;
+    std::map<Position2D, std::shared_ptr<Chunk>> m_ChunkMap;
     std::unordered_set<std::shared_ptr<Chunk>> m_ChangedChunks;
     GLCore::Utils::PerspectiveCameraController &m_CameraController;
 

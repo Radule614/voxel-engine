@@ -1,17 +1,18 @@
 #include "Chunk.hpp"
 #include "GLCoreUtils.hpp"
 #include "VoxelMeshBuilder.hpp"
+#include "World.hpp"
 
 #include <execution>
 
 namespace Terrain
 {
-Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec2(0), perlin)
+Chunk::Chunk(const World &world, const siv::PerlinNoise &perlin) : Chunk(world, Position2D(), perlin)
 {
 }
 
-Chunk::Chunk(glm::vec2 position, const siv::PerlinNoise &perlin)
-    : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin), m_Mutex(std::mutex())
+Chunk::Chunk(const World &world, Position2D position, const siv::PerlinNoise &perlin)
+    : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin), m_Mutex(std::mutex()), m_World(world)
 {
     m_BorderMeshes.insert({VoxelFace::FRONT, {}});
     m_BorderMeshes.insert({VoxelFace::RIGHT, {}});
@@ -179,7 +180,7 @@ void Chunk::DetermineVoxelFeatures(Voxel &v, size_t x, size_t z, size_t h)
     if (density >= 0 && y == h - 1)
         type = VoxelType::GRASS;
 
-    v.SetPosition(glm::vec3(x, y, z));
+    v.SetPosition(Position3D(x, y, z));
     v.SetVoxelType(type);
     ++y;
 }

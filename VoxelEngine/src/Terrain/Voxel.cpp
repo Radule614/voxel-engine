@@ -4,7 +4,7 @@
 
 namespace Terrain
 {
-Voxel::Voxel() : Voxel(VoxelType::AIR, glm::vec3(0))
+Voxel::Voxel() : Voxel(VoxelType::AIR, Position3D())
 {
 }
 
@@ -12,11 +12,11 @@ Voxel::~Voxel()
 {
 }
 
-Voxel::Voxel(VoxelType type) : Voxel(type, glm::vec3(0))
+Voxel::Voxel(VoxelType type) : Voxel(type, Position3D())
 {
 }
 
-Voxel::Voxel(VoxelType type, glm::vec3 position) : m_VoxelType(type), m_Position(position), m_VisibleFaces{false}
+Voxel::Voxel(VoxelType type, Position3D position) : m_VoxelType(type), m_Position(position), m_VisibleFaces{false}
 {
 }
 
