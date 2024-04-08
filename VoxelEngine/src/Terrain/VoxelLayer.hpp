@@ -31,7 +31,7 @@ public:
     virtual void OnImGuiRender() override;
 
 private:
-    void GenerateNewChunkMeshes();
+    void CheckChunkRenderQueue();
     void SetupRenderData(std::shared_ptr<Chunk> chunk);
 
 private:

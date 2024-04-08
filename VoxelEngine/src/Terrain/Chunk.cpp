@@ -11,7 +11,7 @@ Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec2(0), perlin)
 }
 
 Chunk::Chunk(glm::vec2 position, const siv::PerlinNoise &perlin)
-    : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin)
+    : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin), m_Mutex(std::mutex())
 {
     m_BorderMeshes.insert({VoxelFace::FRONT, {}});
     m_BorderMeshes.insert({VoxelFace::RIGHT, {}});
@@ -162,7 +162,7 @@ void Chunk::AddEdgeMesh(VoxelMeshBuilder &meshBuilder, Voxel &v, VoxelFace f1, V
 
 void Chunk::DetermineVoxelFeatures(Voxel &v, size_t x, size_t z, size_t h)
 {
-    int y = &v - &m_VoxelGrid[x][z][0];
+    size_t y = &v - &m_VoxelGrid[x][z][0];
     if (y >= h)
         return;
     double density = m_Perlin.octave3D((m_Position.x * CHUNK_WIDTH + x) * 0.02,

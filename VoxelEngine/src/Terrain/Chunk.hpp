@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <mutex>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerlinNoise.hpp"
@@ -11,7 +12,7 @@
 #include "VoxelMeshBuilder.hpp"
 
 #define CHUNK_WIDTH 16
-#define CHUNK_HEIGHT 96
+#define CHUNK_HEIGHT 48
 #define THREADS 2
 
 namespace Terrain
@@ -45,6 +46,11 @@ public:
         return m_Position;
     }
 
+    std::mutex &GetLock()
+    {
+        return m_Mutex;
+    }
+
     glm::mat4 GetModelMatrix() const;
 
     void Generate();
@@ -65,5 +71,6 @@ private:
     std::vector<Vertex> m_Mesh;
     std::unordered_map<VoxelFace, std::vector<Vertex>> m_BorderMeshes;
     const siv::PerlinNoise &m_Perlin;
+    std::mutex m_Mutex;
 };
 }; // namespace Terrain

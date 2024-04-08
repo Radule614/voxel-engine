@@ -1,8 +1,8 @@
 #pragma once
 
 #include <map>
-#include <queue>
 #include <unordered_set>
+#include <queue>
 #include <mutex>
 #include <thread>
 #include <glm/glm.hpp>
@@ -21,7 +21,7 @@ public:
     ~World();
 
     const std::map<MapPosition, std::shared_ptr<Chunk>> &GetChunkMap() const;
-    std::queue<std::shared_ptr<Chunk>> &GetChunkGenerationQueue();
+    std::unordered_set<std::shared_ptr<Chunk>> &GetChangedChunks();
 
     void StartGeneration();
     void StopGeneration();
@@ -38,13 +38,13 @@ private:
 
     void GenerateWorld();
     void GenerateChunk(MapPosition position);
-    std::vector<MapPosition> FindNextChunkLocations();
-    bool IsPositionValid(std::unordered_set<glm::vec2>& existing, glm::vec2 p);
-
+    std::queue<MapPosition> FindNextChunkLocations(glm::vec2 center, size_t count);
+    bool IsPositionValid(std::unordered_set<glm::vec2> &existing, glm::vec2 p);
+    glm::vec2 WorldToChunkSpace(const glm::vec3& pos);
 
 private:
     std::map<MapPosition, std::shared_ptr<Chunk>> m_ChunkMap;
-    std::queue<std::shared_ptr<Chunk>> m_ChunkGenerationQueue;
+    std::unordered_set<std::shared_ptr<Chunk>> m_ChangedChunks;
     GLCore::Utils::PerspectiveCameraController &m_CameraController;
 
     siv::PerlinNoise m_Perlin;

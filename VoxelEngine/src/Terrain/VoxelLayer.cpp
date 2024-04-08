@@ -68,7 +68,7 @@ void VoxelLayer::OnUpdate(Timestep ts)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(m_Shader->GetRendererID());
 
-    GenerateNewChunkMeshes();
+    CheckChunkRenderQueue();
 
     for (auto it = m_RenderMetadata.cbegin(); it != m_RenderMetadata.cend(); ++it)
     {
@@ -95,19 +95,27 @@ void VoxelLayer::OnImGuiRender()
 {
 }
 
-void VoxelLayer::GenerateNewChunkMeshes()
+void VoxelLayer::CheckChunkRenderQueue()
 {
-    auto &queue = m_World.GetChunkGenerationQueue();
-    auto &m = m_World.GetLock();
-    if (!m.try_lock())
+    auto &worldLock = m_World.GetLock();
+    auto &chunks = m_World.GetChangedChunks();
+    if (chunks.empty() || !worldLock.try_lock())
         return;
-    if (!queue.empty())
+    auto it = chunks.begin();
+    while (it != chunks.end())
     {
-        std::shared_ptr<Chunk> chunk = queue.front();
+        std::shared_ptr<Chunk> chunk = *it;
+        auto &chunkLock = chunk->GetLock();
+        if (!chunkLock.try_lock())
+        {
+            ++it;
+            continue;
+        }
         SetupRenderData(chunk);
-        queue.pop();
+        it = chunks.erase(it);
+        chunkLock.unlock();
     }
-    m.unlock();
+    worldLock.unlock();
 }
 
 void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
@@ -159,8 +167,8 @@ void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void *)(offsetof(Vertex, Vertex::Texture)));
 
     std::vector<uint32_t> indices = {};
-    size_t faceCount = vertices.size() / 4;
-    for (size_t i = 0; i < faceCount; ++i)
+    uint32_t faceCount = vertices.size() / 4;
+    for (uint32_t i = 0; i < faceCount; ++i)
     {
         indices.push_back(i * 4 + 0);
         indices.push_back(i * 4 + 1);
