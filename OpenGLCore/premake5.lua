@@ -7,12 +7,12 @@ project "OpenGLCore"
 	targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
 
-	pchheader "glpch.h"
+	pchheader "src/glpch.hpp"
 	pchsource "src/glpch.cpp"
 
 	files
 	{
-		"src/**.h",
+		"src/**.hpp",
 		"src/**.cpp",
 		"vendor/stb_image/**.h",
 		"vendor/stb_image/**.cpp",

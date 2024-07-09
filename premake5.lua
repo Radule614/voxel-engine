@@ -1,44 +1,6 @@
--- OpenGL-Sandbox
-workspace "OpenGL-Sandbox"
-	architecture "x64"
-	startproject "OpenGL-Sandbox"
-
-	configurations
-	{
-		"Debug",
-		"Release"
-	}
-	
-	flags
-	{
-		"MultiProcessorCompile"
-	}
-
-outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
-
--- Include directories relative to OpenGLCore
-IncludeDir = {}
-IncludeDir["GLFW"] = "vendor/GLFW/include"
-IncludeDir["Glad"] = "vendor/Glad/include"
-IncludeDir["ImGui"] = "vendor/imgui"
-IncludeDir["glm"] = "vendor/glm"
-IncludeDir["stb_image"] = "vendor/stb_image"
-
--- Projects
-group "Dependencies"
-	include "OpenGLCore/vendor/GLFW"
-	include "OpenGLCore/vendor/Glad"
-	include "OpenGLCore/vendor/imgui"
-group ""
-
-include "OpenGLCore"
-include "OpenGL-Sandbox"
-
--- OpenGL-Examples
-workspace "OpenGL-Examples"
-    startproject "OpenGL-Examples"
+workspace "VoxelEngine"
     architecture "x64"
-    startproject "OpenGL-Examples"
+    startproject "VoxelEngine"
 
     configurations
     {
@@ -69,4 +31,4 @@ group "Dependencies"
 group ""
 
 includeexternal "OpenGLCore"
-include "OpenGL-Examples"
+include "VoxelEngine"
