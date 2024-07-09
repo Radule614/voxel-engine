@@ -109,14 +109,14 @@ namespace siv
 		//
 
 		SIVPERLIN_NODISCARD_CXX20
-		constexpr BasicPerlinNoise() noexcept;
+			constexpr BasicPerlinNoise() noexcept;
 
 		SIVPERLIN_NODISCARD_CXX20
-		explicit BasicPerlinNoise(seed_type seed);
+			explicit BasicPerlinNoise(seed_type seed);
 
 		SIVPERLIN_CONCEPT_URBG
-		SIVPERLIN_NODISCARD_CXX20
-		explicit BasicPerlinNoise(URBG&& urbg);
+			SIVPERLIN_NODISCARD_CXX20
+			explicit BasicPerlinNoise(URBG&& urbg);
 
 		///////////////////////////////////////
 		//
@@ -126,7 +126,7 @@ namespace siv
 		void reseed(seed_type seed);
 
 		SIVPERLIN_CONCEPT_URBG
-		void reseed(URBG&& urbg);
+			void reseed(URBG&& urbg);
 
 		///////////////////////////////////////
 		//
@@ -251,7 +251,7 @@ namespace siv
 		//	You may get different results from std::shuffle() with different standard library implementations.
 		//
 		SIVPERLIN_CONCEPT_URBG
-		[[nodiscard]]
+			[[nodiscard]]
 		inline std::uint64_t Random(const std::uint64_t max, URBG&& urbg)
 		{
 			return (urbg() % (max + 1));
@@ -421,7 +421,9 @@ namespace siv
 				129,22,39,253, 19,98,108,110,79,113,224,232,178,185, 112,104,218,246,97,228,
 				251,34,242,193,238,210,144,12,191,179,162,241, 81,51,145,235,249,14,239,107,
 				49,192,214, 31,181,199,106,157,184, 84,204,176,115,121,50,45,127, 4,150,254,
-				138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180 } {}
+				138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180 }
+	{
+	}
 
 	template <class Float>
 	inline BasicPerlinNoise<Float>::BasicPerlinNoise(const seed_type seed)
@@ -431,7 +433,7 @@ namespace siv
 
 	template <class Float>
 	SIVPERLIN_CONCEPT_URBG_
-	inline BasicPerlinNoise<Float>::BasicPerlinNoise(URBG&& urbg)
+		inline BasicPerlinNoise<Float>::BasicPerlinNoise(URBG&& urbg)
 	{
 		reseed(std::forward<URBG>(urbg));
 	}
@@ -446,7 +448,7 @@ namespace siv
 
 	template <class Float>
 	SIVPERLIN_CONCEPT_URBG_
-	inline void BasicPerlinNoise<Float>::reseed(URBG&& urbg)
+		inline void BasicPerlinNoise<Float>::reseed(URBG&& urbg)
 	{
 		std::iota(m_permutation.begin(), m_permutation.end(), uint8_t{ 0 });
 
