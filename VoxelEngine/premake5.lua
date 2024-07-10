@@ -1,7 +1,7 @@
 project "VoxelEngine"
 	kind "ConsoleApp"
 	language "C++"
-	cppdialect "C++17"
+	cppdialect "C++20"
 	staticruntime "on"
 
 	targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
@@ -9,8 +9,9 @@ project "VoxelEngine"
 
 	files
 	{
-		"src/**.h",
-		"src/**.cpp"
+		"src/**.hpp",
+		"src/**.cpp",
+		"vendor/PerlinNoise/**.hpp"
 	}
 
 	includedirs
@@ -20,7 +21,8 @@ project "VoxelEngine"
 		"../OpenGLCore/vendor",
 		"../OpenGLCore/%{IncludeDir.glm}",
 		"../OpenGLCore/%{IncludeDir.Glad}",
-		"../OpenGLCore/%{IncludeDir.ImGui}"
+		"../OpenGLCore/%{IncludeDir.ImGui}",
+		"vendor/PerlinNoise"
 	}
 
 	links

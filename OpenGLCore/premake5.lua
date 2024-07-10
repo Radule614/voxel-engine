@@ -1,13 +1,13 @@
 project "OpenGLCore"
 	kind "StaticLib"
 	language "C++"
-	cppdialect "C++17"
+	cppdialect "C++20"
 	staticruntime "on"
 
 	targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
 
-	pchheader "src/glpch.hpp"
+	pchheader "glpch.hpp"
 	pchsource "src/glpch.cpp"
 
 	files

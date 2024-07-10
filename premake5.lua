@@ -25,10 +25,10 @@ IncludeDir["stb_image"] = "vendor/stb_image"
 
 -- Projects
 group "Dependencies"
-    includeexternal "OpenGLCore/vendor/GLFW"
-    includeexternal "OpenGLCore/vendor/Glad"
-    includeexternal "OpenGLCore/vendor/imgui"
+    include "OpenGLCore/vendor/GLFW"
+    include "OpenGLCore/vendor/Glad"
+    include "OpenGLCore/vendor/imgui"
 group ""
 
-includeexternal "OpenGLCore"
+include "OpenGLCore"
 include "VoxelEngine"
