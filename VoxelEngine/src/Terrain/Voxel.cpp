@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-namespace Terrain
+namespace VoxelEngine
 {
 Voxel::Voxel() : Voxel(VoxelType::AIR, glm::vec3(0))
 {

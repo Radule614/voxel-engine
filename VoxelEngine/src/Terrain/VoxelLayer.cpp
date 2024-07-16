@@ -8,7 +8,7 @@
 using namespace GLCore;
 using namespace GLCore::Utils;
 
-namespace Terrain
+namespace VoxelEngine
 {
 VoxelLayer::VoxelLayer()
     : m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)),

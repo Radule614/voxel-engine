@@ -4,7 +4,7 @@
 
 #include <glm/glm.hpp>
 
-namespace Terrain
+namespace VoxelEngine
 {
 enum VoxelType
 {

@@ -1,16 +1,17 @@
 #include "Chunk.hpp"
 #include "GLCoreUtils.hpp"
 #include "VoxelMeshBuilder.hpp"
+#include "Position2D.hpp"
 
 #include <execution>
 
-namespace Terrain
+namespace VoxelEngine
 {
-Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(glm::vec2(0), perlin)
+Chunk::Chunk(const siv::PerlinNoise &perlin) : Chunk(Position2D(), perlin)
 {
 }
 
-Chunk::Chunk(glm::vec2 position, const siv::PerlinNoise &perlin)
+Chunk::Chunk(Position2D position, const siv::PerlinNoise &perlin)
     : m_Position(position), m_Mesh({}), m_VoxelGrid{}, m_Perlin(perlin), m_Mutex(std::mutex())
 {
     m_BorderMeshes.insert({VoxelFace::FRONT, {}});
@@ -29,10 +30,11 @@ void Chunk::Generate()
     {
         for (size_t z = 0; z < CHUNK_WIDTH; ++z)
         {
-            const double_t height_bias = m_Perlin.octave2D_01((m_Position.x * CHUNK_WIDTH + x) * 0.02,
-                                                              (m_Position.y * CHUNK_WIDTH + z) * 0.02,
+            const double_t height_bias = m_Perlin.octave2D_01(((double_t)m_Position.x * CHUNK_WIDTH + x) * 0.02,
+                                                              ((double_t)m_Position.y * CHUNK_WIDTH + z) * 0.02,
                                                               4);
-            size_t h = 2 * CHUNK_HEIGHT / 3 + glm::floor(height_bias * CHUNK_HEIGHT / 3);
+            size_t h = 2.0 * CHUNK_HEIGHT / 3 + glm::floor(height_bias * CHUNK_HEIGHT / 3);
+
             std::for_each(std::execution::par,
                           std::begin(m_VoxelGrid[x][z]),
                           std::end(m_VoxelGrid[x][z]),
@@ -165,8 +167,8 @@ void Chunk::DetermineVoxelFeatures(Voxel &v, size_t x, size_t z, size_t h)
     size_t y = &v - &m_VoxelGrid[x][z][0];
     if (y >= h)
         return;
-    double density = m_Perlin.octave3D((m_Position.x * CHUNK_WIDTH + x) * 0.02,
-                                       (m_Position.y * CHUNK_WIDTH + z) * 0.02,
+    double_t density = m_Perlin.octave3D(((double_t)m_Position.x * CHUNK_WIDTH + x) * 0.02,
+                                       ((double_t)m_Position.y * CHUNK_WIDTH + z) * 0.02,
                                        y * 0.02,
                                        5);
     VoxelType type = VoxelType::AIR;

@@ -3,17 +3,20 @@
 
 using namespace GLCore;
 
-class VoxelEngine : public Application
+namespace VoxelEngine
 {
-public:
-    VoxelEngine() : Application("Voxel Engine")
+    class VoxelEngine : public Application
     {
-        PushLayer(new Terrain::VoxelLayer());
-    }
-};
+    public:
+        VoxelEngine() : Application("Voxel Engine")
+        {
+            PushLayer(new VoxelLayer());
+        }
+    };
+}
 
 int main()
 {
-    VoxelEngine app;
+    VoxelEngine::VoxelEngine app;
     app.Run();
 }

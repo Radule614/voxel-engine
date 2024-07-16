@@ -3,7 +3,7 @@
 #include <GLCore.hpp>
 #include <vector>
 
-namespace Terrain
+namespace VoxelEngine
 {
 World::World(GLCore::Utils::PerspectiveCameraController &cameraController)
     : m_ChunkMap({}), m_ChangedChunks(), m_ShouldGenerationRun(std::make_shared<bool>(false)), m_Mutex(std::mutex()),
@@ -15,7 +15,7 @@ World::~World()
 {
 }
 
-const std::map<MapPosition, std::shared_ptr<Chunk>> &World::GetChunkMap() const
+const std::map<Position2D, std::shared_ptr<Chunk>> &World::GetChunkMap() const
 {
     return m_ChunkMap;
 }
@@ -72,11 +72,11 @@ void World::StopGeneration()
 
 Chunk::Neighbours World::GetNeighbours(Chunk &chunk)
 {
-    glm::vec2 pos = chunk.GetPosition();
-    auto front = m_ChunkMap.find(MapPosition(glm::vec2(pos.x, pos.y + 1)));
-    auto back = m_ChunkMap.find(MapPosition(glm::vec2(pos.x, pos.y - 1)));
-    auto right = m_ChunkMap.find(MapPosition(glm::vec2(pos.x + 1, pos.y)));
-    auto left = m_ChunkMap.find(MapPosition(glm::vec2(pos.x - 1, pos.y)));
+    Position2D pos = chunk.GetPosition();
+    auto front = m_ChunkMap.find(Position2D(pos.x, pos.y + 1));
+    auto back = m_ChunkMap.find(Position2D(pos.x, pos.y - 1));
+    auto right = m_ChunkMap.find(Position2D(pos.x + 1, pos.y));
+    auto left = m_ChunkMap.find(Position2D(pos.x - 1, pos.y));
 
     Chunk::Neighbours neighbours = {};
 
@@ -96,13 +96,13 @@ void World::GenerateWorld()
 {
     while (*m_ShouldGenerationRun)
     {
-        glm::vec2 center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());
-        std::queue<MapPosition> chunkLocations = FindNextChunkLocations(center, THREADS);
+        Position2D center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());
+        std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, THREADS);
         std::vector<std::thread> threads = {};
 
         while (!chunkLocations.empty())
         {
-            MapPosition pos = chunkLocations.front();
+            Position2D pos = chunkLocations.front();
             threads.push_back(std::thread([this, pos] { this->GenerateChunk(pos); }));
             chunkLocations.pop();
         }
@@ -115,9 +115,9 @@ void World::GenerateWorld()
     }
 }
 
-void World::GenerateChunk(MapPosition position)
+void World::GenerateChunk(Position2D position)
 {
-    auto chunk = std::make_shared<Chunk>(position.Vector, m_Perlin);
+    auto chunk = std::make_shared<Chunk>(position, m_Perlin);
     chunk->GetLock().lock();
     m_ChunkMap.insert({position, chunk});
     chunk->Generate();
@@ -169,32 +169,31 @@ void World::GenerateChunk(MapPosition position)
     chunk->GetLock().unlock();
 }
 
-std::queue<MapPosition> World::FindNextChunkLocations(glm::vec2 center, size_t count)
+std::queue<Position2D> World::FindNextChunkLocations(Position2D center, size_t count)
 {
     int32_t maxDistance = 20;
-    glm::vec3 cameraPosition = m_CameraController.GetCamera().GetPosition();
-    std::queue<MapPosition> positions = {};
-    std::unordered_set<glm::vec2> existing = {};
+    std::queue<Position2D> positions = {};
+    std::unordered_set<Position2D> existing = {};
     for (int32_t r = 0; r < maxDistance; ++r)
     {
         for (int32_t x = 0; x <= r; ++x)
         {
-            glm::vec2 locations[8] = {glm::vec2(x, -r),
-                                      glm::vec2(x, r),
-                                      glm::vec2(-r, x),
-                                      glm::vec2(r, x),
-                                      glm::vec2(-x, -r),
-                                      glm::vec2(-x, r),
-                                      glm::vec2(-r, -x),
-                                      glm::vec2(r, -x)};
+            Position2D locations[8] = {Position2D(x, -r),
+                                       Position2D(x, r),
+                                       Position2D(-r, x),
+                                       Position2D(r, x),
+                                       Position2D(-x, -r),
+                                       Position2D(-x, r),
+                                       Position2D(-r, -x),
+                                       Position2D(r, -x)};
             for (size_t i = 0; i < 8; ++i)
             {
-                if (glm::length(locations[i]) > maxDistance)
+                if (locations[i].GetLength() > maxDistance)
                     continue;
-                glm::vec2 p = locations[i] + center;
+                Position2D p = locations[i] + center;
                 if (!IsPositionValid(existing, p))
                     continue;
-                MapPosition pos = MapPosition(p);
+                Position2D pos = Position2D(p.x, p.y);
                 auto chunk = m_ChunkMap.find(pos);
                 if (chunk == m_ChunkMap.end() && std::find(existing.begin(), existing.end(), pos) == existing.end())
                 {
@@ -209,28 +208,28 @@ std::queue<MapPosition> World::FindNextChunkLocations(glm::vec2 center, size_t c
     return positions;
 }
 
-bool World::IsPositionValid(std::unordered_set<glm::vec2> &existing, glm::vec2 p)
+bool World::IsPositionValid(std::unordered_set<Position2D> &existing, Position2D p)
 {
-    glm::vec2 locations[12] = {glm::vec2(p.x, p.y + 2),
-                               glm::vec2(p.x, p.y + 1),
-                               glm::vec2(p.x, p.y - 1),
-                               glm::vec2(p.x, p.y - 2),
-                               glm::vec2(p.x + 2, p.y),
-                               glm::vec2(p.x + 1, p.y),
-                               glm::vec2(p.x - 1, p.y),
-                               glm::vec2(p.x - 2, p.y),
-                               glm::vec2(p.x + 1, p.y + 1),
-                               glm::vec2(p.x + 1, p.y - 1),
-                               glm::vec2(p.x - 1, p.y + 1),
-                               glm::vec2(p.x - 1, p.y - 1)};
+    Position2D locations[12] = { Position2D(p.x, p.y + 2),
+                                 Position2D(p.x, p.y + 1),
+                                 Position2D(p.x, p.y - 1),
+                                 Position2D(p.x, p.y - 2),
+                                 Position2D(p.x + 2, p.y),
+                                 Position2D(p.x + 1, p.y),
+                                 Position2D(p.x - 1, p.y),
+                                 Position2D(p.x - 2, p.y),
+                                 Position2D(p.x + 1, p.y + 1),
+                                 Position2D(p.x + 1, p.y - 1),
+                                 Position2D(p.x - 1, p.y + 1),
+                                 Position2D(p.x - 1, p.y - 1)};
     for (size_t i = 0; i < 12; ++i)
         if (existing.find(locations[i]) != existing.end())
             return false;
     return true;
 }
 
-glm::vec2 World::WorldToChunkSpace(const glm::vec3 &pos)
+Position2D World::WorldToChunkSpace(const glm::vec3 &pos)
 {
-    return glm::vec2(glm::floor(pos.x / CHUNK_WIDTH), glm::floor(pos.z / CHUNK_WIDTH));
+    return Position2D(glm::floor(pos.x / CHUNK_WIDTH), glm::floor(pos.z / CHUNK_WIDTH));
 }
 }; // namespace Terrain

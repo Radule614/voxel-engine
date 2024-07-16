@@ -6,7 +6,7 @@
 #include "GLCoreUtils.hpp"
 #include "World.hpp"
 
-namespace Terrain
+namespace VoxelEngine
 {
 
 struct ChunkRenderMetadata
@@ -40,7 +40,7 @@ private:
 
 
     World m_World;
-    std::unordered_map<glm::vec2, ChunkRenderMetadata> m_RenderMetadata;
+    std::unordered_map<Position2D, ChunkRenderMetadata> m_RenderMetadata;
 
     //TEMP
     GLCore::Utils::TextureManager m_TextureManager;

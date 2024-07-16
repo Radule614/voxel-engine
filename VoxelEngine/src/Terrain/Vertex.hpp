@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-namespace Terrain
+namespace VoxelEngine
 {
 struct Vertex
 {

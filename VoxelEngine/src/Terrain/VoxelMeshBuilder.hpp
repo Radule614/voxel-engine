@@ -7,7 +7,7 @@
 #include "Voxel.hpp"
 #include "Vertex.hpp"
 
-namespace Terrain
+namespace VoxelEngine
 {
 class VoxelMeshBuilder
 {
