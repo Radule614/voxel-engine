@@ -11,39 +11,40 @@ namespace VoxelEngine
 
 struct ChunkRenderMetadata
 {
-    GLuint VertexArray;
-    GLuint VertexBuffer;
-    GLuint IndexBuffer;
-    std::vector<uint32_t> Indices;
-    glm::mat4 ModelMatrix;
+	GLuint VertexArray;
+	GLuint VertexBuffer;
+	GLuint IndexBuffer;
+	std::vector<uint32_t> Indices;
+	glm::mat4 ModelMatrix;
 };
 
 class VoxelLayer : public GLCore::Layer
 {
 public:
-    VoxelLayer();
-    ~VoxelLayer();
+	VoxelLayer();
+	~VoxelLayer();
 
-    virtual void OnAttach() override;
-    virtual void OnDetach() override;
-    virtual void OnEvent(GLCore::Event &event) override;
-    virtual void OnUpdate(GLCore::Timestep ts) override;
-    virtual void OnImGuiRender() override;
-
-private:
-    void CheckChunkRenderQueue();
-    void SetupRenderData(std::shared_ptr<Chunk> chunk);
+	virtual void OnAttach() override;
+	virtual void OnDetach() override;
+	virtual void OnEvent(GLCore::Event& event) override;
+	virtual void OnUpdate(GLCore::Timestep ts) override;
+	virtual void OnImGuiRender() override;
 
 private:
-    GLCore::Utils::PerspectiveCameraController m_CameraController;
-    GLCore::Utils::Shader *m_Shader;
+	void CheckChunkRenderQueue();
+	void SetupRenderData(std::shared_ptr<Chunk> chunk);
+
+private:
+	GLCore::Utils::PerspectiveCameraController m_CameraController;
+	GLCore::Utils::Shader* m_Shader;
 
 
-    World m_World;
-    std::unordered_map<Position2D, ChunkRenderMetadata> m_RenderMetadata;
+	World m_World;
+	std::unordered_map<Position2D, ChunkRenderMetadata> m_RenderMetadata;
 
-    //TEMP
-    GLCore::Utils::TextureManager m_TextureManager;
-    GLCore::Utils::Texture m_TextureAtlas;
+	//TEMP
+	GLCore::Utils::TextureManager m_TextureManager;
+	GLCore::Utils::Texture m_TextureAtlas;
 };
-}; // namespace Terrain
+
+};

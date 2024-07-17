@@ -5,18 +5,20 @@ using namespace GLCore;
 
 namespace VoxelEngine
 {
-    class VoxelEngine : public Application
-    {
-    public:
-        VoxelEngine() : Application("Voxel Engine")
-        {
-            PushLayer(new VoxelLayer());
-        }
-    };
+
+class VoxelEngine : public Application
+{
+public:
+	VoxelEngine() : Application("Voxel Engine")
+	{
+		PushLayer(new VoxelLayer());
+	}
+};
+
 }
 
 int main()
 {
-    VoxelEngine::VoxelEngine app;
-    app.Run();
+	VoxelEngine::VoxelEngine app;
+	app.Run();
 }
