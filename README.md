@@ -8,4 +8,4 @@ A custom voxel engine that's in the making.
 git clone --recursive https://github.com/Radule614/voxel-engine
 ```
 
-Run `scripts/Win-Premake.bat` and open `VoxelEngine.sln` in Visual Studio.
+Run `premake5 vs2022` and open `VoxelEngine.sln` in Visual Studio.
