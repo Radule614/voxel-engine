@@ -47,12 +47,35 @@ void Chunk::Generate()
 		}
 	}
 
-	//TODO: generate random locations for structures
+	int32_t i = 0;
 	std::vector<Structure> structures{};
-	structures.push_back(Tree(Position3D(3, heightMap[3][3], 3)));
-	structures.push_back(Tree(Position3D(CHUNK_WIDTH - 4, heightMap[CHUNK_WIDTH - 4][CHUNK_WIDTH - 4], CHUNK_WIDTH - 4)));
-	structures.push_back(Tree(Position3D(3, heightMap[3][CHUNK_WIDTH - 4], CHUNK_WIDTH - 4)));
-	structures.push_back(Tree(Position3D(CHUNK_WIDTH - 4, heightMap[CHUNK_WIDTH - 4][3], 3)));
+	double_t treeChance = m_Perlin.octave2D_01((double_t)m_Position.x + i, (double_t)m_Position.y + i, 2);
+	while (treeChance > 0.55 && structures.size() < 2)
+	{
+		int32_t random = m_Perlin.octave2D_01((double_t)m_Position.x + i, (double_t)m_Position.y + i, 2) * CHUNK_WIDTH * CHUNK_WIDTH;
+		size_t x = random / CHUNK_WIDTH;
+		size_t z = random % CHUNK_WIDTH;
+		++i;
+		if (!InRange(x, 0, CHUNK_WIDTH - 1) || !InRange(z, 0, CHUNK_WIDTH - 1))
+			continue;
+		bool isValid = true;
+		for (auto& s : structures)
+		{
+			Position2D p(s.GetRoot().GetPosition().x - x, s.GetRoot().GetPosition().z - z);
+			if (p.GetLength() < s.GetRadius())
+			{
+				isValid = false;
+				break;
+			}
+		}
+		if (isValid)
+		{
+			if (treeChance > 0.7)
+				structures.push_back(LargeTree(Position3D(x, heightMap[x][z], z)));
+			else
+				structures.push_back(Tree(Position3D(x, heightMap[x][z], z)));
+		}
+	}
 	AddStructures(structures);
 }
 
@@ -269,10 +292,9 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
 	if (density >= 0)
 	{
 		type = VoxelType::STONE;
-
 		if (y > snowThreshold)
 		{
-			if(y == snowThreshold + 1)
+			if (y == snowThreshold + 1)
 				type = DIRT_SNOW;
 			else
 				type = SNOW;
