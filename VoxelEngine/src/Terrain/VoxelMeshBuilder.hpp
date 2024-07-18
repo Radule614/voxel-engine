@@ -9,6 +9,7 @@
 
 namespace VoxelEngine
 {
+
 class VoxelMeshBuilder
 {
 public:

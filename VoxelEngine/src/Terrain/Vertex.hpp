@@ -4,6 +4,7 @@
 
 namespace VoxelEngine
 {
+
 struct Vertex
 {
 	glm::vec3 Position;

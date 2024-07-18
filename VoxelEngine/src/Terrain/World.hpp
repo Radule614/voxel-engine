@@ -14,6 +14,7 @@
 
 namespace VoxelEngine
 {
+
 class World
 {
 public:

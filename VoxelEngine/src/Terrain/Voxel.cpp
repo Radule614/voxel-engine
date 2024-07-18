@@ -4,6 +4,7 @@
 
 namespace VoxelEngine
 {
+
 Voxel::Voxel() : Voxel(VoxelType::AIR, Position3D())
 {
 }

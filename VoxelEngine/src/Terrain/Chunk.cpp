@@ -10,6 +10,7 @@
 
 namespace VoxelEngine
 {
+
 Chunk::Chunk(World& world, const siv::PerlinNoise& perlin) : Chunk(world, Position2D(), perlin)
 {
 }
@@ -30,7 +31,6 @@ Chunk::~Chunk()
 void Chunk::Generate()
 {
 	size_t heightMap[CHUNK_WIDTH][CHUNK_WIDTH]{};
-
 	for (size_t x = 0; x < CHUNK_WIDTH; ++x)
 	{
 		for (size_t z = 0; z < CHUNK_WIDTH; ++z)
@@ -47,19 +47,63 @@ void Chunk::Generate()
 		}
 	}
 
-	Position3D p(CHUNK_WIDTH / 2, heightMap[CHUNK_WIDTH / 2][CHUNK_WIDTH / 2] + 1, CHUNK_WIDTH / 2);
-	Tree tree(p);
-	m_VoxelGrid[p.x][p.z][p.y].SetVoxelType(tree.GetRoot().GetVoxelType());
-	for (auto& v : tree.GetVoxels())
+	//TODO: generate random locations for structures
+	std::vector<Structure> structures{};
+	structures.push_back(Tree(Position3D(3, heightMap[3][3], 3)));
+	structures.push_back(Tree(Position3D(CHUNK_WIDTH - 4, heightMap[CHUNK_WIDTH - 4][CHUNK_WIDTH - 4], CHUNK_WIDTH - 4)));
+	structures.push_back(Tree(Position3D(3, heightMap[3][CHUNK_WIDTH - 4], CHUNK_WIDTH - 4)));
+	structures.push_back(Tree(Position3D(CHUNK_WIDTH - 4, heightMap[CHUNK_WIDTH - 4][3], 3)));
+	AddStructures(structures);
+}
+
+void Chunk::AddStructures(std::vector<Structure> structures)
+{
+	std::unordered_set<std::shared_ptr<Chunk>> changedChunks{};
+	auto& defferedQueueMap = m_World.GetDefferedChunkQueue();
+	for (auto& s : structures)
 	{
-		auto pair = GetPositionRelativeToWorld(tree.GetRoot().GetPosition() + v.GetPosition());
-		if (pair.first == m_Position)
+		Position3D p = s.GetRoot().GetPosition();
+		if (m_VoxelGrid[p.x][p.z][p.y - 1].GetVoxelType() == VoxelType::AIR)
+			continue;
+		m_VoxelGrid[p.x][p.z][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
+		m_VoxelGrid[p.x][p.z][p.y].SetPosition(p);
+		for (auto& v : s.GetVoxels())
 		{
-			Position3D& t = pair.second;
-			LOG_INFO(t.ToString());
-			m_VoxelGrid[t.x][t.z][t.y].SetVoxelType(v.GetVoxelType());
+			auto pair = GetPositionRelativeToWorld(p + v.GetPosition());
+			Position3D t = pair.second;
+			if (pair.first == m_Position)
+			{
+				m_VoxelGrid[t.x][t.z][t.y].SetVoxelType(v.GetVoxelType());
+				m_VoxelGrid[t.x][t.z][t.y].SetPosition(t);
+				continue;
+			}
+			if (m_World.GetChunkMap().find(pair.first) != m_World.GetChunkMap().end())
+			{
+				auto& chunk = m_World.GetChunkMap().at(pair.first);
+				chunk->GetLock().lock();
+				auto& voxelGrid = chunk->GetVoxelGrid();
+				voxelGrid[t.x][t.z][t.y].SetVoxelType(v.GetVoxelType());
+				voxelGrid[t.x][t.z][t.y].SetPosition(t);
+				changedChunks.insert(chunk);
+				chunk->GetLock().unlock();
+				continue;
+			}
+			//TODO: check if this needs to be locked
+			//m_World.GetLock().lock();
+			defferedQueueMap[pair.first].push(Voxel(v.GetVoxelType(), t));
+			//m_World.GetLock().unlock();
 		}
 	}
+	m_World.GetLock().lock();
+	for (auto& c : changedChunks)
+	{
+		//TODO: check if this needs to be locked
+		//c->GetLock().lock();
+		c->GenerateMesh();
+		m_World.GetChangedChunks().insert(c);
+		//c->GetLock().unlock();
+	}
+	m_World.GetLock().unlock();
 }
 
 void Chunk::GenerateMesh()

@@ -7,6 +7,7 @@
 
 namespace VoxelEngine
 {
+
 enum VoxelType
 {
 	AIR = 0,

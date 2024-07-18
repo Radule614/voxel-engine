@@ -2,6 +2,7 @@
 
 namespace VoxelEngine
 {
+
 bool VoxelMeshBuilder::s_Initialized = false;
 std::vector<glm::vec2> VoxelMeshBuilder::s_TextureCoordinates = { glm::vec2(0.0f, 0.0f),
 																 glm::vec2(0.0f, 1.0f),

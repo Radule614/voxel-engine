@@ -6,6 +6,7 @@
 
 namespace VoxelEngine
 {
+
 struct Position3D
 {
 	int32_t x;

@@ -13,9 +13,11 @@
 #include "Position2D.hpp"
 #include "Position3D.hpp"
 #include "../Macros.hpp"
+#include "Structure.hpp"
 
 namespace VoxelEngine
 {
+
 class World;
 using VoxelGrid = Voxel[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
 
@@ -51,6 +53,7 @@ private:
 	void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f);
 	void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2);
 	void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h);
+	void AddStructures(std::vector<Structure> structures);
 
 private:
 	World& m_World;

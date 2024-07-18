@@ -10,6 +10,7 @@ using namespace GLCore::Utils;
 
 namespace VoxelEngine
 {
+
 VoxelLayer::VoxelLayer()
 	: m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)),
 	m_TextureManager()
@@ -120,9 +121,6 @@ void VoxelLayer::CheckChunkRenderQueue()
 
 void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
 {
-	// glm::vec3 p = chunk->GetPosition();
-	// LOG_INFO(std::to_string(p.x) + ", " + std::to_string(p.y) + ", " + std::to_string(p.z));
-
 	ChunkRenderMetadata metadata = {};
 	auto renderData = m_RenderMetadata.find(chunk->GetPosition());
 	if (renderData != m_RenderMetadata.end())

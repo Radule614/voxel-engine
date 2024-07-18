@@ -5,6 +5,7 @@
 
 namespace VoxelEngine
 {
+
 World::World(GLCore::Utils::PerspectiveCameraController& cameraController)
 	: m_ChunkMap({}), m_ChangedChunks(), m_DeferredChunkQueueMap(), m_ShouldGenerationRun(std::make_shared<bool>(false)), m_Mutex(std::mutex()),
 	m_CameraController(cameraController), m_Perlin(6512u)
@@ -115,13 +116,15 @@ void World::GenerateChunk(Position2D position)
 	auto deferredQueueMap = m_DeferredChunkQueueMap.find(position);
 	if (deferredQueueMap != m_DeferredChunkQueueMap.end())
 	{
-		auto& defferedQueue = deferredQueueMap->second;
 		m_Mutex.lock();
+		auto& defferedQueue = deferredQueueMap->second;
 		while (!defferedQueue.empty())
 		{
 			Voxel& v = defferedQueue.front();
+			auto& voxelGrid = chunk->GetVoxelGrid();
 			const Position3D& p = v.GetPosition();
-			chunk->GetVoxelGrid()[p.x][p.z][p.y] = v;
+			voxelGrid[p.x][p.z][p.y].SetPosition(p);
+			voxelGrid[p.x][p.z][p.y].SetVoxelType(v.GetVoxelType());
 			defferedQueue.pop();
 		}
 		m_Mutex.unlock();
@@ -184,13 +187,13 @@ std::queue<Position2D> World::FindNextChunkLocations(Position2D center, size_t c
 		for (int32_t x = 0; x <= r; ++x)
 		{
 			Position2D locations[8] = { Position2D(x, -r),
-									   Position2D(x, r),
-									   Position2D(-r, x),
-									   Position2D(r, x),
-									   Position2D(-x, -r),
-									   Position2D(-x, r),
-									   Position2D(-r, -x),
-									   Position2D(r, -x) };
+										Position2D(x, r),
+										Position2D(-r, x),
+										Position2D(r, x),
+										Position2D(-x, -r),
+										Position2D(-x, r),
+										Position2D(-r, -x),
+										Position2D(r, -x) };
 			for (size_t i = 0; i < 8; ++i)
 			{
 				if (locations[i].GetLength() > maxDistance)
