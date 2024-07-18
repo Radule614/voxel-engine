@@ -30,7 +30,7 @@ void VoxelLayer::OnAttach()
 	glCullFace(GL_FRONT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl",
 		"assets/shaders/default.frag.glsl");

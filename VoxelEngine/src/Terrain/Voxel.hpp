@@ -13,8 +13,11 @@ enum VoxelType
 	AIR = 0,
 	DIRT,
 	GRASS,
+	STONE,
+	LOG,
+	LEAVES,
 	SNOW,
-	STONE
+	DIRT_SNOW
 };
 
 enum VoxelFace
@@ -44,6 +47,7 @@ public:
 	VoxelType GetVoxelType() const;
 	void SetPosition(Position3D pos);
 	Position3D GetPosition() const;
+	bool IsTransparent() const;
 
 private:
 	VoxelType m_VoxelType;

@@ -48,9 +48,9 @@ void World::CheckChunkEdges(Chunk& chunk, Chunk::Neighbours& neighbours)
 
 void World::CheckVoxelEdge(Voxel& v1, Voxel& v2, VoxelFace face)
 {
-	if (v1.GetVoxelType() != VoxelType::AIR && v2.GetVoxelType() == VoxelType::AIR)
+	if (!v1.IsTransparent() && v2.IsTransparent())
 		v1.SetFaceVisible(face, true);
-	else if (v1.GetVoxelType() == VoxelType::AIR && v2.GetVoxelType() != VoxelType::AIR)
+	else if (v1.IsTransparent() && !v2.IsTransparent())
 		v2.SetFaceVisible(Voxel::GetOpositeFace(face), true);
 }
 

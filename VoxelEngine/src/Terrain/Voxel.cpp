@@ -77,4 +77,9 @@ Position3D Voxel::GetPosition() const
 	return m_Position;
 }
 
+bool Voxel::IsTransparent() const
+{
+	return m_VoxelType == VoxelType::AIR || m_VoxelType == VoxelType::LEAVES;
+}
+
 };

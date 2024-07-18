@@ -35,10 +35,10 @@ void Chunk::Generate()
 	{
 		for (size_t z = 0; z < CHUNK_WIDTH; ++z)
 		{
-			const double_t height_bias = m_Perlin.octave2D_01(((double_t)m_Position.x * CHUNK_WIDTH + x) * 0.02,
-				((double_t)m_Position.y * CHUNK_WIDTH + z) * 0.02,
-				4);
-			size_t h = 2.0 * CHUNK_HEIGHT / 3 + glm::floor(height_bias * CHUNK_HEIGHT / 3) - 16;
+			const double_t height_bias = m_Perlin.octave2D_01(((double_t)m_Position.x * CHUNK_WIDTH + x) * 0.01,
+				((double_t)m_Position.y * CHUNK_WIDTH + z) * 0.01,
+				8);
+			size_t h = CHUNK_HEIGHT / 5 + glm::floor(height_bias * 3 * CHUNK_HEIGHT / 5);
 			heightMap[x][z] = h;
 			std::for_each(std::execution::par,
 				std::begin(m_VoxelGrid[x][z]),
@@ -63,7 +63,8 @@ void Chunk::AddStructures(std::vector<Structure> structures)
 	for (auto& s : structures)
 	{
 		Position3D p = s.GetRoot().GetPosition();
-		if (m_VoxelGrid[p.x][p.z][p.y - 1].GetVoxelType() == VoxelType::AIR)
+		VoxelType soilType = m_VoxelGrid[p.x][p.z][p.y - 1].GetVoxelType();
+		if (soilType == VoxelType::AIR || soilType == VoxelType::SNOW)
 			continue;
 		m_VoxelGrid[p.x][p.z][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
 		m_VoxelGrid[p.x][p.z][p.y].SetPosition(p);
@@ -120,19 +121,19 @@ void Chunk::GenerateMesh()
 				if (v.GetVoxelType() == VoxelType::AIR)
 					continue;
 
-				if (y != 0 && m_VoxelGrid[x][z][y - 1].GetVoxelType() == VoxelType::AIR)
+				if (y != 0 && m_VoxelGrid[x][z][y - 1].IsTransparent())
 					v.SetFaceVisible(VoxelFace::BOTTOM, true);
-				if (y == CHUNK_HEIGHT - 1 || m_VoxelGrid[x][z][y + 1].GetVoxelType() == VoxelType::AIR)
+				if (y == CHUNK_HEIGHT - 1 || m_VoxelGrid[x][z][y + 1].IsTransparent())
 					v.SetFaceVisible(VoxelFace::TOP, true);
 
-				if (z < CHUNK_WIDTH - 1 && m_VoxelGrid[x][z + 1][y].GetVoxelType() == VoxelType::AIR)
+				if (z < CHUNK_WIDTH - 1 && m_VoxelGrid[x][z + 1][y].IsTransparent())
 					v.SetFaceVisible(VoxelFace::FRONT, true);
-				if (z > 0 && m_VoxelGrid[x][z - 1][y].GetVoxelType() == VoxelType::AIR)
+				if (z > 0 && m_VoxelGrid[x][z - 1][y].IsTransparent())
 					v.SetFaceVisible(VoxelFace::BACK, true);
 
-				if (x < CHUNK_WIDTH - 1 && m_VoxelGrid[x + 1][z][y].GetVoxelType() == VoxelType::AIR)
+				if (x < CHUNK_WIDTH - 1 && m_VoxelGrid[x + 1][z][y].IsTransparent())
 					v.SetFaceVisible(VoxelFace::RIGHT, true);
-				if (x > 0 && m_VoxelGrid[x - 1][z][y].GetVoxelType() == VoxelType::AIR)
+				if (x > 0 && m_VoxelGrid[x - 1][z][y].IsTransparent())
 					v.SetFaceVisible(VoxelFace::LEFT, true);
 
 				if (x == 0 || z == 0 || x == CHUNK_WIDTH - 1 || z == CHUNK_WIDTH - 1)
@@ -255,23 +256,37 @@ void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, V
 
 void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
 {
-	size_t y = &v - &m_VoxelGrid[x][z][0];
+	int32_t y = &v - &m_VoxelGrid[x][z][0];
 	if (y >= h)
 		return;
+	int32_t snowThreshold = 3 * CHUNK_HEIGHT / 5;
 	double_t density = m_Perlin.octave3D(((double_t)m_Position.x * CHUNK_WIDTH + x) * 0.02,
 		((double_t)m_Position.y * CHUNK_WIDTH + z) * 0.02,
 		y * 0.02,
-		5);
+		4);
 	VoxelType type = VoxelType::AIR;
-	density += (1.0 / CHUNK_HEIGHT) * (CHUNK_HEIGHT - h / 1.1);
-	if (density >= 0 || y == 0)
+	density += 1 - (double_t)(y + h / 4) / CHUNK_HEIGHT;
+	if (density >= 0)
+	{
 		type = VoxelType::STONE;
 
-	if (density >= 0 && y > h - 3)
-		type = VoxelType::DIRT;
-	if (density >= 0 && y == h - 1)
-		type = VoxelType::GRASS;
-
+		if (y > snowThreshold)
+		{
+			if(y == snowThreshold + 1)
+				type = DIRT_SNOW;
+			else
+				type = SNOW;
+		}
+		else
+		{
+			if (y > h - 5)
+				type = VoxelType::DIRT;
+			if (y == h - 1)
+				type = VoxelType::GRASS;
+		}
+	}
+	if (y == 0)
+		type = VoxelType::STONE;
 	v.SetPosition(Position3D(x, y, z));
 	v.SetVoxelType(type);
 	++y;

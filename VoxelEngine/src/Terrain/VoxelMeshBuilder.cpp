@@ -52,9 +52,14 @@ void VoxelMeshBuilder::Init()
 	s_NormalMap.insert({ VoxelFace::BACK, glm::vec3(0.0f, 0.0f, -1.0f) });
 	s_NormalMap.insert({ VoxelFace::LEFT, glm::vec3(-1.0f, 0.0f, 0.0f) });
 
+	//TOP BOTTOM LEFT
 	s_FaceTextureMap.insert({ VoxelType::STONE, {0, 0, 0, 0, 0, 0} });
 	s_FaceTextureMap.insert({ VoxelType::DIRT, {1, 0, 1, 0, 1, 0} });
 	s_FaceTextureMap.insert({ VoxelType::GRASS, {3, 0, 1, 0, 2, 0} });
+	s_FaceTextureMap.insert({ VoxelType::LOG, {5, 0, 5, 0, 4, 0} });
+	s_FaceTextureMap.insert({ VoxelType::LEAVES, {6, 0, 6, 0, 6, 0} });
+	s_FaceTextureMap.insert({ VoxelType::SNOW, {8, 0, 8, 0, 8, 0} });
+	s_FaceTextureMap.insert({ VoxelType::DIRT_SNOW, {8, 0, 1, 0, 7, 0} });
 }
 
 VoxelMeshBuilder::VoxelMeshBuilder()

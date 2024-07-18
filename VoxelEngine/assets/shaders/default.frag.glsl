@@ -12,6 +12,8 @@ uniform sampler2D u_Atlas;
 
 void main() {
     vec4 texColor = texture(u_Atlas, i_Fragment.FragTexCoords);
+    if (texColor.a < 0.1)
+        discard;
 
     vec3 lightColor = vec3(1);
     vec3 lightDir = normalize(vec3(1, 1.7, 1));
