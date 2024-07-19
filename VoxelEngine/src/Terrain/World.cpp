@@ -123,8 +123,8 @@ void World::GenerateChunk(Position2D position)
 			Voxel& v = defferedQueue.front();
 			auto& voxelGrid = chunk->GetVoxelGrid();
 			const Position3D& p = v.GetPosition();
-			voxelGrid[p.x][p.z][p.y].SetPosition(p);
-			voxelGrid[p.x][p.z][p.y].SetVoxelType(v.GetVoxelType());
+			voxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
+			voxelGrid[p.GetX()][p.GetZ()][p.y].SetVoxelType(v.GetVoxelType());
 			defferedQueue.pop();
 		}
 		m_Mutex.unlock();

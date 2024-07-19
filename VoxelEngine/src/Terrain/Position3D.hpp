@@ -9,54 +9,59 @@ namespace VoxelEngine
 
 struct Position3D
 {
-	int32_t x;
-	int32_t y;
-	int32_t z;
+	uint8_t xz; // 4 bits for x and 4 bits for z
+	uint8_t y;
 
-	Position3D() : x(0), y(0), z(0)
+	Position3D() : xz(0), y(0)
 	{
 	}
 
-	Position3D(int32_t x, int32_t y, int32_t z) : x(x), y(y), z(z)
+	Position3D(uint8_t x, uint8_t y, uint8_t z) : xz((x & 0xF) | ((z & 0xF) << 4)), y(y)
 	{
 	}
 
-	bool operator<(const Position3D& pos) const noexcept
+	uint8_t GetX() const
 	{
-		if (y != pos.y)
-			return y < pos.y;
-		if (z != pos.z)
-			return z < pos.z;
-		return x < pos.x;
+		return xz & 0xF;
 	}
 
-	bool operator==(const Position3D& pos) const noexcept
+	uint8_t GetZ() const
 	{
-		return x == pos.x && y == pos.y;
+		return (xz >> 4) & 0xF;
+	}
+
+	void SetX(uint8_t x)
+	{
+		xz = (xz & 0xF0) | (x & 0xF);
+	}
+
+	void SetZ(uint8_t z)
+	{
+		xz = (xz & 0x0F) | ((z & 0xF) << 4);
 	}
 
 	Position3D operator+(Position3D const& other)
 	{
 		Position3D res;
-		res.x = x + other.x;
+		res.SetX(GetX() + other.GetX());
 		res.y = y + other.y;
-		res.z = z + other.z;
+		res.SetZ(GetZ() + other.GetZ());
 		return res;
 	}
 
 	inline double_t GetLength() const
 	{
-		return glm::sqrt(glm::pow(x, 2) + glm::pow(y, 2) + glm::pow(z, 2));
+		return glm::sqrt(glm::pow(GetX(), 2) + glm::pow(y, 2) + glm::pow(GetZ(), 2));
 	}
 
 	operator glm::vec3() const
 	{
-		return glm::vec3(x, y, z);
+		return glm::vec3(GetX(), y, GetZ());
 	}
 
 	std::string ToString() const
 	{
-		return "(" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ")";
+		return "(" + std::to_string(GetX()) + ", " + std::to_string(y) + ", " + std::to_string(GetZ()) + ")";
 	}
 };
 
@@ -70,7 +75,7 @@ struct std::hash<Position3D>
 {
 	std::size_t operator()(const Position3D& p) const
 	{
-		return Cantor(p.x, Cantor(p.y, p.z));
+		return Cantor(p.GetX(), Cantor(p.y, p.GetZ()));
 	}
 };
 };

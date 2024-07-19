@@ -61,7 +61,7 @@ void Chunk::Generate()
 		bool isValid = true;
 		for (auto& s : structures)
 		{
-			Position2D p(s.GetRoot().GetPosition().x - x, s.GetRoot().GetPosition().z - z);
+			Position2D p(s.GetRoot().GetPosition().GetX() - x, s.GetRoot().GetPosition().GetZ() - z);
 			if (p.GetLength() < s.GetRadius())
 			{
 				isValid = false;
@@ -86,19 +86,19 @@ void Chunk::AddStructures(std::vector<Structure> structures)
 	for (auto& s : structures)
 	{
 		Position3D p = s.GetRoot().GetPosition();
-		VoxelType soilType = m_VoxelGrid[p.x][p.z][p.y - 1].GetVoxelType();
+		VoxelType soilType = m_VoxelGrid[p.GetX()][p.GetZ()][p.y - 1].GetVoxelType();
 		if (soilType == VoxelType::AIR || soilType == VoxelType::SNOW)
 			continue;
-		m_VoxelGrid[p.x][p.z][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
-		m_VoxelGrid[p.x][p.z][p.y].SetPosition(p);
+		m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
+		m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
 		for (auto& v : s.GetVoxels())
 		{
 			auto pair = GetPositionRelativeToWorld(p + v.GetPosition());
 			Position3D t = pair.second;
 			if (pair.first == m_Position)
 			{
-				m_VoxelGrid[t.x][t.z][t.y].SetVoxelType(v.GetVoxelType());
-				m_VoxelGrid[t.x][t.z][t.y].SetPosition(t);
+				m_VoxelGrid[t.GetX()][t.GetZ()][t.y].SetVoxelType(v.GetVoxelType());
+				m_VoxelGrid[t.GetX()][t.GetZ()][t.y].SetPosition(t);
 				continue;
 			}
 			if (m_World.GetChunkMap().find(pair.first) != m_World.GetChunkMap().end())
@@ -106,26 +106,23 @@ void Chunk::AddStructures(std::vector<Structure> structures)
 				auto& chunk = m_World.GetChunkMap().at(pair.first);
 				chunk->GetLock().lock();
 				auto& voxelGrid = chunk->GetVoxelGrid();
-				voxelGrid[t.x][t.z][t.y].SetVoxelType(v.GetVoxelType());
-				voxelGrid[t.x][t.z][t.y].SetPosition(t);
+				voxelGrid[t.GetX()][t.GetZ()][t.y].SetVoxelType(v.GetVoxelType());
+				voxelGrid[t.GetX()][t.GetZ()][t.y].SetPosition(t);
 				changedChunks.insert(chunk);
 				chunk->GetLock().unlock();
 				continue;
 			}
-			//TODO: check if this needs to be locked
-			//m_World.GetLock().lock();
 			defferedQueueMap[pair.first].push(Voxel(v.GetVoxelType(), t));
-			//m_World.GetLock().unlock();
 		}
 	}
 	m_World.GetLock().lock();
 	for (auto& c : changedChunks)
 	{
 		//TODO: check if this needs to be locked
-		//c->GetLock().lock();
+		c->GetLock().lock();
 		c->GenerateMesh();
 		m_World.GetChangedChunks().insert(c);
-		//c->GetLock().unlock();
+		c->GetLock().unlock();
 	}
 	m_World.GetLock().unlock();
 }
@@ -197,10 +194,10 @@ void Chunk::GenerateEdgeMesh(VoxelFace face)
 	}
 }
 
-std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(Position3D pos) const
+std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(glm::vec3 pos) const
 {
 	if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
-		return { m_Position, pos };
+		return { m_Position, Position3D(pos.x, pos.y, pos.z) };
 	Position2D chunkPos = m_Position;
 	while (pos.x < 0)
 	{
@@ -222,7 +219,7 @@ std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(Position3D p
 		pos.z -= CHUNK_WIDTH;
 		++chunkPos.y;
 	}
-	return { chunkPos, pos };
+	return { chunkPos, Position3D(pos.x, pos.y, pos.z) };
 }
 
 void Chunk::DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& v, size_t x, size_t z)

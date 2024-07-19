@@ -50,9 +50,9 @@ public:
 	bool IsTransparent() const;
 
 private:
-	VoxelType m_VoxelType;
-	bool m_VisibleFaces[6];
 	Position3D m_Position;
+	uint8_t m_VoxelType;
+	uint8_t m_VisibleFaces;
 };
 
 };

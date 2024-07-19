@@ -8,14 +8,14 @@ namespace VoxelEngine
 
 struct Position2D
 {
-	int32_t x;
-	int32_t y;
+	int16_t x;
+	int16_t y;
 
 	Position2D() : x(0), y(0)
 	{
 	}
 
-	Position2D(int32_t x, int32_t y) : x(x), y(y)
+	Position2D(int16_t x, int16_t y) : x(x), y(y)
 	{
 	}
 

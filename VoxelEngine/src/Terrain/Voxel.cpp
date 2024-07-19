@@ -17,24 +17,26 @@ Voxel::Voxel(VoxelType type) : Voxel(type, Position3D())
 {
 }
 
-Voxel::Voxel(VoxelType type, Position3D position) : m_VoxelType(type), m_Position(position), m_VisibleFaces{ false }
+Voxel::Voxel(VoxelType type, Position3D position) : m_VoxelType(type), m_Position(position), m_VisibleFaces(0)
 {
 }
 
 void Voxel::SetFaceVisible(VoxelFace face, bool visible)
 {
-	m_VisibleFaces[face] = visible;
+	if (visible)
+		m_VisibleFaces |= (1 << static_cast<uint8_t>(face));
+	else
+		m_VisibleFaces &= ~(1 << static_cast<uint8_t>(face));
 }
 
 bool Voxel::IsFaceVisible(VoxelFace face) const
 {
-	return m_VisibleFaces[face];
+	return m_VisibleFaces & (1 << static_cast<uint8_t>(face));
 }
 
 void Voxel::SetAllFacesVisible(bool visible)
 {
-	for (size_t i = 0; i < 6; i++)
-		m_VisibleFaces[i] = visible;
+	m_VisibleFaces = visible ? 0x3F : 0;
 }
 
 VoxelFace Voxel::GetOpositeFace(VoxelFace face)
@@ -64,7 +66,7 @@ void Voxel::SetVoxelType(VoxelType type)
 
 VoxelType Voxel::GetVoxelType() const
 {
-	return m_VoxelType;
+	return (VoxelType)m_VoxelType;
 }
 
 void Voxel::SetPosition(Position3D pos)
