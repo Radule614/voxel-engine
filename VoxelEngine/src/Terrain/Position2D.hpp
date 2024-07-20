@@ -44,9 +44,9 @@ struct Position2D
 		return glm::sqrt(glm::pow(x, 2) + glm::pow(y, 2));
 	}
 
-	operator glm::vec2() const
+	operator glm::i16vec2() const
 	{
-		return glm::vec2(x, y);
+		return glm::i16vec2(x, y);
 	}
 
 	std::string ToString() const

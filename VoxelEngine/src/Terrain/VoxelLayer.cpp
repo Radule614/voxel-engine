@@ -11,9 +11,8 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-VoxelLayer::VoxelLayer()
-	: m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)),
-	m_TextureManager()
+VoxelLayer::VoxelLayer(const EngineState& state)
+	: Layer("VoxelLayer"), m_State(state), m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)), m_TextureManager()
 {
 	m_CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
 }
@@ -32,8 +31,7 @@ void VoxelLayer::OnAttach()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl",
-		"assets/shaders/default.frag.glsl");
+	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
 	m_TextureAtlas = m_TextureManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
 
 	m_World.StartGeneration();
@@ -41,7 +39,7 @@ void VoxelLayer::OnAttach()
 
 void VoxelLayer::OnDetach()
 {
-	m_World.StartGeneration();
+	m_World.StopGeneration();
 	for (auto it = m_RenderMetadata.begin(); it != m_RenderMetadata.end(); ++it)
 	{
 		ChunkRenderMetadata& metadata = it->second;
@@ -56,14 +54,22 @@ void VoxelLayer::OnDetach()
 
 void VoxelLayer::OnEvent(GLCore::Event& event)
 {
-	m_CameraController.OnEvent(event);
-	if (event.GetEventType() == EventType::WindowClose)
-		m_World.StopGeneration();
+	if (!m_State.MenuActive)
+		m_CameraController.OnEvent(event);
+
+	EventDispatcher dispatcher(event);
+	dispatcher.Dispatch<WindowCloseEvent>(
+		[&](WindowCloseEvent& e)
+		{
+			m_World.StopGeneration();
+			return true;
+		});
 }
 
 void VoxelLayer::OnUpdate(Timestep ts)
 {
-	m_CameraController.OnUpdate(ts);
+	if (!m_State.MenuActive)
+		m_CameraController.OnUpdate(ts);
 
 	glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

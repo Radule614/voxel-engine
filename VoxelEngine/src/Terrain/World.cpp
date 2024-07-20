@@ -14,6 +14,7 @@ World::World(GLCore::Utils::PerspectiveCameraController& cameraController)
 
 World::~World()
 {
+	StopGeneration();
 }
 
 void World::StartGeneration()

@@ -7,5 +7,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "glm/gtx/hash.hpp"
+#include <imgui.h>
 
 #include "GLCore/Core/Application.hpp"
