@@ -89,7 +89,7 @@ void World::GenerateWorld()
 	while (*m_ShouldGenerationRun)
 	{
 		Position2D center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());
-		std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, THREADS);
+		std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, TerrainConfig::ThreadCount);
 		std::vector<std::thread> threads = {};
 
 		while (!chunkLocations.empty())

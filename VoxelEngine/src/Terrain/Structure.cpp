@@ -1,5 +1,4 @@
 #include "Structure.hpp"
-#include "../Macros.hpp"
 
 namespace VoxelEngine
 {

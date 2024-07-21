@@ -36,10 +36,16 @@ public:
 
 	inline void CaptureMouse(bool enabled) override
 	{
+		glfwSetCursorPos(m_Window, m_Data.Width / 2.0, m_Data.Height / 2.0);
 		if (enabled)
 			glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		else
 			glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
+
+	inline void RaiseStateEvent(StateEvent& event) override
+	{
+		m_Data.EventCallback(event);
 	}
 
 	void SetVSync(bool enabled) override;

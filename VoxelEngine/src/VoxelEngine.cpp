@@ -12,8 +12,8 @@ class VoxelEngine : public Application
 public:
 	VoxelEngine() : Application("Voxel Engine")
 	{
-		PushLayer(new VoxelLayer(m_State));
 		PushOverlay(new UserInterface(m_State, *this));
+		PushLayer(new VoxelLayer(m_State));
 	}
 private:
 	EngineState m_State;

@@ -6,6 +6,7 @@
 #include "../Events/Event.hpp"
 #include "../Events/ApplicationEvent.hpp"
 #include "../Events/KeyEvent.hpp"
+#include "../Events/StateEvent.hpp"
 #include "Timestep.hpp"
 #include "../ImGui/ImGuiLayer.hpp"
 #include "KeyCodes.hpp"
@@ -35,6 +36,11 @@ public:
 	inline void Stop()
 	{
 		m_Running = false;
+	}
+
+	inline void RaiseStateEvent(StateEvent& event)
+	{
+		return m_Window->RaiseStateEvent(event);
 	}
 
 private:

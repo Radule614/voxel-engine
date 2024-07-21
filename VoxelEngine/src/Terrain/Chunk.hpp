@@ -12,8 +12,8 @@
 #include "VoxelMeshBuilder.hpp"
 #include "Position2D.hpp"
 #include "Position3D.hpp"
-#include "../Macros.hpp"
 #include "Structure.hpp"
+#include "TerrainConfig.hpp"
 
 namespace VoxelEngine
 {
