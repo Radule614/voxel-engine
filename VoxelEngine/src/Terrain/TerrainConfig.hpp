@@ -3,7 +3,7 @@
 #include <glad/glad.h>
 
 #define CHUNK_WIDTH 16
-#define CHUNK_HEIGHT 256
+#define CHUNK_HEIGHT 16
 
 namespace VoxelEngine
 {

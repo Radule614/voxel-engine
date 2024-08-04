@@ -4,9 +4,13 @@
 
 #include "Vertex.hpp"
 #include "World.hpp"
+#include "../Physics/PhysicsEngine.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
+using namespace JPH;
+using namespace JPH::literals;
+
 
 namespace VoxelEngine
 {
@@ -48,6 +52,7 @@ void VoxelLayer::OnDetach()
 		metadata.Indices.clear();
 	}
 	m_RenderMetadata.clear();
+	delete m_Shader;
 }
 
 void VoxelLayer::OnEvent(GLCore::Event& event)
@@ -157,6 +162,49 @@ void VoxelLayer::CheckChunkRenderQueue()
 		}
 		SetupRenderData(chunk);
 		it = chunks.erase(it);
+
+		//Temporary physics check
+		LOG_INFO(chunk->GetPosition().ToString());
+		
+		PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
+		BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+
+		/*
+		BodyCreationSettings boxSettings(new BoxShape(Vec3(0.5f, 0.5f, 0.5f)), Vec3(0, 0, 0), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+		VoxelGrid& grid = chunk->GetVoxelGrid();
+		for (size_t x = 0; x < CHUNK_WIDTH; ++x)
+		{
+			for (size_t z = 0; z < CHUNK_WIDTH; ++z)
+			{
+				for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
+				{
+					Voxel& v = grid[x][z][y];
+					Vec3 p = Vec3(x, y, z);
+					BodyID voxelId = bodyInterface.CreateAndAddBody(boxSettings, EActivation::DontActivate);
+					bodyInterface.SetPosition(voxelId, p, EActivation::DontActivate);
+					LOG_INFO("({0}, {1}, {2})", p.GetX(), p.GetY(), p.GetZ());
+				}
+			}
+		}
+		*/
+		
+		BoxShapeSettings floor_shape_settings(Vec3(100.0f, 1.0f, 100.0f));
+		floor_shape_settings.SetEmbedded();
+		ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
+		ShapeRefC floor_shape = floor_shape_result.Get();
+		BodyCreationSettings floor_settings(floor_shape, RVec3(0.0_r, -1.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+		Body* floor = bodyInterface.CreateBody(floor_settings);
+		bodyInterface.AddBody(floor->GetID(), EActivation::DontActivate);
+
+
+		BodyCreationSettings sphere_settings(new SphereShape(0.5f), RVec3(0.0_r, 2.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+		BodyID sphere_id = bodyInterface.CreateAndAddBody(sphere_settings, EActivation::Activate);
+		bodyInterface.SetLinearVelocity(sphere_id, Vec3(0.0f, -5.0f, 0.0f));
+
+		physicsSystem.OptimizeBroadPhase();
+
+		//Temporary end
+
 		chunkLock.unlock();
 	}
 	worldLock.unlock();

@@ -86,7 +86,7 @@ Chunk::Neighbours World::GetNeighbours(Chunk& chunk)
 
 void World::GenerateWorld()
 {
-	while (*m_ShouldGenerationRun)
+	while (*m_ShouldGenerationRun && m_ChunkMap.size() < 1)
 	{
 		Position2D center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());
 		std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, TerrainConfig::ThreadCount);

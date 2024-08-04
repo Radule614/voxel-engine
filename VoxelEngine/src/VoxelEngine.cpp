@@ -1,20 +1,31 @@
 #include "GLCore.hpp"
 #include "Terrain/VoxelLayer.hpp"
 #include "UserInterface.hpp"
+#include "Physics/PhysicsLayer.hpp"
+#include "Physics/PhysicsEngine.hpp"
 
 using namespace GLCore;
 
 namespace VoxelEngine
 {
 
-class VoxelEngine : public Application
+class VoxelEngineApp : public Application
 {
 public:
-	VoxelEngine() : Application("Voxel Engine")
+	VoxelEngineApp() : Application("Voxel Engine")
 	{
-		PushOverlay(new UserInterface(m_State, *this));
+		VoxelEngine::PhysicsEngine::Init();
+
+		PushLayer(new PhysicsLayer(m_State));
 		PushLayer(new VoxelLayer(m_State));
+		PushOverlay(new UserInterface(m_State, *this));
 	}
+
+	~VoxelEngineApp()
+	{
+		VoxelEngine::PhysicsEngine::Shutdown();
+	}
+
 private:
 	EngineState m_State;
 };
@@ -22,6 +33,6 @@ private:
 
 int main()
 {
-	VoxelEngine::VoxelEngine app;
+	VoxelEngine::VoxelEngineApp app;
 	app.Run();
 }
