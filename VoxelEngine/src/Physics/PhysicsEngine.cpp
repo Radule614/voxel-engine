@@ -163,6 +163,8 @@ void PhysicsEngine::Shutdown()
 }
 
 PhysicsEngine::PhysicsEngine() :
+	m_AccumulatedTime(0.0),
+	m_FixedTimestep(1.0 / 60.0),
 	m_BroadPhaseLayerInterface(std::make_unique<BPLayerInterfaceImpl>()),
 	m_ObjectVsBroadPhaseLayerFilter(std::make_unique<ObjectVsBroadPhaseLayerFilterImpl>()),
 	m_ObjectVsObjectLayerFilter(std::make_unique<ObjectLayerPairFilterImpl>()),
@@ -200,7 +202,7 @@ PhysicsEngine::PhysicsEngine() :
 
 	// This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.
 	// Note: This value is low because this is a simple test. For a real project use something in the order of 65536.
-	const uint cMaxBodies = 1024;
+	const uint cMaxBodies = 65536;
 
 	// This determines how many mutexes to allocate to protect rigid bodies from concurrent access. Set it to 0 for the default settings.
 	const uint cNumBodyMutexes = 0;
@@ -209,12 +211,12 @@ PhysicsEngine::PhysicsEngine() :
 	// body pairs based on their bounding boxes and will insert them into a queue for the narrowphase). If you make this buffer
 	// too small the queue will fill up and the broad phase jobs will start to do narrow phase work. This is slightly less efficient.
 	// Note: This value is low because this is a simple test. For a real project use something in the order of 65536.
-	const uint cMaxBodyPairs = 1024;
+	const uint cMaxBodyPairs = 65536;
 
 	// This is the maximum size of the contact constraint buffer. If more contacts (collisions between bodies) are detected than this
 	// number then these contacts will be ignored and bodies will start interpenetrating / fall through the world.
 	// Note: This value is low because this is a simple test. For a real project use something in the order of 10240.
-	const uint cMaxContactConstraints = 1024;
+	const uint cMaxContactConstraints = 10240;
 
 	// Now we can create the actual physics system.
 	m_PhysicsSystem = std::make_unique<PhysicsSystem>();
@@ -235,8 +237,13 @@ PhysicsEngine::~PhysicsEngine()
 
 void PhysicsEngine::OnUpdate(GLCore::Timestep ts)
 {
+	m_AccumulatedTime += ts;
 	const int cCollisionSteps = 1;
-	m_PhysicsSystem->Update(1.0f / 60.0f, cCollisionSteps, m_TempAllocator.get(), m_JobSystem.get());
+	while (m_AccumulatedTime >= m_FixedTimestep)
+	{
+		m_PhysicsSystem->Update(1.0f / 60.0f, 1, m_TempAllocator.get(), m_JobSystem.get());
+		m_AccumulatedTime -= m_FixedTimestep;
+	}
 }
 
 JPH::PhysicsSystem& PhysicsEngine::GetSystem()

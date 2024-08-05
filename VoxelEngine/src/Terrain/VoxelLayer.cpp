@@ -11,14 +11,12 @@ using namespace GLCore::Utils;
 using namespace JPH;
 using namespace JPH::literals;
 
-
 namespace VoxelEngine
 {
 
-VoxelLayer::VoxelLayer(const EngineState& engineState)
-	: Layer("VoxelLayer"), m_EngineState(engineState), m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)), m_TextureManager()
+VoxelLayer::VoxelLayer(EngineState& engineState)
+	: Layer("VoxelLayer"), m_EngineState(engineState), m_RenderMetadata({}), m_World(World(engineState.CameraController))
 {
-	m_CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
 }
 
 VoxelLayer::~VoxelLayer()
@@ -35,7 +33,7 @@ void VoxelLayer::OnAttach()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
-	m_TextureAtlas = m_TextureManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
+	m_TextureAtlas = m_EngineState.TextureManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
 
 	m_World.StartGeneration();
 }
@@ -57,8 +55,6 @@ void VoxelLayer::OnDetach()
 
 void VoxelLayer::OnEvent(GLCore::Event& event)
 {
-	if (!m_EngineState.MenuActive)
-		m_CameraController.OnEvent(event);
 	EventDispatcher dispatcher(event);
 	dispatcher.Dispatch<WindowCloseEvent>(
 		[&](WindowCloseEvent& e)
@@ -84,8 +80,6 @@ void VoxelLayer::OnEvent(GLCore::Event& event)
 
 void VoxelLayer::OnUpdate(Timestep ts)
 {
-	if (!m_EngineState.MenuActive)
-		m_CameraController.OnUpdate(ts);
 	glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(m_Shader->GetRendererID());
@@ -96,7 +90,7 @@ void VoxelLayer::OnUpdate(Timestep ts)
 	{
 		const ChunkRenderMetadata& metadata = it->second;
 
-		auto& viewMatrix = m_CameraController.GetCamera().GetViewProjectionMatrix();
+		auto& viewMatrix = m_EngineState.CameraController.GetCamera().GetViewProjectionMatrix();
 		int location = glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewProjection");
 		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 		location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Model");
@@ -168,9 +162,12 @@ void VoxelLayer::CheckChunkRenderQueue()
 		
 		PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
 		BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+		BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
+		boxShapeSettings.SetEmbedded();
+		ShapeSettings::ShapeResult boxShapeResult = boxShapeSettings.Create();
+		ShapeRefC boxShape = boxShapeResult.Get();
+		BodyCreationSettings boxSettings(boxShape, Vec3(0, 0, 0), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
 
-		/*
-		BodyCreationSettings boxSettings(new BoxShape(Vec3(0.5f, 0.5f, 0.5f)), Vec3(0, 0, 0), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
 		VoxelGrid& grid = chunk->GetVoxelGrid();
 		for (size_t x = 0; x < CHUNK_WIDTH; ++x)
 		{
@@ -179,27 +176,22 @@ void VoxelLayer::CheckChunkRenderQueue()
 				for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
 				{
 					Voxel& v = grid[x][z][y];
-					Vec3 p = Vec3(x, y, z);
+					RVec3 p = RVec3(v.GetPosition().GetX(), v.GetPosition().y, v.GetPosition().GetZ());
 					BodyID voxelId = bodyInterface.CreateAndAddBody(boxSettings, EActivation::DontActivate);
 					bodyInterface.SetPosition(voxelId, p, EActivation::DontActivate);
-					LOG_INFO("({0}, {1}, {2})", p.GetX(), p.GetY(), p.GetZ());
 				}
+				
 			}
 		}
-		*/
 		
-		BoxShapeSettings floor_shape_settings(Vec3(100.0f, 1.0f, 100.0f));
+		/*BoxShapeSettings floor_shape_settings(Vec3(0.5f, 0.5f, 0.5f));
 		floor_shape_settings.SetEmbedded();
 		ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
 		ShapeRefC floor_shape = floor_shape_result.Get();
-		BodyCreationSettings floor_settings(floor_shape, RVec3(0.0_r, -1.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-		Body* floor = bodyInterface.CreateBody(floor_settings);
-		bodyInterface.AddBody(floor->GetID(), EActivation::DontActivate);
-
-
-		BodyCreationSettings sphere_settings(new SphereShape(0.5f), RVec3(0.0_r, 2.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
-		BodyID sphere_id = bodyInterface.CreateAndAddBody(sphere_settings, EActivation::Activate);
-		bodyInterface.SetLinearVelocity(sphere_id, Vec3(0.0f, -5.0f, 0.0f));
+		BodyCreationSettings floor_settings(floor_shape, RVec3(5.0_r, 0.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+		BodyID voxelId = bodyInterface.CreateAndAddBody(floor_settings, EActivation::DontActivate);*/
+		//Body* floor = bodyInterface.CreateBody(floor_settings);
+		//bodyInterface.AddBody(voxelId, EActivation::DontActivate);
 
 		physicsSystem.OptimizeBroadPhase();
 

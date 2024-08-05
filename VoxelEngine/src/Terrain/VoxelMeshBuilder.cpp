@@ -1,4 +1,5 @@
 #include "VoxelMeshBuilder.hpp"
+#include <GLCoreUtils.hpp>
 
 namespace VoxelEngine
 {
@@ -97,6 +98,7 @@ std::vector<Vertex> VoxelMeshBuilder::FromVoxelExceptFaces(Voxel& voxel, bool fa
 
 std::vector<Vertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool faces[6])
 {
+	GLCORE_ASSERT(voxel.GetVoxelType() != VoxelType::AIR, "Voxel type AIR doesn't have texture assigned to it.");
 	std::vector<Vertex> data = {};
 	std::vector<int32_t>& texMap = s_FaceTextureMap.at(voxel.GetVoxelType());
 	float_t textureUnit = 1.0f / 16.0f;

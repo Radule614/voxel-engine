@@ -55,6 +55,8 @@ private:
 	~PhysicsEngine();
 
 private:
+	double_t m_AccumulatedTime;
+	double_t m_FixedTimestep;
 	std::unique_ptr<JPH::PhysicsSystem> m_PhysicsSystem;
 	std::unique_ptr<JPH::TempAllocatorImpl> m_TempAllocator;
 	std::unique_ptr<JPH::JobSystemThreadPool> m_JobSystem;

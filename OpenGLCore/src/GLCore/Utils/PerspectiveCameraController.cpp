@@ -11,6 +11,10 @@ PerspectiveCameraController::PerspectiveCameraController(float_t fov, float_t as
 {
 }
 
+PerspectiveCameraController::PerspectiveCameraController() : PerspectiveCameraController(45.0f, 16.0f / 9.0f, 150.0f)
+{
+}
+
 void PerspectiveCameraController::OnUpdate(Timestep ts)
 {
 	glm::vec3 frontDir = glm::vec3();
