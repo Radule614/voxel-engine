@@ -10,6 +10,3 @@
 [submodule "OpenGLCore/vendor/imgui"]
 	path = OpenGLCore/vendor/imgui
 	url = https://github.com/TheCherno/imgui
-[submodule "VoxelEngine/vendor/JoltPhysics"]
-	path = VoxelEngine/vendor/JoltPhysics
-	url = https://github.com/jrouwe/JoltPhysics
