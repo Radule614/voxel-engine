@@ -53,7 +53,8 @@ void WindowsWindow::Init(const WindowProps &props)
     LOG_INFO("  Version: {0}", (char *)glGetString(GL_VERSION));
 
     glfwSetWindowUserPointer(m_Window, &m_Data);
-    SetVSync(true);
+    // SetVSync(true);
+    glViewport(0, 0, m_Data.Width, m_Data.Height);
 
     glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
@@ -62,6 +63,7 @@ void WindowsWindow::Init(const WindowProps &props)
 
         WindowResizeEvent event(width, height);
         data.EventCallback(event);
+        glViewport(0, 0, data.Width, data.Height);
     });
 
     glfwSetWindowCloseCallback(m_Window, [](GLFWwindow *window) {
@@ -72,7 +74,6 @@ void WindowsWindow::Init(const WindowProps &props)
 
     glfwSetKeyCallback(m_Window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
         WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
-
         switch (action)
         {
         case GLFW_PRESS:

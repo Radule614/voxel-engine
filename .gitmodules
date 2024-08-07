@@ -1,0 +1,15 @@
+[submodule "OpenGLCore/vendor/glfw"]
+	path = OpenGLCore/vendor/glfw
+	url = https://github.com/TheCherno/glfw
+[submodule "OpenGLCore/vendor/spdlog"]
+	path = OpenGLCore/vendor/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "OpenGLCore/vendor/glm"]
+	path = OpenGLCore/vendor/glm
+	url = https://github.com/g-truc/glm
+[submodule "OpenGLCore/vendor/imgui"]
+	path = OpenGLCore/vendor/imgui
+	url = https://github.com/TheCherno/imgui
+[submodule "VoxelEngine/vendor/JoltPhysics"]
+	path = VoxelEngine/vendor/JoltPhysics
+	url = https://github.com/Radule614/JoltPhysics
