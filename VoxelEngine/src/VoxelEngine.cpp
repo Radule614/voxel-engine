@@ -1,20 +1,34 @@
 #include "GLCore.hpp"
 #include "Terrain/VoxelLayer.hpp"
 #include "UserInterface.hpp"
+#include "Physics/PhysicsLayer.hpp"
+#include "Physics/PhysicsEngine.hpp"
 
 using namespace GLCore;
 
 namespace VoxelEngine
 {
 
-class VoxelEngine : public Application
+class VoxelEngineApp : public Application
 {
 public:
-	VoxelEngine() : Application("Voxel Engine")
+	VoxelEngineApp() : Application("Voxel Engine")
 	{
-		PushOverlay(new UserInterface(m_State, *this));
+
+		VoxelEngine::PhysicsEngine::Init();
+		m_State.CameraController = GLCore::Utils::PerspectiveCameraController::PerspectiveCameraController(45.0f, 16.0f / 9.0f, 150.0f);
+		m_State.CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
+
 		PushLayer(new VoxelLayer(m_State));
+		PushLayer(new PhysicsLayer(m_State));
+		PushOverlay(new UserInterface(m_State, *this));
 	}
+
+	~VoxelEngineApp()
+	{
+		VoxelEngine::PhysicsEngine::Shutdown();
+	}
+
 private:
 	EngineState m_State;
 };
@@ -22,6 +36,6 @@ private:
 
 int main()
 {
-	VoxelEngine::VoxelEngine app;
+	VoxelEngine::VoxelEngineApp app;
 	app.Run();
 }

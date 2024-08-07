@@ -28,6 +28,7 @@ group "Dependencies"
     include "OpenGLCore/vendor/GLFW"
     include "OpenGLCore/vendor/Glad"
     include "OpenGLCore/vendor/imgui"
+    include "VoxelEngine/vendor/JoltPhysics"
 group ""
 
 include "OpenGLCore"

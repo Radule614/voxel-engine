@@ -22,7 +22,7 @@ struct ChunkRenderMetadata
 class VoxelLayer : public GLCore::Layer
 {
 public:
-	VoxelLayer(const EngineState& state);
+	VoxelLayer(EngineState& state);
 	~VoxelLayer();
 
 	virtual void OnAttach() override;
@@ -43,18 +43,12 @@ private:
 	void ApplyState() const;
 
 private:
-	const EngineState& m_EngineState;
+	EngineState& m_EngineState;
 	UIState m_UIState;
-	GLCore::Utils::PerspectiveCameraController m_CameraController;
 	GLCore::Utils::Shader* m_Shader;
-
-
+	GLCore::Utils::Texture m_TextureAtlas;
 	World m_World;
 	std::unordered_map<Position2D, ChunkRenderMetadata> m_RenderMetadata;
-
-	//TEMP
-	GLCore::Utils::TextureManager m_TextureManager;
-	GLCore::Utils::Texture m_TextureAtlas;
 };
 
 };

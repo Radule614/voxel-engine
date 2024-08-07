@@ -4,17 +4,19 @@
 
 #include "Vertex.hpp"
 #include "World.hpp"
+#include "../Physics/PhysicsEngine.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
+using namespace JPH;
+using namespace JPH::literals;
 
 namespace VoxelEngine
 {
 
-VoxelLayer::VoxelLayer(const EngineState& engineState)
-	: Layer("VoxelLayer"), m_EngineState(engineState), m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)), m_TextureManager()
+VoxelLayer::VoxelLayer(EngineState& engineState)
+	: Layer("VoxelLayer"), m_EngineState(engineState), m_RenderMetadata({}), m_World(World(engineState.CameraController))
 {
-	m_CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
 }
 
 VoxelLayer::~VoxelLayer()
@@ -31,7 +33,7 @@ void VoxelLayer::OnAttach()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
-	m_TextureAtlas = m_TextureManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
+	m_TextureAtlas = m_EngineState.TextureManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
 
 	m_World.StartGeneration();
 }
@@ -48,12 +50,11 @@ void VoxelLayer::OnDetach()
 		metadata.Indices.clear();
 	}
 	m_RenderMetadata.clear();
+	delete m_Shader;
 }
 
 void VoxelLayer::OnEvent(GLCore::Event& event)
 {
-	if (!m_EngineState.MenuActive)
-		m_CameraController.OnEvent(event);
 	EventDispatcher dispatcher(event);
 	dispatcher.Dispatch<WindowCloseEvent>(
 		[&](WindowCloseEvent& e)
@@ -79,8 +80,6 @@ void VoxelLayer::OnEvent(GLCore::Event& event)
 
 void VoxelLayer::OnUpdate(Timestep ts)
 {
-	if (!m_EngineState.MenuActive)
-		m_CameraController.OnUpdate(ts);
 	glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(m_Shader->GetRendererID());
@@ -91,7 +90,7 @@ void VoxelLayer::OnUpdate(Timestep ts)
 	{
 		const ChunkRenderMetadata& metadata = it->second;
 
-		auto& viewMatrix = m_CameraController.GetCamera().GetViewProjectionMatrix();
+		auto& viewMatrix = m_EngineState.CameraController.GetCamera().GetViewProjectionMatrix();
 		int location = glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewProjection");
 		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(viewMatrix));
 		location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Model");
@@ -157,6 +156,47 @@ void VoxelLayer::CheckChunkRenderQueue()
 		}
 		SetupRenderData(chunk);
 		it = chunks.erase(it);
+
+		//Temporary physics check
+		LOG_INFO(chunk->GetPosition().ToString());
+		
+		PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
+		BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+		BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
+		boxShapeSettings.SetEmbedded();
+		ShapeSettings::ShapeResult boxShapeResult = boxShapeSettings.Create();
+		ShapeRefC boxShape = boxShapeResult.Get();
+		BodyCreationSettings boxSettings(boxShape, Vec3(0, 0, 0), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+
+		VoxelGrid& grid = chunk->GetVoxelGrid();
+		for (size_t x = 0; x < CHUNK_WIDTH; ++x)
+		{
+			for (size_t z = 0; z < CHUNK_WIDTH; ++z)
+			{
+				for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
+				{
+					Voxel& v = grid[x][z][y];
+					RVec3 p = RVec3(v.GetPosition().GetX(), v.GetPosition().y, v.GetPosition().GetZ());
+					BodyID voxelId = bodyInterface.CreateAndAddBody(boxSettings, EActivation::DontActivate);
+					bodyInterface.SetPosition(voxelId, p, EActivation::DontActivate);
+				}
+				
+			}
+		}
+		
+		/*BoxShapeSettings floor_shape_settings(Vec3(0.5f, 0.5f, 0.5f));
+		floor_shape_settings.SetEmbedded();
+		ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
+		ShapeRefC floor_shape = floor_shape_result.Get();
+		BodyCreationSettings floor_settings(floor_shape, RVec3(5.0_r, 0.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+		BodyID voxelId = bodyInterface.CreateAndAddBody(floor_settings, EActivation::DontActivate);*/
+		//Body* floor = bodyInterface.CreateBody(floor_settings);
+		//bodyInterface.AddBody(voxelId, EActivation::DontActivate);
+
+		physicsSystem.OptimizeBroadPhase();
+
+		//Temporary end
+
 		chunkLock.unlock();
 	}
 	worldLock.unlock();

@@ -12,6 +12,7 @@ namespace GLCore::Utils
 class PerspectiveCameraController
 {
 public:
+    PerspectiveCameraController();
     PerspectiveCameraController(float_t fov, float_t aspectRatio, float_t speed);
 
     void OnUpdate(Timestep ts);
