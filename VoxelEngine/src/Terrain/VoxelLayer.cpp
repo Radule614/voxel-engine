@@ -11,9 +11,8 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-VoxelLayer::VoxelLayer()
-	: m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)),
-	m_TextureManager()
+VoxelLayer::VoxelLayer(const EngineState& engineState)
+	: Layer("VoxelLayer"), m_EngineState(engineState), m_CameraController(45.0f, 16.0f / 9.0f, 150.0f), m_RenderMetadata({}), m_World(World(m_CameraController)), m_TextureManager()
 {
 	m_CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
 }
@@ -30,10 +29,8 @@ void VoxelLayer::OnAttach()
 	glCullFace(GL_FRONT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl",
-		"assets/shaders/default.frag.glsl");
+	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
 	m_TextureAtlas = m_TextureManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
 
 	m_World.StartGeneration();
@@ -41,7 +38,7 @@ void VoxelLayer::OnAttach()
 
 void VoxelLayer::OnDetach()
 {
-	m_World.StartGeneration();
+	m_World.StopGeneration();
 	for (auto it = m_RenderMetadata.begin(); it != m_RenderMetadata.end(); ++it)
 	{
 		ChunkRenderMetadata& metadata = it->second;
@@ -53,18 +50,37 @@ void VoxelLayer::OnDetach()
 	m_RenderMetadata.clear();
 }
 
-
 void VoxelLayer::OnEvent(GLCore::Event& event)
 {
-	m_CameraController.OnEvent(event);
-	if (event.GetEventType() == EventType::WindowClose)
-		m_World.StopGeneration();
+	if (!m_EngineState.MenuActive)
+		m_CameraController.OnEvent(event);
+	EventDispatcher dispatcher(event);
+	dispatcher.Dispatch<WindowCloseEvent>(
+		[&](WindowCloseEvent& e)
+		{
+			m_World.StopGeneration();
+			return false;
+		});
+	dispatcher.Dispatch<StatePauseEvent>(
+		[&](StatePauseEvent& e)
+		{
+			m_World.StopGeneration();
+			UIState state;
+			m_UIState = state;
+			return false;
+		});
+	dispatcher.Dispatch<StateUnpauseEvent>(
+		[&](StateUnpauseEvent& e)
+		{
+			m_World.StartGeneration();
+			return false;
+		});
 }
 
 void VoxelLayer::OnUpdate(Timestep ts)
 {
-	m_CameraController.OnUpdate(ts);
-
+	if (!m_EngineState.MenuActive)
+		m_CameraController.OnUpdate(ts);
 	glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(m_Shader->GetRendererID());
@@ -94,6 +110,33 @@ void VoxelLayer::OnUpdate(Timestep ts)
 
 void VoxelLayer::OnImGuiRender()
 {
+	if (!m_EngineState.MenuActive)
+		return;
+
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
+	auto& io = ImGui::GetIO();
+	ImGui::SetNextWindowSize(ImVec2(400.0, 600.0));
+	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 400.0, 0));
+
+	ImGui::Begin("Terrain Settings", nullptr, windowFlags);
+	ImGui::Text("Terrain Settings");
+
+	const char* polygonModes[] = { "Fill", "Line" };
+	ImGui::Combo("Polygon Mode", &m_UIState.PolygonMode, polygonModes, IM_ARRAYSIZE(polygonModes));
+	const char* threadCounts[] = { "1", "2", "3", "4" };
+	ImGui::Combo("Thread Count", &m_UIState.ThreadCount, threadCounts, IM_ARRAYSIZE(threadCounts));
+
+	if (ImGui::Button("Apply"))
+		ApplyState();
+
+	ImGui::End();
+}
+
+void VoxelLayer::ApplyState() const
+{
+	TerrainConfig::PolygonMode = m_UIState.PolygonMode == 0 ? GL_FILL : GL_LINE;
+	TerrainConfig::ThreadCount = m_UIState.ThreadCount + 1;
+	glPolygonMode(GL_FRONT_AND_BACK, TerrainConfig::PolygonMode);
 }
 
 void VoxelLayer::CheckChunkRenderQueue()

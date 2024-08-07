@@ -13,7 +13,7 @@ public:
 		m_Root.SetPosition(p);
 		m_Radius = 4;
 		for (size_t y = 1; y <= 7; ++y)
-			m_Voxels.push_back(Voxel(VoxelType::LOG, Position3D(0, y, 0)));
+			m_VoxelData.push_back({ glm::i16vec3(0, y, 0), VoxelType::LOG });
 		for (int32_t x = -3; x <= 3; ++x)
 		{
 			for (int32_t z = -3; z <= 3; ++z)
@@ -25,7 +25,7 @@ public:
 						continue;
 					if ((x == -3 || x == 3 || z == -3 || z == 3) && (y == 5 || y == 9))
 						continue;
-					m_Voxels.push_back(Voxel(VoxelType::LEAVES, Position3D(x, y, z)));
+					m_VoxelData.push_back({ glm::i16vec3(x, y, z), VoxelType::LEAVES });
 				}
 			}
 		}
@@ -40,7 +40,7 @@ public:
 		m_Root.SetPosition(p);
 		m_Radius = 5;
 		for (size_t y = 1; y <= 10; ++y)
-			m_Voxels.push_back(Voxel(VoxelType::LOG, Position3D(0, y, 0)));
+			m_VoxelData.push_back({ glm::i16vec3(0, y, 0), VoxelType::LOG });
 		for (int32_t x = -3; x <= 3; ++x)
 		{
 			for (int32_t z = -3; z <= 3; ++z)
@@ -52,7 +52,7 @@ public:
 						continue;
 					if ((x == -3 || x == 3 || z == -3 || z == 3) && (y == 8 || y == 13))
 						continue;
-					m_Voxels.push_back(Voxel(VoxelType::LEAVES, Position3D(x, y, z)));
+					m_VoxelData.push_back({ glm::i16vec3(x, y, z), VoxelType::LEAVES });
 				}
 			}
 		}

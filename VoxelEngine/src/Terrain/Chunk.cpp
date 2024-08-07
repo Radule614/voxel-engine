@@ -91,13 +91,13 @@ void Chunk::AddStructures(std::vector<Structure> structures)
 			continue;
 		m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
 		m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
-		for (auto& v : s.GetVoxels())
+		for (auto& v : s.GetVoxelData())
 		{
-			auto pair = GetPositionRelativeToWorld(p + v.GetPosition());
+			auto pair = GetPositionRelativeToWorld((glm::i16vec3)p + v.first);
 			Position3D t = pair.second;
 			if (pair.first == m_Position)
 			{
-				m_VoxelGrid[t.GetX()][t.GetZ()][t.y].SetVoxelType(v.GetVoxelType());
+				m_VoxelGrid[t.GetX()][t.GetZ()][t.y].SetVoxelType(v.second);
 				m_VoxelGrid[t.GetX()][t.GetZ()][t.y].SetPosition(t);
 				continue;
 			}
@@ -106,19 +106,18 @@ void Chunk::AddStructures(std::vector<Structure> structures)
 				auto& chunk = m_World.GetChunkMap().at(pair.first);
 				chunk->GetLock().lock();
 				auto& voxelGrid = chunk->GetVoxelGrid();
-				voxelGrid[t.GetX()][t.GetZ()][t.y].SetVoxelType(v.GetVoxelType());
+				voxelGrid[t.GetX()][t.GetZ()][t.y].SetVoxelType(v.second);
 				voxelGrid[t.GetX()][t.GetZ()][t.y].SetPosition(t);
 				changedChunks.insert(chunk);
 				chunk->GetLock().unlock();
 				continue;
 			}
-			defferedQueueMap[pair.first].push(Voxel(v.GetVoxelType(), t));
+			defferedQueueMap[pair.first].push(Voxel(v.second, t));
 		}
 	}
 	m_World.GetLock().lock();
 	for (auto& c : changedChunks)
 	{
-		//TODO: check if this needs to be locked
 		c->GetLock().lock();
 		c->GenerateMesh();
 		m_World.GetChangedChunks().insert(c);
@@ -194,7 +193,7 @@ void Chunk::GenerateEdgeMesh(VoxelFace face)
 	}
 }
 
-std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(glm::vec3 pos) const
+std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(glm::i16vec3 pos) const
 {
 	if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
 		return { m_Position, Position3D(pos.x, pos.y, pos.z) };

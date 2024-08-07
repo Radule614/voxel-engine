@@ -54,9 +54,9 @@ struct Position3D
 		return glm::sqrt(glm::pow(GetX(), 2) + glm::pow(y, 2) + glm::pow(GetZ(), 2));
 	}
 
-	operator glm::vec3() const
+	operator glm::i16vec3() const
 	{
-		return glm::vec3(GetX(), y, GetZ());
+		return glm::i16vec3(GetX(), y, GetZ());
 	}
 
 	std::string ToString() const

@@ -1,10 +1,9 @@
 #include "Structure.hpp"
-#include "../Macros.hpp"
 
 namespace VoxelEngine
 {
 
-Structure::Structure(VoxelType rootType) : m_Radius(0), m_Voxels({}), m_Root(rootType) {}
+Structure::Structure(VoxelType rootType) : m_Radius(0), m_VoxelData({}), m_Root(rootType) {}
 
 Voxel& Structure::GetRoot()
 {
@@ -16,9 +15,9 @@ int32_t Structure::GetRadius() const
 	return m_Radius;
 }
 
-const std::vector<Voxel>& Structure::GetVoxels()
+const std::vector<std::pair<glm::i16vec3, VoxelType>>& Structure::GetVoxelData()
 {
-	return m_Voxels;
+	return m_VoxelData;
 }
 
 void Structure::SetRootPosition(Position3D p)

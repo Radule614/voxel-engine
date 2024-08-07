@@ -1,5 +1,6 @@
 #include "GLCore.hpp"
 #include "Terrain/VoxelLayer.hpp"
+#include "UserInterface.hpp"
 
 using namespace GLCore;
 
@@ -11,10 +12,12 @@ class VoxelEngine : public Application
 public:
 	VoxelEngine() : Application("Voxel Engine")
 	{
-		PushLayer(new VoxelLayer());
+		PushOverlay(new UserInterface(m_State, *this));
+		PushLayer(new VoxelLayer(m_State));
 	}
+private:
+	EngineState m_State;
 };
-
 }
 
 int main()

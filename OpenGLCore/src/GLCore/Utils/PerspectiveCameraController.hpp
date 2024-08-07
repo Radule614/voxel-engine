@@ -5,6 +5,7 @@
 
 #include "GLCore/Events/ApplicationEvent.hpp"
 #include "GLCore/Events/MouseEvent.hpp"
+#include "GLCore/Events/StateEvent.hpp"
 
 namespace GLCore::Utils
 {

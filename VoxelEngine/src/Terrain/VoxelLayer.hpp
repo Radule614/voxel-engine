@@ -5,6 +5,7 @@
 #include "GLCore.hpp"
 #include "GLCoreUtils.hpp"
 #include "World.hpp"
+#include "../EngineState.hpp"
 
 namespace VoxelEngine
 {
@@ -21,7 +22,7 @@ struct ChunkRenderMetadata
 class VoxelLayer : public GLCore::Layer
 {
 public:
-	VoxelLayer();
+	VoxelLayer(const EngineState& state);
 	~VoxelLayer();
 
 	virtual void OnAttach() override;
@@ -31,10 +32,19 @@ public:
 	virtual void OnImGuiRender() override;
 
 private:
+	struct UIState
+	{
+		int32_t ThreadCount = TerrainConfig::ThreadCount - 1;
+		int32_t PolygonMode = TerrainConfig::PolygonMode == GL_FILL ? 0 : 1;
+	};
+
 	void CheckChunkRenderQueue();
 	void SetupRenderData(std::shared_ptr<Chunk> chunk);
+	void ApplyState() const;
 
 private:
+	const EngineState& m_EngineState;
+	UIState m_UIState;
 	GLCore::Utils::PerspectiveCameraController m_CameraController;
 	GLCore::Utils::Shader* m_Shader;
 

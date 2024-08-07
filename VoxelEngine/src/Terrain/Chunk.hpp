@@ -12,8 +12,8 @@
 #include "VoxelMeshBuilder.hpp"
 #include "Position2D.hpp"
 #include "Position3D.hpp"
-#include "../Macros.hpp"
 #include "Structure.hpp"
+#include "TerrainConfig.hpp"
 
 namespace VoxelEngine
 {
@@ -39,7 +39,7 @@ public:
 	void Generate();
 	void GenerateMesh();
 	void GenerateEdgeMesh(VoxelFace face);
-	std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::vec3 pos) const;
+	std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::i16vec3 pos) const;
 
 	VoxelGrid& GetVoxelGrid();
 	const std::vector<Vertex>& GetMesh() const;
