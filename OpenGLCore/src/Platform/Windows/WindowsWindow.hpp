@@ -66,4 +66,4 @@ private:
 	};
 	WindowData m_Data;
 };
-} // namespace GLCore
+} 

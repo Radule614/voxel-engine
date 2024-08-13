@@ -16,4 +16,4 @@ protected:
     virtual float GetMouseYImpl() override;
 };
 
-} // namespace GLCore
+} 

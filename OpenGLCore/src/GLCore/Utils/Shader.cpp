@@ -91,4 +91,4 @@ void Shader::LoadFromGLSLTextFiles(const std::string &vertexShaderPath, const st
 
     m_RendererID = program;
 }
-} // namespace GLCore::Utils
+}

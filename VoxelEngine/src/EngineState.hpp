@@ -1,4 +1,5 @@
 #pragma once
+#include "Assets/AssetManager.hpp"
 
 struct EngineState
 {
@@ -6,5 +7,5 @@ struct EngineState
 	GLCore::Utils::PerspectiveCameraController CameraController;
 
 	//TEMP
-	GLCore::Utils::TextureManager TextureManager;
+	VoxelEngine::AssetManager AssetManager;
 };

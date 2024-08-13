@@ -46,7 +46,7 @@ private:
 	EngineState& m_EngineState;
 	UIState m_UIState;
 	GLCore::Utils::Shader* m_Shader;
-	GLCore::Utils::Texture m_TextureAtlas;
+	VoxelEngine::Texture m_TextureAtlas;
 	World m_World;
 	std::unordered_map<Position2D, ChunkRenderMetadata> m_RenderMetadata;
 };

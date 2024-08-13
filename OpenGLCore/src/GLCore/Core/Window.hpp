@@ -41,4 +41,4 @@ public:
 	static Window* Create(const WindowProps& props = WindowProps());
 	;
 };
-} // namespace GLCore
+} 

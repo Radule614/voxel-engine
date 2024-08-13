@@ -54,4 +54,4 @@ private:
 	ImGuiLayer* m_ImGuiLayer;
 	static Application* s_Instance;
 };
-} // namespace GLCore
+} 

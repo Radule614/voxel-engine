@@ -51,4 +51,4 @@ void EnableGLDebugging()
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 }
 
-} // namespace GLCore::Utils
+}

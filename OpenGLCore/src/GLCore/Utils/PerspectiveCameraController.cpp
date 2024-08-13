@@ -95,4 +95,4 @@ bool PerspectiveCameraController::OnMouseMoved(MouseMovedEvent& e)
 	return false;
 }
 
-} // namespace GLCore::Utils
+}

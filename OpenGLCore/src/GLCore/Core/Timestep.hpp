@@ -26,4 +26,4 @@ public:
 private:
     float m_Time;
 };
-} // namespace GLCore
+} 

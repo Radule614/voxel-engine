@@ -23,4 +23,4 @@ private:
 private:
     GLuint m_RendererID;
 };
-} // namespace GLCore::Utils
+}

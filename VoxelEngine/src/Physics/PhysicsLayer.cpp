@@ -3,6 +3,8 @@
 #include "../Terrain/TerrainConfig.hpp"
 #include "../Terrain/Voxel.hpp"
 #include "../Terrain/VoxelMeshBuilder.hpp"
+#include "../Assets/Model.hpp"
+#include "../Ecs/MeshComponent.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -17,6 +19,8 @@ namespace VoxelEngine
 
 PhysicsLayer::PhysicsLayer(EngineState& state) : m_State(state)
 {
+	m_Shader = std::make_shared<Shader>(*Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl"));
+	m_TextureAtlas = m_State.AssetManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
 }
 
 PhysicsLayer::~PhysicsLayer()
@@ -32,9 +36,6 @@ void PhysicsLayer::OnAttach()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
-	m_TextureAtlas = m_State.TextureManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
-
 	PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
 	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
 
@@ -45,6 +46,9 @@ void PhysicsLayer::OnAttach()
 
 	physicsSystem.OptimizeBroadPhase();
 
+	Model model("assets/models/sphere/sphere.obj");
+	MeshComponent mesh(m_Shader, model.GetMeshes());
+	
 	VoxelMeshBuilder meshBuilder;
 	v.SetAllFacesVisible(true);
 	std::vector<Vertex> vertices = meshBuilder.FromVoxel(v);

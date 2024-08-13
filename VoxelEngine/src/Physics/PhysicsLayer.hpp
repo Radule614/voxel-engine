@@ -27,8 +27,8 @@ public:
 	virtual void OnUpdate(GLCore::Timestep ts) override;
 private:
 	EngineState& m_State;
-	GLCore::Utils::Shader* m_Shader;
-	GLCore::Utils::Texture m_TextureAtlas;
+	std::shared_ptr<GLCore::Utils::Shader> m_Shader;
+	VoxelEngine::Texture m_TextureAtlas;
 	RenderMetadata m_RenderMetadata;
 };
 

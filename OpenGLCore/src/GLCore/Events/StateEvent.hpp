@@ -35,4 +35,4 @@ public:
     EVENT_CLASS_CATEGORY(EventCategoryState)
 };
 
-} // namespace GLCore
+} 

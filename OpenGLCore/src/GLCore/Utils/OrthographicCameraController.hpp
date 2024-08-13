@@ -51,4 +51,4 @@ private:
     float m_CameraTranslationSpeed = 5.0f, m_CameraRotationSpeed = 180.0f;
 };
 
-} // namespace GLCore::Utils
+}

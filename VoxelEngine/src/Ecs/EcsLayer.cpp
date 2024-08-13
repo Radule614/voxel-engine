@@ -13,6 +13,7 @@ EcsLayer::~EcsLayer()
 
 void EcsLayer::OnAttach()
 {
+
 }
 
 void EcsLayer::OnDetach()

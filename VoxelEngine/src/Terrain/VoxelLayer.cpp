@@ -2,7 +2,7 @@
 #include "VoxelMeshBuilder.hpp"
 #include <vector>
 
-#include "Vertex.hpp"
+#include "../Assets/Vertex.hpp"
 #include "World.hpp"
 #include "../Physics/PhysicsEngine.hpp"
 
@@ -33,7 +33,7 @@ void VoxelLayer::OnAttach()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
-	m_TextureAtlas = m_EngineState.TextureManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
+	m_TextureAtlas = m_EngineState.AssetManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
 
 	m_World.StartGeneration();
 }
@@ -158,8 +158,6 @@ void VoxelLayer::CheckChunkRenderQueue()
 		it = chunks.erase(it);
 
 		//Temporary physics check
-		LOG_INFO(chunk->GetPosition().ToString());
-		
 		PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
 		BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
 		BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
@@ -167,7 +165,6 @@ void VoxelLayer::CheckChunkRenderQueue()
 		ShapeSettings::ShapeResult boxShapeResult = boxShapeSettings.Create();
 		ShapeRefC boxShape = boxShapeResult.Get();
 		BodyCreationSettings boxSettings(boxShape, Vec3(0, 0, 0), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-
 		VoxelGrid& grid = chunk->GetVoxelGrid();
 		for (size_t x = 0; x < CHUNK_WIDTH; ++x)
 		{
@@ -183,18 +180,7 @@ void VoxelLayer::CheckChunkRenderQueue()
 				
 			}
 		}
-		
-		/*BoxShapeSettings floor_shape_settings(Vec3(0.5f, 0.5f, 0.5f));
-		floor_shape_settings.SetEmbedded();
-		ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
-		ShapeRefC floor_shape = floor_shape_result.Get();
-		BodyCreationSettings floor_settings(floor_shape, RVec3(5.0_r, 0.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-		BodyID voxelId = bodyInterface.CreateAndAddBody(floor_settings, EActivation::DontActivate);*/
-		//Body* floor = bodyInterface.CreateBody(floor_settings);
-		//bodyInterface.AddBody(voxelId, EActivation::DontActivate);
-
 		physicsSystem.OptimizeBroadPhase();
-
 		//Temporary end
 
 		chunkLock.unlock();
