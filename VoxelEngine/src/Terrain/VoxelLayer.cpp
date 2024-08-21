@@ -5,6 +5,7 @@
 #include "../Assets/Vertex.hpp"
 #include "World.hpp"
 #include "../Physics/PhysicsEngine.hpp"
+#include "../Renderer/Renderer.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -32,7 +33,7 @@ void VoxelLayer::OnAttach()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
+	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/voxel.vert.glsl", "assets/shaders/voxel.frag.glsl");
 	m_TextureAtlas = m_EngineState.AssetManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
 
 	m_World.StartGeneration();
@@ -83,6 +84,8 @@ void VoxelLayer::OnUpdate(Timestep ts)
 	glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(m_Shader->GetRendererID());
+	DirectionalLight light = { glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)), glm::vec3(0.25f), glm::vec3(1.0f), glm::vec3(0.1f) };
+	Renderer::Instance().SetDirectionalLight(*m_Shader, "directionalLight", light);
 
 	CheckChunkRenderQueue();
 
@@ -91,13 +94,11 @@ void VoxelLayer::OnUpdate(Timestep ts)
 		const ChunkRenderMetadata& metadata = it->second;
 
 		auto& viewMatrix = m_EngineState.CameraController.GetCamera().GetViewProjectionMatrix();
-		int location = glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewProjection");
-		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(viewMatrix));
-		location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Model");
-		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(metadata.ModelMatrix));
+		m_Shader->SetViewProjection(viewMatrix);
+		m_Shader->SetModel(metadata.ModelMatrix);
 
 		glActiveTexture(GL_TEXTURE0);
-		location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Atlas");
+		int32_t location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Atlas");
 		glUniform1i(location, 0);
 		glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
 
@@ -177,7 +178,7 @@ void VoxelLayer::CheckChunkRenderQueue()
 					BodyID voxelId = bodyInterface.CreateAndAddBody(boxSettings, EActivation::DontActivate);
 					bodyInterface.SetPosition(voxelId, p, EActivation::DontActivate);
 				}
-				
+
 			}
 		}
 		physicsSystem.OptimizeBroadPhase();
@@ -231,7 +232,7 @@ void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Normal)));
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Texture)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::TexCoords)));
 
 	std::vector<uint32_t> indices = {};
 	uint32_t faceCount = vertices.size() / 4;

@@ -4,6 +4,7 @@
 #include "Physics/PhysicsLayer.hpp"
 #include "Physics/PhysicsEngine.hpp"
 #include "Ecs/Ecs.hpp"
+#include "Ecs/EcsLayer.hpp"
 
 using namespace GLCore;
 
@@ -27,11 +28,12 @@ public:
 private:
 	void Setup()
 	{
-		m_State.CameraController = GLCore::Utils::PerspectiveCameraController(45.0f, 16.0f / 9.0f, 150.0f);
+		m_State.CameraController = GLCore::Utils::PerspectiveCameraController(45.0f, 16.0f / 9.0f, 100.0f);
 		m_State.CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
 
 		PushLayer(new VoxelLayer(m_State));
 		PushLayer(new PhysicsLayer(m_State));
+		PushLayer(new EcsLayer(m_State));
 		PushOverlay(new UserInterface(m_State, *this));
 	}
 

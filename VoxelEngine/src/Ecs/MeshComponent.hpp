@@ -18,6 +18,11 @@ public:
 		return m_Meshes;
 	}
 
+	inline std::shared_ptr<GLCore::Utils::Shader> GetShader()
+	{
+		return m_Shader;
+	}
+
 private:
 	std::shared_ptr<GLCore::Utils::Shader> m_Shader;
 	std::vector<Mesh> m_Meshes;
