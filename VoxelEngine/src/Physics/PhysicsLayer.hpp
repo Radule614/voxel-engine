@@ -29,7 +29,6 @@ private:
 	EngineState& m_State;
 	std::shared_ptr<GLCore::Utils::Shader> m_Shader;
 	VoxelEngine::Texture m_TextureAtlas;
-	RenderMetadata m_RenderMetadata;
 };
 
 }

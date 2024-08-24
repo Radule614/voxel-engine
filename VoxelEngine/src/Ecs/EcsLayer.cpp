@@ -3,6 +3,8 @@
 #include "../Ecs/MeshComponent.hpp"
 #include "../Ecs/Ecs.hpp"
 #include "../Renderer/Renderer.hpp"
+#include "TransformComponent.hpp"
+#include "../Utils/Utils.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -37,11 +39,15 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
 {
 	glCullFace(GL_BACK);
 	auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-	auto view = registry.view<MeshComponent>();
+	auto view = registry.view<MeshComponent, TransformComponent>();
 	for (auto entity : view)
 	{
 		auto& mesh = view.get<MeshComponent>(entity);
-		glm::mat4 model = glm::translate(glm::mat4(1), glm::vec3(0, 10, 0));
+		auto& transform = view.get<TransformComponent>(entity);
+		glm::mat4 model = glm::mat4(1);
+		model = glm::translate(model, transform.Position);
+		model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
+		model = glm::scale(model, transform.Scale);
 		Renderer::Instance().Render(mesh, m_State.CameraController.GetCamera(), model);
 	}
 	glCullFace(GL_FRONT);
