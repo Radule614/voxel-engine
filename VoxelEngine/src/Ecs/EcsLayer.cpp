@@ -1,9 +1,7 @@
 #include "EcsLayer.hpp"
 #include "../Physics/PhysicsEngine.hpp"
-#include "../Ecs/MeshComponent.hpp"
 #include "../Ecs/Ecs.hpp"
 #include "../Renderer/Renderer.hpp"
-#include "TransformComponent.hpp"
 #include "../Utils/Utils.hpp"
 
 using namespace GLCore;
@@ -39,6 +37,28 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
 {
 	glCullFace(GL_BACK);
 	auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+	PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
+	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+
+	auto colliderView = registry.view<ColliderComponent>();
+	for (auto entity : colliderView)
+	{
+		auto& collider = colliderView.get<ColliderComponent>(entity);
+		auto bodyId = collider.GetBodyId();
+		if (!bodyInterface.IsActive(bodyId))
+			continue;
+		bodyInterface.GetTransformedShape(bodyId).GetShapeScale();
+		RVec3 p = bodyInterface.GetCenterOfMassPosition(bodyId);
+		Vec3 r;
+		float_t angle;
+		bodyInterface.GetRotation(bodyId).GetAxisAngle(r, angle);
+		TransformComponent& transform = registry.view<TransformComponent>().get<TransformComponent>(entity);
+		transform.Position = glm::vec3(p.GetX(), p.GetY(), p.GetZ());
+		transform.RotationAngle = angle;
+		transform.RotationAxis = glm::vec3(r.GetX(), r.GetY(), r.GetZ());
+		transform.Scale = glm::vec3(1);
+	}
+
 	auto view = registry.view<MeshComponent, TransformComponent>();
 	for (auto entity : view)
 	{
@@ -50,6 +70,7 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
 		model = glm::scale(model, transform.Scale);
 		Renderer::Instance().Render(mesh, m_State.CameraController.GetCamera(), model);
 	}
+
 	glCullFace(GL_FRONT);
 }
 

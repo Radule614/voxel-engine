@@ -3,7 +3,7 @@
 #include <vector>
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
-#include "../Ecs/MeshComponent.hpp"
+#include "../Ecs/Ecs.hpp"
 
 namespace VoxelEngine
 {

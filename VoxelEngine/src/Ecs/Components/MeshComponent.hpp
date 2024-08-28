@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GLCoreUtils.hpp>
-#include "../Assets/Mesh.hpp"
+#include "../../Assets/Mesh.hpp"
 
 namespace VoxelEngine
 {

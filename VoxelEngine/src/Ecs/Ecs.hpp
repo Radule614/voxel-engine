@@ -2,6 +2,10 @@
 
 #include <entt.hpp>
 
+#include "Components/TransformComponent.hpp"
+#include "Components/MeshComponent.hpp"
+#include "Components/ColliderComponent.hpp"
+
 namespace VoxelEngine
 {
 

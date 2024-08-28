@@ -7,15 +7,6 @@
 namespace VoxelEngine
 {
 
-struct RenderMetadata
-{
-	GLuint VertexArray;
-	GLuint VertexBuffer;
-	GLuint IndexBuffer;
-	std::vector<uint32_t> Indices;
-	glm::mat4 ModelMatrix;
-};
-
 class PhysicsLayer : public GLCore::Layer
 {
 public:
