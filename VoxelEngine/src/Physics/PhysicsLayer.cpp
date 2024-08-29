@@ -38,8 +38,7 @@ void PhysicsLayer::OnAttach()
 	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
 	auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-	ColliderComponent collider = ColliderFactory::CreateSphereCollider(1.0f, glm::vec3(8, 25, 8));
-
+	ColliderComponent collider = ColliderFactory::CreateSphereCollider(1.0f, glm::vec3(8, 25, 8), EMotionType::Dynamic, EActivation::Activate);
 	bodyInterface.AddImpulse(collider.GetBodyId(), Vec3(300.0f, 0.0f, 0.0f), Vec3(70.0f, 150.0f, 50.0f));
 	physicsSystem.OptimizeBroadPhase();
 

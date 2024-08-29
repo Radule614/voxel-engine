@@ -20,22 +20,22 @@ struct Position3D
 	{
 	}
 
-	uint8_t GetX() const
+	inline uint8_t GetX() const
 	{
 		return xz & 0xF;
 	}
 
-	uint8_t GetZ() const
+	inline uint8_t GetZ() const
 	{
 		return (xz >> 4) & 0xF;
 	}
 
-	void SetX(uint8_t x)
+	inline void SetX(uint8_t x)
 	{
 		xz = (xz & 0xF0) | (x & 0xF);
 	}
 
-	void SetZ(uint8_t z)
+	inline void SetZ(uint8_t z)
 	{
 		xz = (xz & 0x0F) | ((z & 0xF) << 4);
 	}
@@ -59,7 +59,12 @@ struct Position3D
 		return glm::i16vec3(GetX(), y, GetZ());
 	}
 
-	std::string ToString() const
+	operator glm::vec3() const
+	{
+		return glm::vec3(GetX(), y, GetZ());
+	}
+
+	inline std::string ToString() const
 	{
 		return "(" + std::to_string(GetX()) + ", " + std::to_string(y) + ", " + std::to_string(GetZ()) + ")";
 	}

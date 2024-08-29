@@ -13,20 +13,18 @@ struct Material
 	glm::vec3 Ambient;
 	glm::vec3 Diffuse;
 	glm::vec3 Specular;
-	float Shininess;
+	float_t Shininess;
 };
 
 struct PointLight
 {
 	glm::vec3 Position;
-
 	glm::vec3 Ambient;
 	glm::vec3 Diffuse;
 	glm::vec3 Specular;
-
-	float Constant;
-	float Linear;
-	float Quadratic;
+	float_t Constant;
+	float_t Linear;
+	float_t Quadratic;
 
 	PointLight(glm::vec3 pos, glm::vec3 color)
 	{
@@ -39,7 +37,7 @@ struct PointLight
 		Quadratic = 0.012f;
 	}
 
-	PointLight(glm::vec3 pos, glm::vec3 a, glm::vec3 d, glm::vec3 s, float x, float y, float z)
+	PointLight(glm::vec3 pos, glm::vec3 a, glm::vec3 d, glm::vec3 s, float_t x, float_t y, float_t z)
 	{
 		Position = pos;
 		Ambient = a;
@@ -54,7 +52,6 @@ struct PointLight
 struct DirectionalLight
 {
 	glm::vec3 Direction;
-
 	glm::vec3 Ambient;
 	glm::vec3 Diffuse;
 	glm::vec3 Specular;
@@ -67,11 +64,11 @@ struct SpotLight
 	glm::vec3 Ambient;
 	glm::vec3 Diffuse;
 	glm::vec3 Specular;
-	float CutOff;
-	float OuterCutOff;
-	float Constant;
-	float Linear;
-	float Quadratic;
+	float_t CutOff;
+	float_t OuterCutOff;
+	float_t Constant;
+	float_t Linear;
+	float_t Quadratic;
 
 	SpotLight(glm::vec3 pos, glm::vec3 dir, glm::vec3 dif, glm::vec3 spec)
 	{

@@ -6,7 +6,7 @@ using namespace JPH::literals;
 namespace VoxelEngine
 {
 
-ColliderComponent::ColliderComponent(JPH::BodyID bodyId, JPH::Shape* shape) : m_BodyId(bodyId), m_Shape(shape)
+ColliderComponent::ColliderComponent(JPH::BodyID bodyId) : m_BodyId(bodyId)
 {
 }
 
@@ -19,26 +19,30 @@ JPH::BodyID ColliderComponent::GetBodyId() const
 	return m_BodyId;
 }
 
-ColliderComponent ColliderFactory::CreateSphereCollider(float_t r, glm::vec3 p)
+ColliderComponent ColliderFactory::CreateCollider(JPH::ShapeRefC shape, glm::vec3 p, EMotionType motion, EActivation activation)
 {
-	PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
-	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
-	SphereShape* sphereShape = new SphereShape(r);
-	BodyCreationSettings sphereSettings(sphereShape, RVec3(p.x, p.y, p.z), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
-	BodyID bodyId = bodyInterface.CreateAndAddBody(sphereSettings, EActivation::Activate);
-	ColliderComponent collider(bodyId, sphereShape);
+	BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
+	ObjectLayer layer = (motion == EMotionType::Static) ? Layers::NON_MOVING : Layers::MOVING;
+	BodyCreationSettings bodySettings(shape, Vec3(p.x, p.y, p.z), Quat::sIdentity(), motion, layer);
+	BodyID bodyId = bodyInterface.CreateAndAddBody(bodySettings, activation);
+	ColliderComponent collider(bodyId);
 	return collider;
 }
 
-ColliderComponent ColliderFactory::CreateBoxCollider()
+ColliderComponent ColliderFactory::CreateSphereCollider(float_t r, glm::vec3 p, EMotionType motion, EActivation activation)
 {
-	PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
-	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
-	BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
-	boxShapeSettings.SetEmbedded();
-	ShapeSettings::ShapeResult boxShapeResult = boxShapeSettings.Create();
-	ShapeRefC boxShape = boxShapeResult.Get();
-	BodyCreationSettings boxSettings(boxShape, Vec3(0, 0, 0), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+	SphereShapeSettings shapeSettings(r);
+	shapeSettings.SetEmbedded();
+	ShapeRefC shape = shapeSettings.Create().Get();
+	return CreateCollider(shape, p, motion, activation);
+}
+
+ColliderComponent ColliderFactory::CreateBoxCollider(glm::vec3 s, glm::vec3 p, EMotionType motion, EActivation activation)
+{
+	BoxShapeSettings shapeSettings(Vec3(s.x, s.y, s.z));
+	shapeSettings.SetEmbedded();
+	ShapeRefC shape = shapeSettings.Create().Get();
+	return CreateCollider(shape, p, motion, activation);
 }
 
 }

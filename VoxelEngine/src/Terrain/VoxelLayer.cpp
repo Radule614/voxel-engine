@@ -159,29 +159,21 @@ void VoxelLayer::CheckChunkRenderQueue()
 		it = chunks.erase(it);
 
 		//Temporary physics check
-		PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
-		BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
 		BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
 		boxShapeSettings.SetEmbedded();
 		ShapeSettings::ShapeResult boxShapeResult = boxShapeSettings.Create();
-		ShapeRefC boxShape = boxShapeResult.Get();
-		BodyCreationSettings boxSettings(boxShape, Vec3(0, 0, 0), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+		ShapeRefC shape = boxShapeResult.Get();
 		VoxelGrid& grid = chunk->GetVoxelGrid();
 		for (size_t x = 0; x < CHUNK_WIDTH; ++x)
 		{
 			for (size_t z = 0; z < CHUNK_WIDTH; ++z)
 			{
 				for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
-				{
-					Voxel& v = grid[x][z][y];
-					RVec3 p = RVec3(v.GetPosition().GetX(), v.GetPosition().y, v.GetPosition().GetZ());
-					BodyID voxelId = bodyInterface.CreateAndAddBody(boxSettings, EActivation::DontActivate);
-					bodyInterface.SetPosition(voxelId, p, EActivation::DontActivate);
-				}
-
+					ColliderFactory::CreateCollider(shape, grid[x][z][y].GetPosition(), EMotionType::Static, EActivation::DontActivate);
 			}
 		}
-		physicsSystem.OptimizeBroadPhase();
+
+		PhysicsEngine::Instance().GetSystem().OptimizeBroadPhase();
 		//Temporary end
 
 		chunkLock.unlock();
