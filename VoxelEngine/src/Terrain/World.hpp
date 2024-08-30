@@ -28,6 +28,7 @@ public:
 	std::unordered_set<std::shared_ptr<Chunk>>& GetChangedChunks();
 	std::mutex& GetLock();
 	std::map<Position2D, std::queue<Voxel>>& GetDefferedChunkQueue();
+	const Voxel* GetVoxelFromWorldSpace(const glm::vec3& pos);
 
 private:
 	void CheckChunkEdges(Chunk& chunk, Chunk::Neighbours& neighbours);

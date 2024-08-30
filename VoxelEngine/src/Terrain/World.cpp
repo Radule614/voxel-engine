@@ -262,4 +262,17 @@ std::map<Position2D, std::queue<Voxel>>& World::GetDefferedChunkQueue()
 	return m_DeferredChunkQueueMap;
 }
 
+const Voxel* World::GetVoxelFromWorldSpace(const glm::vec3& pos)
+{
+	Position2D chunkPosition = WorldToChunkSpace(pos);
+	if (m_ChunkMap.contains(chunkPosition) && pos.y >= 0 && pos.y < CHUNK_HEIGHT)
+	{
+		int32_t x = pos.x / CHUNK_WIDTH;
+		int32_t z = pos.z / CHUNK_WIDTH;
+		int32_t y = pos.y;
+		return &m_ChunkMap[chunkPosition]->GetVoxelGrid()[x][y][z];
+	}
+	return nullptr;
+}
+
 };

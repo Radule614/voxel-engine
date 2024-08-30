@@ -7,6 +7,7 @@
 #include "../Events/ApplicationEvent.hpp"
 #include "../Events/KeyEvent.hpp"
 #include "../Events/StateEvent.hpp"
+#include "../Events/EngineEvent.hpp"
 #include "Timestep.hpp"
 #include "../ImGui/ImGuiLayer.hpp"
 #include "KeyCodes.hpp"
@@ -38,9 +39,9 @@ public:
 		m_Running = false;
 	}
 
-	inline void RaiseStateEvent(StateEvent& event)
+	inline void RaiseEvent(Event& event)
 	{
-		return m_Window->RaiseStateEvent(event);
+		return m_Window->RaiseEvent(event);
 	}
 
 private:

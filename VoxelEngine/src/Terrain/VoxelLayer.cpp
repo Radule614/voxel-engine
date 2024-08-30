@@ -77,6 +77,12 @@ void VoxelLayer::OnEvent(GLCore::Event& event)
 			m_World.StartGeneration();
 			return false;
 		});
+	dispatcher.Dispatch<ColliderLocationChangedEvent>(
+		[&](ColliderLocationChangedEvent& e)
+		{
+			PrintVec3(e.GetLocation());
+			return true;
+		});
 }
 
 void VoxelLayer::OnUpdate(Timestep ts)

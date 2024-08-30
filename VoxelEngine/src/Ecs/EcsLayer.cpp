@@ -47,16 +47,21 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
 		auto bodyId = collider.GetBodyId();
 		if (!bodyInterface.IsActive(bodyId))
 			continue;
-		bodyInterface.GetTransformedShape(bodyId).GetShapeScale();
 		RVec3 p = bodyInterface.GetCenterOfMassPosition(bodyId);
 		Vec3 r;
 		float_t angle;
 		bodyInterface.GetRotation(bodyId).GetAxisAngle(r, angle);
 		TransformComponent& transform = registry.view<TransformComponent>().get<TransformComponent>(entity);
+		transform.PreviousPosition = transform.Position;
 		transform.Position = glm::vec3(p.GetX(), p.GetY(), p.GetZ());
 		transform.RotationAngle = angle;
 		transform.RotationAxis = glm::vec3(r.GetX(), r.GetY(), r.GetZ());
 		transform.Scale = glm::vec3(1);
+		if ((glm::ivec3)transform.PreviousPosition != (glm::ivec3)transform.Position)
+		{
+			ColliderLocationChangedEvent event(transform.Position);
+			m_State.Application->RaiseEvent(event);
+		}
 	}
 
 	auto view = registry.view<MeshComponent, TransformComponent>();

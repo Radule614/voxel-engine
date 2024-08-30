@@ -12,6 +12,7 @@ struct TransformComponent
 	float_t RotationAngle;
 	glm::vec3 RotationAxis;
 	glm::vec3 Scale;
+	glm::vec3 PreviousPosition;
 };
 
 }

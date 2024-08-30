@@ -5,6 +5,7 @@
 #include "../Terrain/VoxelMeshBuilder.hpp"
 #include "../Assets/Model.hpp"
 #include "../Ecs/Ecs.hpp"
+#include "GlCore.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
