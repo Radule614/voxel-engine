@@ -20,6 +20,10 @@ struct Position3D
 	{
 	}
 
+	Position3D(glm::i16vec3 v) : Position3D(v.x, v.y, v.z)
+	{
+	}
+
 	inline uint8_t GetX() const
 	{
 		return xz & 0xF;
@@ -38,6 +42,20 @@ struct Position3D
 	inline void SetZ(uint8_t z)
 	{
 		xz = (xz & 0x0F) | ((z & 0xF) << 4);
+	}
+
+	bool operator<(const Position3D& pos) const noexcept
+	{
+		if (y != pos.y)
+			return y < pos.y;
+		if (GetZ() != pos.GetZ())
+			return GetZ() < pos.GetZ();
+		return GetX() < pos.GetX();
+	}
+
+	bool operator==(const Position3D& pos) const noexcept
+	{
+		return GetX() == pos.GetX() && y == pos.y && GetZ() == pos.GetZ();
 	}
 
 	Position3D operator+(Position3D const& other)

@@ -92,7 +92,7 @@ public:
 	static void Shutdown();
 	static Renderer& Instance();
 
-	void Render(MeshComponent& meshComponent, GLCore::Utils::PerspectiveCamera& camera, glm::mat4 model) const;
+	void Render(MeshComponent& meshComponent, GLCore::Utils::PerspectiveCamera& camera, glm::mat4& model) const;
 	void SetPointLight(GLCore::Utils::Shader& shader, const std::string&, PointLight&) const;
 	void SetDirectionalLight(GLCore::Utils::Shader& shader, const std::string&, DirectionalLight&) const;
 	void SetSpotLight(GLCore::Utils::Shader& shader, const std::string&, SpotLight&) const;

@@ -23,7 +23,7 @@ Renderer& Renderer::Instance()
 	return *g_Renderer;
 }
 
-void Renderer::Render(MeshComponent& meshComponent, PerspectiveCamera& camera, glm::mat4 model) const
+void Renderer::Render(MeshComponent& meshComponent, PerspectiveCamera& camera, glm::mat4& model) const
 {
 	DirectionalLight light = { glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)), glm::vec3(0.1f), glm::vec3(0.7f), glm::vec3(0.3f) };
 	auto shader = meshComponent.GetShader();

@@ -6,6 +6,8 @@
 #include "GLCoreUtils.hpp"
 #include "World.hpp"
 #include "../EngineState.hpp"
+#include "../Physics/PhysicsEngine.hpp"
+#include "../Renderer/Renderer.hpp"
 
 namespace VoxelEngine
 {
@@ -41,6 +43,8 @@ private:
 	void CheckChunkRenderQueue();
 	void SetupRenderData(std::shared_ptr<Chunk> chunk);
 	void ApplyState() const;
+	void OnColliderLocationChanged(glm::vec3 pos);
+	void OptimizeColliders();
 
 private:
 	EngineState& m_EngineState;
@@ -49,6 +53,9 @@ private:
 	VoxelEngine::Texture m_TextureAtlas;
 	World m_World;
 	std::unordered_map<Position2D, ChunkRenderMetadata> m_RenderMetadata;
+	JPH::ShapeRefC m_VoxelShape;
+	std::unordered_map<glm::i16vec3, ColliderComponent> m_VoxelColliders;
+	float_t timeSinceLastColliderOptimization = 0.0f;
 };
 
 };

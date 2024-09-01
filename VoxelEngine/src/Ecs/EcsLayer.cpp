@@ -51,13 +51,15 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
 		Vec3 r;
 		float_t angle;
 		bodyInterface.GetRotation(bodyId).GetAxisAngle(r, angle);
-		TransformComponent& transform = registry.view<TransformComponent>().get<TransformComponent>(entity);
+		auto& transform = registry.view<TransformComponent>().get<TransformComponent>(entity);
 		transform.PreviousPosition = transform.Position;
 		transform.Position = glm::vec3(p.GetX(), p.GetY(), p.GetZ());
 		transform.RotationAngle = angle;
-		transform.RotationAxis = glm::vec3(r.GetX(), r.GetY(), r.GetZ());
-		transform.Scale = glm::vec3(1);
-		if ((glm::ivec3)transform.PreviousPosition != (glm::ivec3)transform.Position)
+		if (r != Vec3(0.0f, 0.0f, 0.0f))
+			transform.RotationAxis = glm::vec3(r.GetX(), r.GetY(), r.GetZ());
+		else
+			transform.RotationAxis = glm::vec3(0.0f, 1.0f, 0.0f);
+		if ((glm::ivec3)glm::round(transform.PreviousPosition) != (glm::ivec3)glm::round(transform.Position))
 		{
 			ColliderLocationChangedEvent event(transform.Position);
 			m_State.Application->RaiseEvent(event);
@@ -69,13 +71,12 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
 	{
 		auto& mesh = view.get<MeshComponent>(entity);
 		auto& transform = view.get<TransformComponent>(entity);
-		glm::mat4 model = glm::mat4(1);
+		glm::mat4 model = glm::mat4(1.0);
 		model = glm::translate(model, transform.Position);
 		model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
 		model = glm::scale(model, transform.Scale);
 		Renderer::Instance().Render(mesh, m_State.CameraController.GetCamera(), model);
 	}
-
 	glCullFace(GL_FRONT);
 }
 

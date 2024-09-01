@@ -4,8 +4,6 @@
 
 #include "../Assets/Vertex.hpp"
 #include "World.hpp"
-#include "../Physics/PhysicsEngine.hpp"
-#include "../Renderer/Renderer.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -16,8 +14,11 @@ namespace VoxelEngine
 {
 
 VoxelLayer::VoxelLayer(EngineState& engineState)
-	: Layer("VoxelLayer"), m_EngineState(engineState), m_RenderMetadata({}), m_World(World(engineState.CameraController))
+	: Layer("VoxelLayer"), m_EngineState(engineState), m_RenderMetadata({}), m_World(World(engineState.CameraController)), m_Shader(nullptr), m_VoxelColliders({})
 {
+	BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
+	boxShapeSettings.SetEmbedded();
+	m_VoxelShape = boxShapeSettings.Create().Get();
 }
 
 VoxelLayer::~VoxelLayer()
@@ -80,7 +81,7 @@ void VoxelLayer::OnEvent(GLCore::Event& event)
 	dispatcher.Dispatch<ColliderLocationChangedEvent>(
 		[&](ColliderLocationChangedEvent& e)
 		{
-			PrintVec3(e.GetLocation());
+			OnColliderLocationChanged(e.GetLocation());
 			return true;
 		});
 }
@@ -97,10 +98,9 @@ void VoxelLayer::OnUpdate(Timestep ts)
 
 	for (auto it = m_RenderMetadata.cbegin(); it != m_RenderMetadata.cend(); ++it)
 	{
-		const ChunkRenderMetadata& metadata = it->second;
-
 		auto& viewMatrix = m_EngineState.CameraController.GetCamera().GetViewProjectionMatrix();
 		m_Shader->SetViewProjection(viewMatrix);
+		const ChunkRenderMetadata& metadata = it->second;
 		m_Shader->SetModel(metadata.ModelMatrix);
 
 		glActiveTexture(GL_TEXTURE0);
@@ -111,6 +111,12 @@ void VoxelLayer::OnUpdate(Timestep ts)
 		glBindVertexArray(metadata.VertexArray);
 		glDrawElements(GL_TRIANGLES, metadata.Indices.size(), GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
+	}
+	timeSinceLastColliderOptimization += ts;
+	if (timeSinceLastColliderOptimization >= 3.0f)
+	{
+		timeSinceLastColliderOptimization = 0.0f;
+		OptimizeColliders();
 	}
 }
 
@@ -145,6 +151,67 @@ void VoxelLayer::ApplyState() const
 	glPolygonMode(GL_FRONT_AND_BACK, TerrainConfig::PolygonMode);
 }
 
+void VoxelLayer::OnColliderLocationChanged(glm::vec3 pos)
+{
+	auto& chunkMap = m_World.GetChunkMap();
+	auto chunkIterator = m_World.GetChunkMap().find(m_World.WorldToChunkSpace(pos));
+	if (chunkIterator == chunkMap.end())
+		return;
+	auto& chunk = chunkIterator->second;
+	int32_t r = 2;
+	for (int32_t x = -r; x <= r; ++x)
+	{
+		for (int32_t z = -r; z <= r; ++z)
+		{
+			for (int32_t y = -r; y <= r; ++y)
+			{
+				glm::i16vec3 p = glm::i16vec3(glm::round(pos)) + glm::i16vec3(x, y, z);
+				auto [chunkPosition, voxelPosition] = m_World.GetPositionInWorld(p);
+				auto it = chunkMap.find(chunkPosition);
+				if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
+					continue;
+				Voxel& v = it->second->GetVoxelGrid()[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
+				if (v.GetVoxelType() == VoxelType::AIR || m_VoxelColliders.find(p) != m_VoxelColliders.end())
+					continue;
+				ColliderComponent collider = ColliderFactory::CreateCollider(m_VoxelShape, p, EMotionType::Static, EActivation::DontActivate);
+				m_VoxelColliders.insert(std::make_pair(p, collider));
+			}
+		}
+	}
+}
+
+void VoxelLayer::OptimizeColliders()
+{
+	LOG_INFO("Body count before optimization: {0}", PhysicsEngine::Instance().GetSystem().GetNumBodies());
+	PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
+	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+	std::unordered_map<glm::i16vec3, ColliderComponent> collidersToRemove(m_VoxelColliders);
+	BodyIDVector bodies;
+	physicsSystem.GetBodies(bodies);
+	for (size_t i = 0; i < bodies.size(); ++i)
+	{
+		BodyID bodyId = bodies[i];
+		ObjectLayer layer = bodyInterface.GetObjectLayer(bodyId);
+		if (layer != Layers::MOVING)
+			continue;
+		Vec3 jphPosition = bodyInterface.GetPosition(bodyId);
+		glm::vec3 p(jphPosition.GetX(), jphPosition.GetY(), jphPosition.GetZ());
+		for (auto& [pos, collider] : m_VoxelColliders)
+		{
+			float_t distance = glm::distance(p, (glm::vec3)pos);
+			if (distance < 3 && collidersToRemove.find(pos) != collidersToRemove.end())
+				collidersToRemove.erase(pos);
+		}
+	}
+	for (auto& [pos, collider] : collidersToRemove)
+	{
+		m_VoxelColliders.erase(m_VoxelColliders.find(pos));
+		bodyInterface.RemoveBody(collider.GetBodyId());
+		bodyInterface.DestroyBody(collider.GetBodyId());
+	}
+	LOG_INFO("Body count after optimization: {0}", PhysicsEngine::Instance().GetSystem().GetNumBodies());
+}
+
 void VoxelLayer::CheckChunkRenderQueue()
 {
 	auto& worldLock = m_World.GetLock();
@@ -163,25 +230,6 @@ void VoxelLayer::CheckChunkRenderQueue()
 		}
 		SetupRenderData(chunk);
 		it = chunks.erase(it);
-
-		//Temporary physics check
-		BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
-		boxShapeSettings.SetEmbedded();
-		ShapeSettings::ShapeResult boxShapeResult = boxShapeSettings.Create();
-		ShapeRefC shape = boxShapeResult.Get();
-		VoxelGrid& grid = chunk->GetVoxelGrid();
-		for (size_t x = 0; x < CHUNK_WIDTH; ++x)
-		{
-			for (size_t z = 0; z < CHUNK_WIDTH; ++z)
-			{
-				for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
-					ColliderFactory::CreateCollider(shape, grid[x][z][y].GetPosition(), EMotionType::Static, EActivation::DontActivate);
-			}
-		}
-
-		PhysicsEngine::Instance().GetSystem().OptimizeBroadPhase();
-		//Temporary end
-
 		chunkLock.unlock();
 	}
 	worldLock.unlock();

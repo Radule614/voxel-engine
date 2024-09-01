@@ -86,7 +86,8 @@ Chunk::Neighbours World::GetNeighbours(Chunk& chunk)
 
 void World::GenerateWorld()
 {
-	while (*m_ShouldGenerationRun && m_ChunkMap.size() < 1)
+	//while (*m_ShouldGenerationRun && m_ChunkMap.size() < 1)
+	while (*m_ShouldGenerationRun)
 	{
 		Position2D center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());
 		std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, TerrainConfig::ThreadCount);
@@ -262,17 +263,32 @@ std::map<Position2D, std::queue<Voxel>>& World::GetDefferedChunkQueue()
 	return m_DeferredChunkQueueMap;
 }
 
-const Voxel* World::GetVoxelFromWorldSpace(const glm::vec3& pos)
+std::pair<Position2D, Position3D> World::GetPositionInWorld(glm::i16vec3 pos) const
 {
-	Position2D chunkPosition = WorldToChunkSpace(pos);
-	if (m_ChunkMap.contains(chunkPosition) && pos.y >= 0 && pos.y < CHUNK_HEIGHT)
+	if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
+		return { Position2D(0, 0), Position3D(pos.x, pos.y, pos.z)};
+	Position2D chunkPos(0, 0);
+	while (pos.x < 0)
 	{
-		int32_t x = pos.x / CHUNK_WIDTH;
-		int32_t z = pos.z / CHUNK_WIDTH;
-		int32_t y = pos.y;
-		return &m_ChunkMap[chunkPosition]->GetVoxelGrid()[x][y][z];
+		pos.x += CHUNK_WIDTH;
+		--chunkPos.x;
 	}
-	return nullptr;
+	while (pos.x > CHUNK_WIDTH - 1)
+	{
+		pos.x -= CHUNK_WIDTH;
+		++chunkPos.x;
+	}
+	while (pos.z < 0)
+	{
+		pos.z += CHUNK_WIDTH;
+		--chunkPos.y;
+	}
+	while (pos.z > CHUNK_WIDTH - 1)
+	{
+		pos.z -= CHUNK_WIDTH;
+		++chunkPos.y;
+	}
+	return { chunkPos, Position3D(pos.x, pos.y, pos.z) };
 }
 
 };

@@ -28,7 +28,8 @@ public:
 	std::unordered_set<std::shared_ptr<Chunk>>& GetChangedChunks();
 	std::mutex& GetLock();
 	std::map<Position2D, std::queue<Voxel>>& GetDefferedChunkQueue();
-	const Voxel* GetVoxelFromWorldSpace(const glm::vec3& pos);
+	std::pair<Position2D, Position3D> GetPositionInWorld(glm::i16vec3 pos) const;
+	Position2D WorldToChunkSpace(const glm::vec3& pos);
 
 private:
 	void CheckChunkEdges(Chunk& chunk, Chunk::Neighbours& neighbours);
@@ -39,7 +40,6 @@ private:
 	void GenerateChunk(Position2D position);
 	std::queue<Position2D> FindNextChunkLocations(Position2D center, size_t count);
 	bool IsPositionValid(std::unordered_set<Position2D>& existing, Position2D p);
-	Position2D WorldToChunkSpace(const glm::vec3& pos);
 
 private:
 	std::map<Position2D, std::shared_ptr<Chunk>> m_ChunkMap;

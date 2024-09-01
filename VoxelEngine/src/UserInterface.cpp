@@ -43,7 +43,7 @@ void UserInterface::OnEvent(GLCore::Event& event)
 					m_State.Application->RaiseEvent(event);
 				}
 			}
-			return true;
+			return false;
 		});
 }
 
