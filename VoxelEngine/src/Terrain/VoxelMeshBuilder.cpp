@@ -136,7 +136,7 @@ std::vector<Vertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool faces[6]
 			Vertex v;
 			v.Position = pos + (glm::vec3)(glm::i16vec3)voxel.GetPosition();
 			v.Normal = normal;
-			v.Texture = atlasTexCoord;
+			v.TexCoords = atlasTexCoord;
 			data.push_back(v);
 		}
 	}

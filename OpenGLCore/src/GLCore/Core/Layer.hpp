@@ -35,4 +35,4 @@ public:
 private:
     std::string m_DebugName;
 };
-} // namespace GLCore
+} 

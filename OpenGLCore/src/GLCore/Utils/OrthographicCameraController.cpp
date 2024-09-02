@@ -80,4 +80,4 @@ bool OrthographicCameraController::OnWindowResized(WindowResizeEvent &e)
     return false;
 }
 
-} // namespace GLCore::Utils
+}

@@ -25,4 +25,4 @@ void PerspectiveCamera::RecalculateViewMatrix()
     m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 }
 
-} // namespace GLCore::Utils
+}

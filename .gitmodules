@@ -13,3 +13,6 @@
 [submodule "VoxelEngine/vendor/JoltPhysics"]
 	path = VoxelEngine/vendor/JoltPhysics
 	url = https://github.com/Radule614/JoltPhysics
+[submodule "VoxelEngine/vendor/Assimp"]
+	path = VoxelEngine/vendor/Assimp
+	url = https://github.com/Radule614/assimp

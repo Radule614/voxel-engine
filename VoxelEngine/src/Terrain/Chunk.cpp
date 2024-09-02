@@ -93,26 +93,28 @@ void Chunk::AddStructures(std::vector<Structure> structures)
 		m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
 		for (auto& v : s.GetVoxelData())
 		{
-			auto pair = GetPositionRelativeToWorld((glm::i16vec3)p + v.first);
-			Position3D t = pair.second;
-			if (pair.first == m_Position)
+			glm::i16vec3 position = (glm::i16vec3)p + v.first;
+			auto [chunkPosition, voxelPosition] = GetPositionRelativeToWorld(position);
+			if (chunkPosition == m_Position)
 			{
-				m_VoxelGrid[t.GetX()][t.GetZ()][t.y].SetVoxelType(v.second);
-				m_VoxelGrid[t.GetX()][t.GetZ()][t.y].SetPosition(t);
+				Voxel& voxel = m_VoxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
+				voxel.SetVoxelType(v.second);
+				voxel.SetPosition(voxelPosition);
 				continue;
 			}
-			if (m_World.GetChunkMap().find(pair.first) != m_World.GetChunkMap().end())
+			if (m_World.GetChunkMap().find(chunkPosition) != m_World.GetChunkMap().end())
 			{
-				auto& chunk = m_World.GetChunkMap().at(pair.first);
+				auto& chunk = m_World.GetChunkMap().at(chunkPosition);
 				chunk->GetLock().lock();
 				auto& voxelGrid = chunk->GetVoxelGrid();
-				voxelGrid[t.GetX()][t.GetZ()][t.y].SetVoxelType(v.second);
-				voxelGrid[t.GetX()][t.GetZ()][t.y].SetPosition(t);
+				Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
+				voxel.SetVoxelType(v.second);
+				voxel.SetPosition(voxelPosition);
 				changedChunks.insert(chunk);
 				chunk->GetLock().unlock();
 				continue;
 			}
-			defferedQueueMap[pair.first].push(Voxel(v.second, t));
+			defferedQueueMap[chunkPosition].push(Voxel(v.second, voxelPosition));
 		}
 	}
 	m_World.GetLock().lock();

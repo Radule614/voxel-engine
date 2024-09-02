@@ -86,7 +86,8 @@ Chunk::Neighbours World::GetNeighbours(Chunk& chunk)
 
 void World::GenerateWorld()
 {
-	while (*m_ShouldGenerationRun && m_ChunkMap.size() < 1)
+	//while (*m_ShouldGenerationRun && m_ChunkMap.size() < 1)
+	while (*m_ShouldGenerationRun)
 	{
 		Position2D center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());
 		std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, TerrainConfig::ThreadCount);
@@ -260,6 +261,34 @@ std::mutex& World::GetLock()
 std::map<Position2D, std::queue<Voxel>>& World::GetDefferedChunkQueue()
 {
 	return m_DeferredChunkQueueMap;
+}
+
+std::pair<Position2D, Position3D> World::GetPositionInWorld(glm::i16vec3 pos) const
+{
+	if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
+		return { Position2D(0, 0), Position3D(pos.x, pos.y, pos.z)};
+	Position2D chunkPos(0, 0);
+	while (pos.x < 0)
+	{
+		pos.x += CHUNK_WIDTH;
+		--chunkPos.x;
+	}
+	while (pos.x > CHUNK_WIDTH - 1)
+	{
+		pos.x -= CHUNK_WIDTH;
+		++chunkPos.x;
+	}
+	while (pos.z < 0)
+	{
+		pos.z += CHUNK_WIDTH;
+		--chunkPos.y;
+	}
+	while (pos.z > CHUNK_WIDTH - 1)
+	{
+		pos.z -= CHUNK_WIDTH;
+		++chunkPos.y;
+	}
+	return { chunkPos, Position3D(pos.x, pos.y, pos.z) };
 }
 
 };

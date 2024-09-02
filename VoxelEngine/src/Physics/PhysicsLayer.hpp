@@ -3,18 +3,10 @@
 #include "GLCore.hpp"
 #include "GLCoreUtils.hpp"
 #include "../EngineState.hpp"
+#include "../Assets/Model.hpp"
 
 namespace VoxelEngine
 {
-
-struct RenderMetadata
-{
-	GLuint VertexArray;
-	GLuint VertexBuffer;
-	GLuint IndexBuffer;
-	std::vector<uint32_t> Indices;
-	glm::mat4 ModelMatrix;
-};
 
 class PhysicsLayer : public GLCore::Layer
 {
@@ -27,9 +19,9 @@ public:
 	virtual void OnUpdate(GLCore::Timestep ts) override;
 private:
 	EngineState& m_State;
-	GLCore::Utils::Shader* m_Shader;
-	GLCore::Utils::Texture m_TextureAtlas;
-	RenderMetadata m_RenderMetadata;
+	std::shared_ptr<GLCore::Utils::Shader> m_Shader;
+	VoxelEngine::Texture m_TextureAtlas;
+	Model* m_Model;
 };
 
 }

@@ -114,4 +114,4 @@ public:
     EVENT_CLASS_TYPE(MouseButtonReleased)
 };
 
-} // namespace GLCore
+} 

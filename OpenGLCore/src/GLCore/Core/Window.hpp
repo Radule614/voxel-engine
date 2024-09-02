@@ -34,11 +34,11 @@ public:
 	virtual void SetVSync(bool enabled) = 0;
 	virtual bool IsVSync() const = 0;
 	virtual void CaptureMouse(bool enabled) = 0;
-	virtual void RaiseStateEvent(StateEvent& event) = 0;
+	virtual void RaiseEvent(Event& event) = 0;
 
 	virtual void* GetNativeWindow() const = 0;
 
 	static Window* Create(const WindowProps& props = WindowProps());
 	;
 };
-} // namespace GLCore
+} 

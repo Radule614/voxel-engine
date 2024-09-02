@@ -7,7 +7,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerlinNoise.hpp"
 
-#include "Vertex.hpp"
 #include "Voxel.hpp"
 #include "VoxelMeshBuilder.hpp"
 #include "Position2D.hpp"
