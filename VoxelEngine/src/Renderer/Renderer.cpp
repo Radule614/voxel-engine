@@ -28,10 +28,10 @@ void Renderer::Render(MeshComponent& meshComponent, PerspectiveCamera& camera, g
 	DirectionalLight light = { glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)), glm::vec3(0.1f), glm::vec3(0.7f), glm::vec3(0.3f) };
 	auto shader = meshComponent.GetShader();
 	glUseProgram(shader->GetRendererID());
-	shader->SetVec3("CameraPos", camera.GetPosition());
+	shader->SetVec3("u_CameraPos", camera.GetPosition());
 	shader->SetViewProjection(camera.GetViewProjectionMatrix());
 	shader->SetModel(model);
-	SetDirectionalLight(*shader, "directionalLight", light);
+	SetDirectionalLight(*shader, "u_DirectionalLight", light);
 	for (Mesh& mesh : meshComponent.GetMeshes())
 	{
 		uint32_t diffuseNr = 1;
@@ -43,13 +43,13 @@ void Renderer::Render(MeshComponent& meshComponent, PerspectiveCamera& camera, g
 			glActiveTexture(GL_TEXTURE0 + i);
 			std::string number;
 			std::string name = textures[i].type;
-			if (name == "texture_diffuse")
+			if (name == "Diffuse")
 				number = std::to_string(diffuseNr++);
-			else if (name == "texture_specular")
+			else if (name == "Specular")
 				number = std::to_string(specularNr++);
-			else if (name == "texture_normal")
+			else if (name == "Normal")
 				number = std::to_string(normalNr++);
-			const std::string uniform = name + number;
+			const std::string uniform = "u_Texture" + name + "_" + number;
 			glUniform1i(glGetUniformLocation(shader->GetRendererID(), uniform.c_str()), i);
 			glBindTexture(GL_TEXTURE_2D, textures[i].id);
 		}

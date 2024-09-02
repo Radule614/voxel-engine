@@ -174,11 +174,11 @@ Mesh AssetManager::ProcessMesh(aiMesh* mesh, const aiScene* scene, std::string d
 	if (mesh->mMaterialIndex >= 0)
 	{
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-		std::vector<Texture> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse", directory);
+		std::vector<Texture> diffuseMaps = LoadMaterialTextures(material, aiTextureType_DIFFUSE, "Diffuse", directory);
 		textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
-		std::vector<Texture> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular", directory);
+		std::vector<Texture> specularMaps = LoadMaterialTextures(material, aiTextureType_SPECULAR, "Specular", directory);
 		textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
-		std::vector<Texture> normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal", directory);
+		std::vector<Texture> normalMaps = LoadMaterialTextures(material, aiTextureType_HEIGHT, "Normal", directory);
 		textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
 	}
 	return Mesh(vertices, indices, textures);

@@ -35,7 +35,7 @@ void VoxelLayer::OnAttach()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/voxel.vert.glsl", "assets/shaders/voxel.frag.glsl");
-	m_TextureAtlas = m_EngineState.AssetManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
+	m_TextureAtlas = m_EngineState.AssetManager.LoadTexture("assets/textures/atlas.png", "Diffuse");
 
 	m_World.StartGeneration();
 }

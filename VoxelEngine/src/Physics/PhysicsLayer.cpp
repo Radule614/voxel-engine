@@ -18,8 +18,9 @@ namespace VoxelEngine
 PhysicsLayer::PhysicsLayer(EngineState& state) : m_State(state)
 {
 	m_Shader = std::make_shared<Shader>(*Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl"));
-	m_TextureAtlas = m_State.AssetManager.LoadTexture("assets/textures/atlas.png", "texture_diffuse");
-	m_Model = m_State.AssetManager.LoadModel("assets/models/moon/moon.obj");
+	m_TextureAtlas = m_State.AssetManager.LoadTexture("assets/textures/atlas.png", "Diffuse");
+	//m_Model = m_State.AssetManager.LoadModel("assets/models/moon/moon.obj");
+	m_Model = m_State.AssetManager.LoadModel("assets/models/sphere/sphere.obj");
 }
 
 PhysicsLayer::~PhysicsLayer()
