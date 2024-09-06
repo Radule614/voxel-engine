@@ -4,8 +4,6 @@
 using namespace JPH;
 using namespace JPH::literals;
 
-
-
 static void TraceImpl(const char* inFMT, ...)
 {
 	// Format the message
@@ -221,8 +219,8 @@ PhysicsEngine::PhysicsEngine() :
 	// Now we can create the actual physics system.
 	m_PhysicsSystem = std::make_unique<PhysicsSystem>();
 	m_PhysicsSystem->Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints, *m_BroadPhaseLayerInterface.get(), *m_ObjectVsBroadPhaseLayerFilter.get(), *m_ObjectVsObjectLayerFilter.get());
-	m_PhysicsSystem->SetBodyActivationListener(m_BodyActivationListener.get());
-	m_PhysicsSystem->SetContactListener(m_ContactListener.get());
+	//m_PhysicsSystem->SetBodyActivationListener(m_BodyActivationListener.get());
+	//m_PhysicsSystem->SetContactListener(m_ContactListener.get());
 }
 
 PhysicsEngine::~PhysicsEngine()

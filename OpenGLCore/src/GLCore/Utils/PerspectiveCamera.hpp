@@ -70,4 +70,4 @@ private:
     glm::vec3 m_Right;
     glm::vec3 m_Up;
 };
-} // namespace GLCore::Utils
+}

@@ -19,7 +19,7 @@ public:
 private:
     static std::shared_ptr<spdlog::logger> s_Logger;
 };
-} // namespace GLCore
+} 
 
 #define LOG_TRACE(...) ::GLCore::Log::GetLogger()->trace(__VA_ARGS__);
 #define LOG_INFO(...) ::GLCore::Log::GetLogger()->info(__VA_ARGS__);

@@ -43,7 +43,7 @@ public:
 			glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	}
 
-	inline void RaiseStateEvent(StateEvent& event) override
+	inline void RaiseEvent(Event& event) override
 	{
 		m_Data.EventCallback(event);
 	}
@@ -66,4 +66,4 @@ private:
 	};
 	WindowData m_Data;
 };
-} // namespace GLCore
+} 

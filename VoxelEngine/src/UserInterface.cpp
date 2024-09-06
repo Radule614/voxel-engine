@@ -8,7 +8,7 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-UserInterface::UserInterface(EngineState& state, GLCore::Application& app) : m_State(state), m_Application(app)
+UserInterface::UserInterface(EngineState& state) : m_State(state)
 {
 }
 
@@ -18,11 +18,13 @@ UserInterface::~UserInterface()
 
 void UserInterface::OnAttach()
 {
-	m_Application.GetWindow().CaptureMouse(true);
+	m_State.Application->GetWindow().CaptureMouse(true);
 }
 
 void UserInterface::OnEvent(GLCore::Event& event)
 {
+	if (!m_State.MenuActive)
+		m_State.CameraController.OnEvent(event);
 	EventDispatcher dispatcher(event);
 	dispatcher.Dispatch<KeyPressedEvent>(
 		[&](KeyPressedEvent& e)
@@ -32,18 +34,18 @@ void UserInterface::OnEvent(GLCore::Event& event)
 				m_State.MenuActive = !m_State.MenuActive;
 				if (!m_State.MenuActive)
 				{
-					m_Application.GetWindow().CaptureMouse(true);
+					m_State.Application->GetWindow().CaptureMouse(true);
 					StateUnpauseEvent event;
-					m_Application.RaiseStateEvent(event);
+					m_State.Application->RaiseEvent(event);
 				}
 				else
 				{
-					m_Application.GetWindow().CaptureMouse(false);
+					m_State.Application->GetWindow().CaptureMouse(false);
 					StatePauseEvent event;
-					m_Application.RaiseStateEvent(event);
+					m_State.Application->RaiseEvent(event);
 				}
 			}
-			return true;
+			return false;
 		});
 }
 
@@ -62,6 +64,12 @@ void UserInterface::OnImGuiRender()
 	if (ImGui::Button("Click Me"))
 		ImGui::Text("Button was clicked!");
 	ImGui::End();
+}
+
+void UserInterface::OnUpdate(GLCore::Timestep ts)
+{
+	if (!m_State.MenuActive)
+		m_State.CameraController.OnUpdate(ts);
 }
 
 }

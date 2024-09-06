@@ -62,4 +62,4 @@ private:
 
     bool m_First = true;
 };
-} // namespace GLCore::Utils
+}

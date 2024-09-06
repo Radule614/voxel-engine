@@ -73,4 +73,4 @@ bool Application::OnWindowClose(WindowCloseEvent& e)
 	m_Running = false;
 	return true;
 }
-} // namespace GLCore
+} 

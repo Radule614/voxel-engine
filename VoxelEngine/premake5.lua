@@ -11,7 +11,8 @@ project "VoxelEngine"
 	{
 		"src/**.hpp",
 		"src/**.cpp",
-		"vendor/PerlinNoise/**.hpp"
+		"vendor/PerlinNoise/**.hpp",
+		"vendor/Entt/**.hpp"
 	}
 
 	includedirs
@@ -22,14 +23,17 @@ project "VoxelEngine"
 		"../OpenGLCore/%{IncludeDir.glm}",
 		"../OpenGLCore/%{IncludeDir.Glad}",
 		"../OpenGLCore/%{IncludeDir.ImGui}",
-		"vendor/PerlinNoise",
-		"vendor/JoltPhysics"
+		"%{IncludeDir.JoltPhysics}",
+		"%{IncludeDir.Assimp}",
+		"%{IncludeDir.PerlinNoise}",
+		"%{IncludeDir.Entt}"
 	}
 
 	links
 	{
 		"OpenGLCore",
-		"JoltPhysics"
+		"JoltPhysics",
+		"Assimp"
 	}
 
 	filter "system:windows"

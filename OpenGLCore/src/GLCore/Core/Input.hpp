@@ -48,4 +48,4 @@ private:
     static Input *s_Instance;
 };
 
-} // namespace GLCore
+} 

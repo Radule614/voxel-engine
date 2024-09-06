@@ -78,7 +78,6 @@ private:
 	// Note that this is called from a job so whatever you do here needs to be thread safe.
 	// Registering one is entirely optional.
 	std::unique_ptr<JPH::BodyActivationListener> m_BodyActivationListener;
-
 };
 
 inline PhysicsEngine* g_PhysicsEngine = nullptr;

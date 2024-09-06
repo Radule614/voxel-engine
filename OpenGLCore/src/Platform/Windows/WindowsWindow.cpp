@@ -162,4 +162,4 @@ bool WindowsWindow::IsVSync() const
     return m_Data.VSync;
 }
 
-} // namespace GLCore
+} 

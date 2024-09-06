@@ -25,7 +25,8 @@ enum class EventType
     MouseMoved,
     MouseScrolled,
     StatePause,
-    StateUnpause
+    StateUnpause,
+    ColliderLocationChanged
 };
 
 enum EventCategory
@@ -36,7 +37,8 @@ enum EventCategory
     EventCategoryKeyboard = BIT(2),
     EventCategoryMouse = BIT(3),
     EventCategoryMouseButton = BIT(4),
-    EventCategoryState = BIT(5)
+    EventCategoryState = BIT(5),
+    EventCategoryEngine = BIT(6)
 };
 
 #define EVENT_CLASS_TYPE(type)                                                                                         \
@@ -106,4 +108,4 @@ inline std::ostream &operator<<(std::ostream &os, const Event &e)
     return os << e.ToString();
 }
 
-} // namespace GLCore
+} 

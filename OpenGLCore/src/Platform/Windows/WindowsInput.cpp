@@ -44,4 +44,4 @@ float WindowsInput::GetMouseYImpl()
     return y;
 }
 
-} // namespace GLCore
+} 

@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 
 #include "Voxel.hpp"
-#include "Vertex.hpp"
+#include "../Assets/Vertex.hpp"
 
 namespace VoxelEngine
 {

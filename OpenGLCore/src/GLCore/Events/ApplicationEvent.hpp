@@ -78,4 +78,4 @@ public:
     EVENT_CLASS_CATEGORY(EventCategoryApplication)
 };
 
-} // namespace GLCore
+} 

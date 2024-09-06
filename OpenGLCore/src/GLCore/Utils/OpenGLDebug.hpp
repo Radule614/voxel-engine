@@ -27,4 +27,4 @@ void OpenGLLogMessage(GLenum source,
                       const GLchar *message,
                       const void *userParam);
 
-} // namespace GLCore::Utils
+}
