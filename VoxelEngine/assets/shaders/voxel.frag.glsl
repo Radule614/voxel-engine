@@ -30,7 +30,7 @@ vec3 calculateDirectionalLight(DirectionalLight light, vec3 diffuseColor, vec3 n
 
 void main() {
     vec4 texColor = texture(u_Atlas, i_Fragment.FragTexCoords);
-    if (texColor.a < 0.1)
+    if (texColor.a < 0.5)
         discard;
     o_Color = vec4(calculateDirectionalLight(directionalLight, vec3(texColor), i_Fragment.FragNormal), texColor.w);
 }
