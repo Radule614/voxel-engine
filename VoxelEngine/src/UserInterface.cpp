@@ -23,6 +23,8 @@ void UserInterface::OnAttach()
 
 void UserInterface::OnEvent(GLCore::Event& event)
 {
+	if (!m_State.MenuActive)
+		m_State.CameraController.OnEvent(event);
 	EventDispatcher dispatcher(event);
 	dispatcher.Dispatch<KeyPressedEvent>(
 		[&](KeyPressedEvent& e)
@@ -62,6 +64,12 @@ void UserInterface::OnImGuiRender()
 	if (ImGui::Button("Click Me"))
 		ImGui::Text("Button was clicked!");
 	ImGui::End();
+}
+
+void UserInterface::OnUpdate(GLCore::Timestep ts)
+{
+	if (!m_State.MenuActive)
+		m_State.CameraController.OnUpdate(ts);
 }
 
 }

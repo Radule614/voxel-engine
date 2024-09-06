@@ -5,6 +5,7 @@
 #include "Physics/PhysicsEngine.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/EcsLayer.hpp"
+#include "Sandbox/SandboxLayer.hpp"
 
 using namespace GLCore;
 
@@ -36,6 +37,8 @@ private:
 		PushLayer(new PhysicsLayer(m_State));
 		PushLayer(new EcsLayer(m_State));
 		PushOverlay(new UserInterface(m_State));
+
+		PushLayer(new Sandbox::SandboxLayer(m_State));
 	}
 
 	void Init()

@@ -16,6 +16,7 @@ public:
 	virtual void OnAttach() override;
 	virtual void OnEvent(GLCore::Event& event) override;
 	virtual void OnImGuiRender() override;
+	virtual void OnUpdate(GLCore::Timestep ts) override;
 
 private:
 	EngineState& m_State;

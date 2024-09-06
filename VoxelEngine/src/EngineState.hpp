@@ -2,6 +2,9 @@
 #include "Assets/AssetManager.hpp"
 #include "GLCore/Core/Application.hpp"
 
+namespace VoxelEngine
+{
+
 struct EngineState
 {
 	bool MenuActive = false;
@@ -12,3 +15,5 @@ struct EngineState
 	VoxelEngine::AssetManager AssetManager;
 	GLCore::Application* Application;
 };
+
+}
