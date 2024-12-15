@@ -4,6 +4,10 @@
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
 #include "../Ecs/Ecs.hpp"
+#include "../Terrain/Position2D.hpp"
+
+#define SHADOW_WIDTH 4096
+#define SHADOW_HEIGHT 4096
 
 namespace VoxelEngine
 {
@@ -88,14 +92,32 @@ struct SpotLight
 class Renderer
 {
 public:
-	static void Init();
+	static void Init(GLCore::Window& window);
 	static void Shutdown();
 	static Renderer& Instance();
 
-	void Render(MeshComponent& meshComponent, GLCore::Utils::PerspectiveCamera& camera, glm::mat4& model) const;
-	void SetPointLight(GLCore::Utils::Shader& shader, const std::string&, PointLight&) const;
-	void SetDirectionalLight(GLCore::Utils::Shader& shader, const std::string&, DirectionalLight&) const;
-	void SetSpotLight(GLCore::Utils::Shader& shader, const std::string&, SpotLight&) const;
+	Renderer(GLCore::Window& window);
+
+	void SetDirectionalLight(DirectionalLight light);
+	void RenderScene(GLCore::Utils::PerspectiveCamera& camera);
+
+private:
+	void Render(GLCore::Utils::PerspectiveCamera& camera, GLCore::Utils::Shader* terrainShader, GLCore::Utils::Shader* meshShader);
+	void RenderPass(GLCore::Utils::PerspectiveCamera& camera);
+
+	void RenderMesh(MeshComponent& meshComponent, GLCore::Utils::PerspectiveCamera& camera, glm::mat4& model, GLCore::Utils::Shader* shader);
+	void RenderTerrain(std::unordered_map<Position2D, ChunkRenderData>& renderDataMap, GLCore::Utils::PerspectiveCamera& camera, GLCore::Utils::Shader* shader);
+
+	void SetPointLightUniform(GLCore::Utils::Shader& shader, const std::string&, PointLight&);
+	void SetDirectionalLightUniform(GLCore::Utils::Shader& shader, const std::string&, DirectionalLight&);
+	void SetSpotLightUniform(GLCore::Utils::Shader& shader, const std::string&, SpotLight&);
+private:
+	GLCore::Window& m_Window;
+	VoxelEngine::Texture m_TextureAtlas;
+	DirectionalLight m_DirectionalLight;
+
+	GLCore::Utils::Shader* m_TerrainShader;
+	GLCore::Utils::Shader* m_MeshShader;
 };
 
 inline Renderer* g_Renderer = nullptr;

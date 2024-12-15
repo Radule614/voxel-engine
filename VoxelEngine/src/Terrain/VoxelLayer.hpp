@@ -12,15 +12,6 @@
 namespace VoxelEngine
 {
 
-struct ChunkRenderMetadata
-{
-	GLuint VertexArray;
-	GLuint VertexBuffer;
-	GLuint IndexBuffer;
-	std::vector<uint32_t> Indices;
-	glm::mat4 ModelMatrix;
-};
-
 class VoxelLayer : public GLCore::Layer
 {
 public:
@@ -49,13 +40,12 @@ private:
 private:
 	EngineState& m_EngineState;
 	UIState m_UIState;
-	GLCore::Utils::Shader* m_Shader;
-	VoxelEngine::Texture m_TextureAtlas;
 	World m_World;
-	std::unordered_map<Position2D, ChunkRenderMetadata> m_RenderMetadata;
+	std::unordered_map<Position2D, ChunkRenderData>* m_RenderData;
 	JPH::ShapeRefC m_VoxelShape;
 	std::unordered_map<glm::i16vec3, ColliderComponent> m_VoxelColliders;
 	float_t timeSinceLastColliderOptimization = 0.0f;
+	entt::entity m_EntityId;
 };
 
 };

@@ -7,7 +7,6 @@
 using namespace GLCore;
 using namespace GLCore::Utils;
 using namespace JPH;
-using namespace JPH::literals;
 
 namespace VoxelEngine
 {
@@ -25,6 +24,7 @@ void EcsLayer::OnAttach()
 	EnableGLDebugging();
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+	glCullFace(GL_FRONT);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
@@ -35,11 +35,9 @@ void EcsLayer::OnDetach()
 
 void EcsLayer::OnUpdate(GLCore::Timestep ts)
 {
-	glCullFace(GL_BACK);
-	auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 	PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
 	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
-
+	auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 	auto colliderView = registry.view<ColliderComponent>();
 	for (auto entity : colliderView)
 	{
@@ -65,19 +63,7 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
 			m_State.Application->RaiseEvent(event);
 		}
 	}
-
-	auto view = registry.view<MeshComponent, TransformComponent>();
-	for (auto entity : view)
-	{
-		auto& mesh = view.get<MeshComponent>(entity);
-		auto& transform = view.get<TransformComponent>(entity);
-		glm::mat4 model = glm::mat4(1.0);
-		model = glm::translate(model, transform.Position);
-		model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
-		model = glm::scale(model, transform.Scale);
-		Renderer::Instance().Render(mesh, m_State.CameraController.GetCamera(), model);
-	}
-	glCullFace(GL_FRONT);
+	Renderer::Instance().RenderScene(m_State.CameraController.GetCamera());
 }
 
 }

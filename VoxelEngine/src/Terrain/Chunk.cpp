@@ -161,7 +161,7 @@ void Chunk::GenerateMesh()
 					DetermineEdgeMeshes(meshBuilder, v, x, z);
 				else
 				{
-					std::vector<Vertex> data = meshBuilder.FromVoxel(v);
+					std::vector<VoxelVertex> data = meshBuilder.FromVoxel(v);
 					m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
 				}
 			}
@@ -171,7 +171,7 @@ void Chunk::GenerateMesh()
 
 void Chunk::GenerateEdgeMesh(VoxelFace face)
 {
-	std::vector<Vertex>& mesh = m_BorderMeshes.at(face);
+	std::vector<VoxelVertex>& mesh = m_BorderMeshes.at(face);
 	mesh.clear();
 	VoxelMeshBuilder meshBuilder;
 	for (size_t x = 0; x < CHUNK_WIDTH; x++)
@@ -189,7 +189,7 @@ void Chunk::GenerateEdgeMesh(VoxelFace face)
 				v = m_VoxelGrid[0][x][y];
 			if (!v.IsFaceVisible(face))
 				continue;
-			std::vector<Vertex> data = meshBuilder.FromVoxel(v, face);
+			std::vector<VoxelVertex> data = meshBuilder.FromVoxel(v, face);
 			mesh.insert(mesh.end(), data.begin(), data.end());
 		}
 	}
@@ -253,7 +253,7 @@ void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f)
 {
 	bool faces[6] = { false, false, false, false, false, false };
 	faces[f] = true;
-	std::vector<Vertex> data = meshBuilder.FromVoxelFaces(v, faces);
+	std::vector<VoxelVertex> data = meshBuilder.FromVoxelFaces(v, faces);
 	m_BorderMeshes.at(f).insert(m_BorderMeshes.at(f).begin(), data.begin(), data.end());
 	data = meshBuilder.FromVoxelExceptFaces(v, faces);
 	m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
@@ -261,7 +261,7 @@ void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f)
 
 void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2)
 {
-	std::vector<Vertex> data;
+	std::vector<VoxelVertex> data;
 	bool faces[6] = { false, false, false, false, false, false };
 	faces[f1] = true;
 	data = meshBuilder.FromVoxelFaces(v, faces);
@@ -279,7 +279,10 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
 {
 	int32_t y = &v - &m_VoxelGrid[x][z][0];
 	if (y >= h)
+	{
+		v.SetPosition(Position3D(x, y, z));
 		return;
+	}
 	int32_t snowThreshold = 3 * CHUNK_HEIGHT / 5;
 	double_t density = m_Perlin.octave3D(((double_t)m_Position.x * CHUNK_WIDTH + x) * 0.02,
 		((double_t)m_Position.y * CHUNK_WIDTH + z) * 0.02,
@@ -317,12 +320,12 @@ VoxelGrid& Chunk::GetVoxelGrid()
 	return m_VoxelGrid;
 }
 
-const std::vector<Vertex>& Chunk::GetMesh() const
+const std::vector<VoxelVertex>& Chunk::GetMesh() const
 {
 	return m_Mesh;
 }
 
-const std::vector<Vertex>& Chunk::GetBorderMesh(VoxelFace face) const
+const std::vector<VoxelVertex>& Chunk::GetBorderMesh(VoxelFace face) const
 {
 	return m_BorderMeshes.at(face);
 }

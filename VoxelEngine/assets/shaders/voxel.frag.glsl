@@ -16,21 +16,21 @@ struct DirectionalLight {
 };
 
 uniform sampler2D u_Atlas;
-uniform DirectionalLight directionalLight;
+uniform DirectionalLight u_DirectionalLight;
 
 vec3 calculateDirectionalLight(DirectionalLight light, vec3 diffuseColor, vec3 normal) {
     vec3 norm = normalize(normal);
     vec3 lightDir = normalize(-light.Direction);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 ambient = light.Ambient * diffuseColor;
-    vec3 diffuse = light.Diffuse * diff * diffuseColor;
-    vec3 specular = light.Specular * diff * diffuseColor;
-    return (ambient + diffuse + specular);
+    vec3 ambient = light.Ambient;
+    vec3 diffuse = light.Diffuse * diff;
+    vec3 specular = light.Specular * diff;
+    return (ambient + diffuse + specular) * diffuseColor;
 }
 
 void main() {
     vec4 texColor = texture(u_Atlas, i_Fragment.FragTexCoords);
     if (texColor.a < 0.5)
         discard;
-    o_Color = vec4(calculateDirectionalLight(directionalLight, vec3(texColor), i_Fragment.FragNormal), texColor.w);
+    o_Color = vec4(calculateDirectionalLight(u_DirectionalLight, vec3(texColor), i_Fragment.FragNormal), texColor.w);
 }

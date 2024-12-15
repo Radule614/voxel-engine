@@ -8,11 +8,20 @@ namespace VoxelEngine
 
 std::vector<Texture> AssetManager::m_LoadedTextures = {};
 
-AssetManager::AssetManager()
+void AssetManager::Init()
 {
+	g_AssetManager = new AssetManager();
 }
-AssetManager::~AssetManager()
+
+void AssetManager::Shutdown()
 {
+	delete g_AssetManager;
+	g_AssetManager = nullptr;
+}
+
+AssetManager& AssetManager::Instance()
+{
+	return *g_AssetManager;
 }
 
 Texture& AssetManager::LoadTexture(std::string path, std::string type)

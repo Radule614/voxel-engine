@@ -86,7 +86,6 @@ Chunk::Neighbours World::GetNeighbours(Chunk& chunk)
 
 void World::GenerateWorld()
 {
-	//while (*m_ShouldGenerationRun && m_ChunkMap.size() < 1)
 	while (*m_ShouldGenerationRun)
 	{
 		Position2D center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());

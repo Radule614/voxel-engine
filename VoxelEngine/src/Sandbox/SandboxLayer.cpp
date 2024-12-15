@@ -26,8 +26,8 @@ void SandboxLayer::OnAttach()
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	m_Shader = std::make_shared<Shader>(*Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl"));
-	m_TextureAtlas = m_State.AssetManager.LoadTexture("assets/textures/atlas.png", "Diffuse");
-	m_Model = m_State.AssetManager.LoadModel("assets/models/sphere/sphere.obj");
+	m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
+	m_Model = AssetManager::Instance().LoadModel("assets/models/sphere/sphere.obj");
 }
 
 void SandboxLayer::OnEvent(GLCore::Event& event)

@@ -61,6 +61,7 @@ void VoxelMeshBuilder::Init()
 	s_FaceTextureMap.insert({ VoxelType::LEAVES, {6, 0, 6, 0, 6, 0} });
 	s_FaceTextureMap.insert({ VoxelType::SNOW, {8, 0, 8, 0, 8, 0} });
 	s_FaceTextureMap.insert({ VoxelType::DIRT_SNOW, {8, 0, 1, 0, 7, 0} });
+	s_FaceTextureMap.insert({ VoxelType::LAMP , {9, 0, 9, 0, 9, 0}});
 }
 
 VoxelMeshBuilder::VoxelMeshBuilder()
@@ -76,30 +77,30 @@ VoxelMeshBuilder::~VoxelMeshBuilder()
 {
 }
 
-std::vector<Vertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel)
+std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel)
 {
 	bool faces[6] = { true, true, true, true, true, true };
 	return FromVoxelFaces(voxel, faces);
 }
 
-std::vector<Vertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel, VoxelFace f)
+std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel, VoxelFace f)
 {
 	bool faces[6] = { false, false, false, false, false, false };
 	faces[f] = true;
 	return FromVoxelFaces(voxel, faces);
 }
 
-std::vector<Vertex> VoxelMeshBuilder::FromVoxelExceptFaces(Voxel& voxel, bool faces[6])
+std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelExceptFaces(Voxel& voxel, bool faces[6])
 {
 	for (size_t i = 0; i < 6; ++i)
 		faces[i] = !faces[i];
 	return FromVoxelFaces(voxel, faces);
 }
 
-std::vector<Vertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool faces[6])
+std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool faces[6])
 {
 	GLCORE_ASSERT(voxel.GetVoxelType() != VoxelType::AIR, "Voxel type AIR doesn't have texture assigned to it.");
-	std::vector<Vertex> data = {};
+	std::vector<VoxelVertex> data = {};
 	std::vector<int32_t>& texMap = s_FaceTextureMap.at(voxel.GetVoxelType());
 	float_t textureUnit = 1.0f / 16.0f;
 	for (size_t i = 0; i < 6; ++i)
@@ -133,10 +134,11 @@ std::vector<Vertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool faces[6]
 			if (texCoord.y == 1.0f)
 				atlasTexCoord.y += textureUnit;
 
-			Vertex v;
+			VoxelVertex v;
 			v.Position = pos + (glm::vec3)(glm::i16vec3)voxel.GetPosition();
 			v.Normal = normal;
 			v.TexCoords = atlasTexCoord;
+			v.Light = voxel.GetLight();
 			data.push_back(v);
 		}
 	}

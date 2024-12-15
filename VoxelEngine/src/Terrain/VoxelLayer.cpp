@@ -8,17 +8,21 @@
 using namespace GLCore;
 using namespace GLCore::Utils;
 using namespace JPH;
-using namespace JPH::literals;
 
 namespace VoxelEngine
 {
 
 VoxelLayer::VoxelLayer(EngineState& engineState)
-	: Layer("VoxelLayer"), m_EngineState(engineState), m_RenderMetadata({}), m_World(World(engineState.CameraController)), m_Shader(nullptr), m_VoxelColliders({})
+	: Layer("VoxelLayer"), m_EngineState(engineState), m_World(World(engineState.CameraController)), m_VoxelColliders({})
 {
 	BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
 	boxShapeSettings.SetEmbedded();
 	m_VoxelShape = boxShapeSettings.Create().Get();
+
+	auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+	m_EntityId = registry.create();
+	registry.emplace<TerrainComponent>(m_EntityId);
+	m_RenderData = &registry.get<TerrainComponent>(m_EntityId).RenderData;
 }
 
 VoxelLayer::~VoxelLayer()
@@ -27,32 +31,22 @@ VoxelLayer::~VoxelLayer()
 
 void VoxelLayer::OnAttach()
 {
-	EnableGLDebugging();
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	glCullFace(GL_FRONT);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	m_Shader = Shader::FromGLSLTextFiles("assets/shaders/voxel.vert.glsl", "assets/shaders/voxel.frag.glsl");
-	m_TextureAtlas = m_EngineState.AssetManager.LoadTexture("assets/textures/atlas.png", "Diffuse");
-
 	m_World.StartGeneration();
 }
 
 void VoxelLayer::OnDetach()
 {
 	m_World.StopGeneration();
-	for (auto it = m_RenderMetadata.begin(); it != m_RenderMetadata.end(); ++it)
+	auto& renderDataMap = *m_RenderData;
+	for (auto it = renderDataMap.begin(); it != renderDataMap.end(); ++it)
 	{
-		ChunkRenderMetadata& metadata = it->second;
-		glDeleteVertexArrays(1, &metadata.VertexArray);
-		glDeleteBuffers(1, &metadata.VertexBuffer);
-		glDeleteBuffers(1, &metadata.IndexBuffer);
-		metadata.Indices.clear();
+		ChunkRenderData& data = it->second;
+		glDeleteVertexArrays(1, &data.VertexArray);
+		glDeleteBuffers(1, &data.VertexBuffer);
+		glDeleteBuffers(1, &data.IndexBuffer);
+		data.Indices.clear();
 	}
-	m_RenderMetadata.clear();
-	delete m_Shader;
+	renderDataMap.clear();
 }
 
 void VoxelLayer::OnEvent(GLCore::Event& event)
@@ -88,30 +82,7 @@ void VoxelLayer::OnEvent(GLCore::Event& event)
 
 void VoxelLayer::OnUpdate(Timestep ts)
 {
-	glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(m_Shader->GetRendererID());
-	DirectionalLight light = { glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)), glm::vec3(0.25f), glm::vec3(1.0f), glm::vec3(0.1f) };
-	Renderer::Instance().SetDirectionalLight(*m_Shader, "directionalLight", light);
-
 	CheckChunkRenderQueue();
-
-	for (auto it = m_RenderMetadata.cbegin(); it != m_RenderMetadata.cend(); ++it)
-	{
-		auto& viewMatrix = m_EngineState.CameraController.GetCamera().GetViewProjectionMatrix();
-		m_Shader->SetViewProjection(viewMatrix);
-		const ChunkRenderMetadata& metadata = it->second;
-		m_Shader->SetModel(metadata.ModelMatrix);
-
-		glActiveTexture(GL_TEXTURE0);
-		int32_t location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Atlas");
-		glUniform1i(location, 0);
-		glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
-
-		glBindVertexArray(metadata.VertexArray);
-		glDrawElements(GL_TRIANGLES, metadata.Indices.size(), GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-	}
 	timeSinceLastColliderOptimization += ts;
 	if (timeSinceLastColliderOptimization >= 3.0f)
 	{
@@ -237,19 +208,20 @@ void VoxelLayer::CheckChunkRenderQueue()
 
 void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
 {
-	ChunkRenderMetadata metadata = {};
-	auto renderData = m_RenderMetadata.find(chunk->GetPosition());
-	if (renderData != m_RenderMetadata.end())
+	ChunkRenderData data = {};
+	auto& renderDataMap = *m_RenderData;
+	auto renderData = renderDataMap.find(chunk->GetPosition());
+	if (renderData != renderDataMap.end())
 	{
-		ChunkRenderMetadata& m = renderData->second;
+		ChunkRenderData& m = renderData->second;
 		glDeleteVertexArrays(1, &m.VertexArray);
 		glDeleteBuffers(1, &m.VertexBuffer);
 		glDeleteBuffers(1, &m.IndexBuffer);
 		m.Indices.clear();
-		m_RenderMetadata.erase(chunk->GetPosition());
+		renderDataMap.erase(chunk->GetPosition());
 	}
 
-	std::vector<Vertex> vertices = {};
+	std::vector<VoxelVertex> vertices = {};
 	vertices.insert(vertices.end(), chunk->GetMesh().begin(), chunk->GetMesh().end());
 	vertices.insert(vertices.end(),
 		chunk->GetBorderMesh(VoxelFace::FRONT).begin(),
@@ -267,18 +239,18 @@ void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
 	if (vertices.empty())
 		return;
 
-	glCreateVertexArrays(1, &metadata.VertexArray);
-	glBindVertexArray(metadata.VertexArray);
+	glCreateVertexArrays(1, &data.VertexArray);
+	glBindVertexArray(data.VertexArray);
 
-	glCreateBuffers(1, &metadata.VertexBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, metadata.VertexBuffer);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+	glCreateBuffers(1, &data.VertexBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, data.VertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VoxelVertex), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), 0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::Normal)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), (void*)(offsetof(VoxelVertex, VoxelVertex::Normal)));
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(offsetof(Vertex, Vertex::TexCoords)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), (void*)(offsetof(VoxelVertex, VoxelVertex::TexCoords)));
 
 	std::vector<uint32_t> indices = {};
 	uint32_t faceCount = vertices.size() / 4;
@@ -291,16 +263,16 @@ void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
 		indices.push_back(i * 4 + 3);
 		indices.push_back(i * 4 + 0);
 	}
-	glCreateBuffers(1, &metadata.IndexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, metadata.IndexBuffer);
+	glCreateBuffers(1, &data.IndexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.IndexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), &indices[0], GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
 
-	metadata.Indices = indices;
-	metadata.ModelMatrix = chunk->GetModelMatrix();
+	data.Indices = indices;
+	data.ModelMatrix = chunk->GetModelMatrix();
 
-	m_RenderMetadata.insert({ chunk->GetPosition(), metadata });
+	renderDataMap.insert({ chunk->GetPosition(), data });
 }
 
 };

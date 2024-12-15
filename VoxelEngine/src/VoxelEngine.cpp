@@ -33,6 +33,9 @@ private:
 		m_State.CameraController = GLCore::Utils::PerspectiveCameraController(45.0f, 16.0f / 9.0f, 100.0f);
 		m_State.CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
 
+		DirectionalLight light = { glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)), glm::vec3(0.25f), glm::vec3(1.0f), glm::vec3(0.1f) };
+		Renderer::Instance().SetDirectionalLight(light);
+
 		PushLayer(new VoxelLayer(m_State));
 		PushLayer(new PhysicsLayer(m_State));
 		PushLayer(new EcsLayer(m_State));
@@ -43,14 +46,18 @@ private:
 
 	void Init()
 	{
+		AssetManager::Init();
 		PhysicsEngine::Init();
 		EntityComponentSystem::Init();
+		Renderer::Init(GetWindow());
 	}
 
 	void Shutdown()
 	{
+		Renderer::Shutdown();
 		EntityComponentSystem::Shutdown();
 		PhysicsEngine::Shutdown();
+		AssetManager::Shutdown();
 	}
 
 private:

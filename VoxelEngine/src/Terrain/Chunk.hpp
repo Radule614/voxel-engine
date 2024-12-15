@@ -41,8 +41,8 @@ public:
 	std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::i16vec3 pos) const;
 
 	VoxelGrid& GetVoxelGrid();
-	const std::vector<Vertex>& GetMesh() const;
-	const std::vector<Vertex>& GetBorderMesh(VoxelFace face) const;
+	const std::vector<VoxelVertex>& GetMesh() const;
+	const std::vector<VoxelVertex>& GetBorderMesh(VoxelFace face) const;
 	Position2D GetPosition() const;
 	std::mutex& GetLock();
 	glm::mat4 GetModelMatrix() const;
@@ -58,8 +58,8 @@ private:
 	World& m_World;
 	Position2D m_Position;
 	VoxelGrid m_VoxelGrid;
-	std::vector<Vertex> m_Mesh;
-	std::unordered_map<VoxelFace, std::vector<Vertex>> m_BorderMeshes;
+	std::vector<VoxelVertex> m_Mesh;
+	std::unordered_map<VoxelFace, std::vector<VoxelVertex>> m_BorderMeshes;
 	const siv::PerlinNoise& m_Perlin;
 	std::mutex m_Mutex;
 };

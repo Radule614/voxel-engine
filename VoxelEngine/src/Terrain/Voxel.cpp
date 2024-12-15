@@ -84,4 +84,29 @@ bool Voxel::IsTransparent() const
 	return m_VoxelType == VoxelType::AIR || m_VoxelType == VoxelType::LEAVES;
 }
 
+int Voxel::GetSunlight() const
+{
+	return (m_Light >> 4) & 0xF;
+}
+
+void Voxel::SetSunlight(int32_t val)
+{
+	m_Light = (m_Light & 0xF) | (val << 4);
+}
+
+int Voxel::GetTorchlight() const
+{
+	return m_Light & 0xF;
+}
+
+void Voxel::SetTorchlight(int32_t val)
+{
+	m_Light = (m_Light & 0xF0) | val;
+}
+
+uint8_t Voxel::GetLight() const
+{
+	return m_Light;
+}
+
 };

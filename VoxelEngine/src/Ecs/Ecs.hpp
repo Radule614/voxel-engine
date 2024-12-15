@@ -5,6 +5,7 @@
 #include "Components/TransformComponent.hpp"
 #include "Components/MeshComponent.hpp"
 #include "Components/ColliderComponent.hpp"
+#include "Components/TerrainComponent.hpp"
 
 namespace VoxelEngine
 {
