@@ -1,5 +1,3 @@
-# OpenGLCore/CMakeLists.txt.txt
-
 project(OpenGLCore)
 
 # C++ settings

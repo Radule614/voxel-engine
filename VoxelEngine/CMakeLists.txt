@@ -1,5 +1,3 @@
-# VoxelEngine/CMakeLists.txt.txt
-
 # Define the project
 project(VoxelEngine)
 
