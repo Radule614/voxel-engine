@@ -8,7 +8,7 @@ PhysicsLayer::PhysicsLayer(EngineState& state) : m_State(state)
 {
 }
 
-void PhysicsLayer::OnUpdate(GLCore::Timestep ts)
+void PhysicsLayer::OnUpdate(const GLCore::Timestep ts)
 {
 	PhysicsEngine::Instance().OnUpdate(ts);
 }

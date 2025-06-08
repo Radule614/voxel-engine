@@ -42,7 +42,7 @@ void Renderer::RenderScene(PerspectiveCamera& camera)
 	RenderPass(camera);
 }
 
-void Renderer::Render(GLCore::Utils::PerspectiveCamera& camera, Shader* terrainShader, Shader* meshShader)
+void Renderer::Render(PerspectiveCamera& camera, Shader* terrainShader, Shader* meshShader)
 {
 	glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -57,12 +57,11 @@ void Renderer::Render(GLCore::Utils::PerspectiveCamera& camera, Shader* terrainS
 	}
 
 	glCullFace(GL_BACK);
-	auto view = registry.view<MeshComponent, TransformComponent>();
-	for (auto entity : view)
+	for (auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity : view)
 	{
 		auto& mesh = view.get<MeshComponent>(entity);
 		auto& transform = view.get<TransformComponent>(entity);
-		glm::mat4 model = glm::mat4(1.0);
+		auto model = glm::mat4(1.0);
 		model = glm::translate(model, transform.Position);
 		model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
 		model = glm::scale(model, transform.Scale);
@@ -71,7 +70,7 @@ void Renderer::Render(GLCore::Utils::PerspectiveCamera& camera, Shader* terrainS
 	glCullFace(GL_FRONT);
 }
 
-void Renderer::RenderPass(GLCore::Utils::PerspectiveCamera& camera)
+void Renderer::RenderPass(PerspectiveCamera& camera)
 {
 	glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -88,7 +87,7 @@ void Renderer::RenderPass(GLCore::Utils::PerspectiveCamera& camera)
 	Render(camera, m_TerrainShader, m_MeshShader);
 }
 
-void Renderer::RenderMesh(MeshComponent& meshComponent, PerspectiveCamera& camera, glm::mat4& model, Shader* shader)
+void Renderer::RenderMesh(MeshComponent& meshComponent, const PerspectiveCamera& camera, const glm::mat4& model, const Shader* shader)
 {
 	glUseProgram(shader->GetRendererID());
 	shader->SetVec3("u_CameraPos", camera.GetPosition());
@@ -123,18 +122,18 @@ void Renderer::RenderMesh(MeshComponent& meshComponent, PerspectiveCamera& camer
 	glUseProgram(0);
 }
 
-void Renderer::RenderTerrain(std::unordered_map<Position2D, ChunkRenderData>& renderDataMap, PerspectiveCamera& camera, Shader* shader)
+void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap, const PerspectiveCamera& camera, Shader* shader)
 {
 	glUseProgram(shader->GetRendererID());
 	shader->SetVec3("u_CameraPos", camera.GetPosition());
 	SetDirectionalLightUniform(*shader, "u_DirectionalLight", m_DirectionalLight);
-	for (auto it = renderDataMap.cbegin(); it != renderDataMap.cend(); ++it)
+	for (const auto& it : renderDataMap)
 	{
-		const ChunkRenderData& metadata = it->second;
+		const ChunkRenderData& metadata = it.second;
 		shader->SetModel(metadata.ModelMatrix);
 
 		glActiveTexture(GL_TEXTURE0);
-		int32_t location = glGetUniformLocation(shader->GetRendererID(), "u_Atlas");
+		const int32_t location = glGetUniformLocation(shader->GetRendererID(), "u_Atlas");
 		glUniform1i(location, 0);
 		glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
 
@@ -144,7 +143,7 @@ void Renderer::RenderTerrain(std::unordered_map<Position2D, ChunkRenderData>& re
 	}
 }
 
-void Renderer::SetPointLightUniform(Shader& shader, const std::string& uniform, PointLight& light)
+void Renderer::SetPointLightUniform(const Shader& shader, const std::string& uniform, const PointLight& light)
 {
 	shader.SetVec3(uniform + ".Position", light.Position);
 	shader.SetVec3(uniform + ".Ambient", light.Ambient);
@@ -155,7 +154,7 @@ void Renderer::SetPointLightUniform(Shader& shader, const std::string& uniform, 
 	shader.SetFloat(uniform + ".Quadratic", light.Quadratic);
 }
 
-void Renderer::SetDirectionalLightUniform(Shader& shader, const std::string& uniform, DirectionalLight& light)
+void Renderer::SetDirectionalLightUniform(const Shader& shader, const std::string& uniform, const DirectionalLight& light)
 {
 	shader.SetVec3(uniform + ".Direction", light.Direction);
 	shader.SetVec3(uniform + ".Ambient", light.Ambient);
@@ -163,7 +162,7 @@ void Renderer::SetDirectionalLightUniform(Shader& shader, const std::string& uni
 	shader.SetVec3(uniform + ".Specular", light.Specular);
 }
 
-void Renderer::SetSpotLightUniform(Shader& shader, const std::string& uniform, SpotLight& light)
+void Renderer::SetSpotLightUniform(const Shader& shader, const std::string& uniform, const SpotLight& light)
 {
 	shader.SetVec3(uniform + ".Direction", light.Direction);
 	shader.SetVec3(uniform + ".Position", light.Position);

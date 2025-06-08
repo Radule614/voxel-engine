@@ -15,9 +15,7 @@ EcsLayer::EcsLayer(EngineState& state) : m_State(state)
 {
 }
 
-EcsLayer::~EcsLayer()
-{
-}
+EcsLayer::~EcsLayer() = default;
 
 void EcsLayer::OnAttach()
 {
@@ -36,10 +34,9 @@ void EcsLayer::OnDetach()
 void EcsLayer::OnUpdate(GLCore::Timestep ts)
 {
 	PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
-	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+	const BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
 	auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-	auto colliderView = registry.view<ColliderComponent>();
-	for (auto entity : colliderView)
+	for (const auto colliderView = registry.view<ColliderComponent>(); const auto entity : colliderView)
 	{
 		auto& collider = colliderView.get<ColliderComponent>(entity);
 		auto bodyId = collider.GetBodyId();
@@ -57,7 +54,7 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
 			transform.RotationAxis = glm::vec3(r.GetX(), r.GetY(), r.GetZ());
 		else
 			transform.RotationAxis = glm::vec3(0.0f, 1.0f, 0.0f);
-		if ((glm::ivec3)glm::round(transform.PreviousPosition) != (glm::ivec3)glm::round(transform.Position))
+		if (static_cast<glm::ivec3>(glm::round(transform.PreviousPosition)) != static_cast<glm::ivec3>(glm::round(transform.Position)))
 		{
 			ColliderLocationChangedEvent event(transform.Position);
 			m_State.Application->RaiseEvent(event);

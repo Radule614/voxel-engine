@@ -9,7 +9,8 @@ namespace VoxelEngine
 class MeshComponent
 {
 public:
-	MeshComponent(std::shared_ptr<GLCore::Utils::Shader> shader, std::vector<Mesh> meshes) : m_Shader(shader), m_Meshes(meshes)
+	MeshComponent(const std::shared_ptr<GLCore::Utils::Shader> &shader, const std::vector<Mesh> &meshes)
+		: m_Shader(shader), m_Meshes(meshes)
 	{
 	}
 

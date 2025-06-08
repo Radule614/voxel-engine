@@ -5,19 +5,17 @@
 namespace VoxelEngine
 {
 
-Voxel::Voxel() : Voxel(VoxelType::AIR, Position3D())
+Voxel::Voxel() : Voxel(AIR, Position3D())
 {
 }
 
-Voxel::~Voxel()
-{
-}
+Voxel::~Voxel() = default;
 
 Voxel::Voxel(VoxelType type) : Voxel(type, Position3D())
 {
 }
 
-Voxel::Voxel(VoxelType type, Position3D position) : m_VoxelType(type), m_Position(position), m_VisibleFaces(0)
+Voxel::Voxel(const VoxelType type, const Position3D position) : m_Position(position), m_VoxelType(type), m_VisibleFaces(0)
 {
 }
 
@@ -39,22 +37,22 @@ void Voxel::SetAllFacesVisible(bool visible)
 	m_VisibleFaces = visible ? 0x3F : 0;
 }
 
-VoxelFace Voxel::GetOpositeFace(VoxelFace face)
+VoxelFace Voxel::GetOppositeFace(VoxelFace face)
 {
 	switch (face)
 	{
-	case VoxelFace::TOP:
-		return VoxelFace::BOTTOM;
-	case VoxelFace::BOTTOM:
-		return VoxelFace::TOP;
-	case VoxelFace::FRONT:
-		return VoxelFace::BACK;
-	case VoxelFace::BACK:
-		return VoxelFace::FRONT;
-	case VoxelFace::RIGHT:
-		return VoxelFace::LEFT;
-	case VoxelFace::LEFT:
-		return VoxelFace::RIGHT;
+	case TOP:
+		return BOTTOM;
+	case BOTTOM:
+		return TOP;
+	case FRONT:
+		return BACK;
+	case BACK:
+		return FRONT;
+	case RIGHT:
+		return LEFT;
+	case LEFT:
+		return RIGHT;
 	}
 	return face;
 }
@@ -66,7 +64,7 @@ void Voxel::SetVoxelType(VoxelType type)
 
 VoxelType Voxel::GetVoxelType() const
 {
-	return (VoxelType)m_VoxelType;
+	return static_cast<VoxelType>(m_VoxelType);
 }
 
 void Voxel::SetPosition(Position3D pos)
@@ -81,7 +79,7 @@ Position3D Voxel::GetPosition() const
 
 bool Voxel::IsTransparent() const
 {
-	return m_VoxelType == VoxelType::AIR || m_VoxelType == VoxelType::LEAVES;
+	return m_VoxelType == AIR || m_VoxelType == LEAVES;
 }
 
 int Voxel::GetSunlight() const
@@ -89,7 +87,7 @@ int Voxel::GetSunlight() const
 	return (m_Light >> 4) & 0xF;
 }
 
-void Voxel::SetSunlight(int32_t val)
+void Voxel::SetSunlight(const int32_t val)
 {
 	m_Light = (m_Light & 0xF) | (val << 4);
 }
@@ -99,7 +97,7 @@ int Voxel::GetTorchlight() const
 	return m_Light & 0xF;
 }
 
-void Voxel::SetTorchlight(int32_t val)
+void Voxel::SetTorchlight(const int32_t val)
 {
 	m_Light = (m_Light & 0xF0) | val;
 }

@@ -7,7 +7,7 @@ namespace VoxelEngine
 {
 
 World::World(GLCore::Utils::PerspectiveCameraController& cameraController)
-	: m_ChunkMap({}), m_ChangedChunks(), m_DeferredChunkQueueMap(), m_ShouldGenerationRun(std::make_shared<bool>(false)), m_Mutex(std::mutex()),
+	: m_ChunkMap({}), m_ShouldGenerationRun(std::make_shared<bool>(false)), m_Mutex(std::mutex()),
 	m_CameraController(cameraController), m_Perlin(6512u)
 {
 }
@@ -36,13 +36,13 @@ void World::CheckChunkEdges(Chunk& chunk, Chunk::Neighbours& neighbours)
 			Voxel& left = voxelGrid[0][x][y];
 
 			if (neighbours.front != nullptr)
-				CheckVoxelEdge(front, neighbours.front->GetVoxelGrid()[x][0][y], VoxelFace::FRONT);
+				CheckVoxelEdge(front, neighbours.front->GetVoxelGrid()[x][0][y], FRONT);
 			if (neighbours.back != nullptr)
-				CheckVoxelEdge(back, neighbours.back->GetVoxelGrid()[x][CHUNK_WIDTH - 1][y], VoxelFace::BACK);
+				CheckVoxelEdge(back, neighbours.back->GetVoxelGrid()[x][CHUNK_WIDTH - 1][y], BACK);
 			if (neighbours.right != nullptr)
-				CheckVoxelEdge(right, neighbours.right->GetVoxelGrid()[0][x][y], VoxelFace::RIGHT);
+				CheckVoxelEdge(right, neighbours.right->GetVoxelGrid()[0][x][y], RIGHT);
 			if (neighbours.left != nullptr)
-				CheckVoxelEdge(left, neighbours.left->GetVoxelGrid()[CHUNK_WIDTH - 1][x][y], VoxelFace::LEFT);
+				CheckVoxelEdge(left, neighbours.left->GetVoxelGrid()[CHUNK_WIDTH - 1][x][y], LEFT);
 		}
 	}
 }
@@ -52,7 +52,7 @@ void World::CheckVoxelEdge(Voxel& v1, Voxel& v2, VoxelFace face)
 	if (!v1.IsTransparent() && v2.IsTransparent())
 		v1.SetFaceVisible(face, true);
 	else if (v1.IsTransparent() && !v2.IsTransparent())
-		v2.SetFaceVisible(Voxel::GetOpositeFace(face), true);
+		v2.SetFaceVisible(Voxel::GetOppositeFace(face), true);
 }
 
 void World::StopGeneration()
@@ -95,14 +95,14 @@ void World::GenerateWorld()
 		while (!chunkLocations.empty())
 		{
 			Position2D pos = chunkLocations.front();
-			threads.push_back(std::thread([this, pos] { this->GenerateChunk(pos); }));
+			threads.emplace_back([this, pos] { this->GenerateChunk(pos); });
 			chunkLocations.pop();
 		}
 
-		for (size_t i = 0; i < threads.size(); ++i)
+		for (auto& thread : threads)
 		{
-			if (threads[i].joinable())
-				threads[i].join();
+			if (thread.joinable())
+				thread.join();
 		}
 	}
 }
@@ -118,15 +118,15 @@ void World::GenerateChunk(Position2D position)
 	if (deferredQueueMap != m_DeferredChunkQueueMap.end())
 	{
 		m_Mutex.lock();
-		auto& defferedQueue = deferredQueueMap->second;
-		while (!defferedQueue.empty())
+		auto& deferredQueue = deferredQueueMap->second;
+		while (!deferredQueue.empty())
 		{
-			Voxel& v = defferedQueue.front();
+			Voxel& v = deferredQueue.front();
 			auto& voxelGrid = chunk->GetVoxelGrid();
 			const Position3D& p = v.GetPosition();
 			voxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
 			voxelGrid[p.GetX()][p.GetZ()][p.y].SetVoxelType(v.GetVoxelType());
-			defferedQueue.pop();
+			deferredQueue.pop();
 		}
 		m_Mutex.unlock();
 	}
@@ -195,16 +195,15 @@ std::queue<Position2D> World::FindNextChunkLocations(Position2D center, size_t c
 										Position2D(-x, r),
 										Position2D(-r, -x),
 										Position2D(r, -x) };
-			for (size_t i = 0; i < 8; ++i)
+			for (auto& location : locations)
 			{
-				if (locations[i].GetLength() > maxDistance)
+				if (location.GetLength() > maxDistance)
 					continue;
-				Position2D p = locations[i] + center;
+				Position2D p = location + center;
 				if (!IsPositionValid(existing, p))
 					continue;
-				Position2D pos = Position2D(p.x, p.y);
-				auto chunk = m_ChunkMap.find(pos);
-				if (chunk == m_ChunkMap.end() && std::find(existing.begin(), existing.end(), pos) == existing.end())
+				auto pos = Position2D(p.x, p.y);
+				if (auto chunk = m_ChunkMap.find(pos); chunk == m_ChunkMap.end() && !existing.contains(pos))
 				{
 					existing.insert(p);
 					positions.push(pos);
@@ -231,15 +230,15 @@ bool World::IsPositionValid(std::unordered_set<Position2D>& existing, Position2D
 								 Position2D(p.x + 1, p.y - 1),
 								 Position2D(p.x - 1, p.y + 1),
 								 Position2D(p.x - 1, p.y - 1) };
-	for (size_t i = 0; i < 12; ++i)
-		if (existing.find(locations[i]) != existing.end())
+	for (auto location : locations)
+		if (existing.contains(location))
 			return false;
 	return true;
 }
 
 Position2D World::WorldToChunkSpace(const glm::vec3& pos)
 {
-	return Position2D(glm::floor(pos.x / CHUNK_WIDTH), glm::floor(pos.z / CHUNK_WIDTH));
+	return {static_cast<int16_t>(glm::floor(pos.x / CHUNK_WIDTH)), static_cast<int16_t>(glm::floor(pos.z / CHUNK_WIDTH))};
 }
 
 const std::map<Position2D, std::shared_ptr<Chunk>>& World::GetChunkMap() const
@@ -257,7 +256,7 @@ std::mutex& World::GetLock()
 	return m_Mutex;
 }
 
-std::map<Position2D, std::queue<Voxel>>& World::GetDefferedChunkQueue()
+std::map<Position2D, std::queue<Voxel>>& World::GetDeferredChunkQueue()
 {
 	return m_DeferredChunkQueueMap;
 }

@@ -18,15 +18,13 @@ Chunk::Chunk(World& world, const siv::PerlinNoise& perlin) : Chunk(world, Positi
 Chunk::Chunk(World& world, Position2D position, const siv::PerlinNoise& perlin)
 	: m_World(world), m_Position(position), m_Mesh({}), m_VoxelGrid(), m_Perlin(perlin), m_Mutex(std::mutex())
 {
-	m_BorderMeshes.insert({ VoxelFace::FRONT, {} });
-	m_BorderMeshes.insert({ VoxelFace::RIGHT, {} });
-	m_BorderMeshes.insert({ VoxelFace::BACK, {} });
-	m_BorderMeshes.insert({ VoxelFace::LEFT, {} });
+	m_BorderMeshes.insert({ FRONT, {} });
+	m_BorderMeshes.insert({ RIGHT, {} });
+	m_BorderMeshes.insert({ BACK, {} });
+	m_BorderMeshes.insert({ LEFT, {} });
 }
 
-Chunk::~Chunk()
-{
-}
+Chunk::~Chunk() = default;
 
 void Chunk::Generate()
 {
@@ -35,8 +33,8 @@ void Chunk::Generate()
 	{
 		for (size_t z = 0; z < CHUNK_WIDTH; ++z)
 		{
-			const double_t height_bias = m_Perlin.octave2D_01(((double_t)m_Position.x * CHUNK_WIDTH + x) * 0.01,
-				((double_t)m_Position.y * CHUNK_WIDTH + z) * 0.01,
+			const double_t height_bias = m_Perlin.octave2D_01((x + static_cast<double_t>(m_Position.x) * CHUNK_WIDTH) * 0.01,
+				(z + static_cast<double_t>(m_Position.y) * CHUNK_WIDTH) * 0.01,
 				8);
 			size_t h = CHUNK_HEIGHT / 5 + glm::floor(height_bias * 3 * CHUNK_HEIGHT / 5);
 			heightMap[x][z] = h;
@@ -49,10 +47,10 @@ void Chunk::Generate()
 
 	int32_t i = 0;
 	std::vector<Structure> structures{};
-	double_t treeChance = m_Perlin.octave2D_01((double_t)m_Position.x + i, (double_t)m_Position.y + i, 2);
+	double_t treeChance = m_Perlin.octave2D_01(static_cast<double_t>(m_Position.x) + i, static_cast<double_t>(m_Position.y) + i, 2);
 	while (treeChance > 0.55 && structures.size() < 2)
 	{
-		int32_t random = m_Perlin.octave2D_01((double_t)m_Position.x + i, (double_t)m_Position.y + i, 2) * CHUNK_WIDTH * CHUNK_WIDTH;
+		const int32_t random = m_Perlin.octave2D_01(static_cast<double_t>(m_Position.x) + i, static_cast<double_t>(m_Position.y) + i, 2) * CHUNK_WIDTH * CHUNK_WIDTH;
 		size_t x = random / CHUNK_WIDTH;
 		size_t z = random % CHUNK_WIDTH;
 		++i;
@@ -82,18 +80,18 @@ void Chunk::Generate()
 void Chunk::AddStructures(std::vector<Structure> structures)
 {
 	std::unordered_set<std::shared_ptr<Chunk>> changedChunks{};
-	auto& defferedQueueMap = m_World.GetDefferedChunkQueue();
+	auto& deferredQueueMap = m_World.GetDeferredChunkQueue();
 	for (auto& s : structures)
 	{
 		Position3D p = s.GetRoot().GetPosition();
 		VoxelType soilType = m_VoxelGrid[p.GetX()][p.GetZ()][p.y - 1].GetVoxelType();
-		if (soilType == VoxelType::AIR || soilType == VoxelType::SNOW)
+		if (soilType == AIR || soilType == SNOW)
 			continue;
 		m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
 		m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
 		for (auto& v : s.GetVoxelData())
 		{
-			glm::i16vec3 position = (glm::i16vec3)p + v.first;
+			glm::i16vec3 position = static_cast<glm::i16vec3>(p) + v.first;
 			auto [chunkPosition, voxelPosition] = GetPositionRelativeToWorld(position);
 			if (chunkPosition == m_Position)
 			{
@@ -114,7 +112,7 @@ void Chunk::AddStructures(std::vector<Structure> structures)
 				chunk->GetLock().unlock();
 				continue;
 			}
-			defferedQueueMap[chunkPosition].push(Voxel(v.second, voxelPosition));
+			deferredQueueMap[chunkPosition].emplace(v.second, voxelPosition);
 		}
 	}
 	m_World.GetLock().lock();
@@ -139,23 +137,23 @@ void Chunk::GenerateMesh()
 			for (size_t y = 0; y < CHUNK_HEIGHT; ++y)
 			{
 				Voxel v = m_VoxelGrid[x][z][y];
-				if (v.GetVoxelType() == VoxelType::AIR)
+				if (v.GetVoxelType() == AIR)
 					continue;
 
 				if (y != 0 && m_VoxelGrid[x][z][y - 1].IsTransparent())
-					v.SetFaceVisible(VoxelFace::BOTTOM, true);
+					v.SetFaceVisible(BOTTOM, true);
 				if (y == CHUNK_HEIGHT - 1 || m_VoxelGrid[x][z][y + 1].IsTransparent())
-					v.SetFaceVisible(VoxelFace::TOP, true);
+					v.SetFaceVisible(TOP, true);
 
 				if (z < CHUNK_WIDTH - 1 && m_VoxelGrid[x][z + 1][y].IsTransparent())
-					v.SetFaceVisible(VoxelFace::FRONT, true);
+					v.SetFaceVisible(FRONT, true);
 				if (z > 0 && m_VoxelGrid[x][z - 1][y].IsTransparent())
-					v.SetFaceVisible(VoxelFace::BACK, true);
+					v.SetFaceVisible(BACK, true);
 
 				if (x < CHUNK_WIDTH - 1 && m_VoxelGrid[x + 1][z][y].IsTransparent())
-					v.SetFaceVisible(VoxelFace::RIGHT, true);
+					v.SetFaceVisible(RIGHT, true);
 				if (x > 0 && m_VoxelGrid[x - 1][z][y].IsTransparent())
-					v.SetFaceVisible(VoxelFace::LEFT, true);
+					v.SetFaceVisible(LEFT, true);
 
 				if (x == 0 || z == 0 || x == CHUNK_WIDTH - 1 || z == CHUNK_WIDTH - 1)
 					DetermineEdgeMeshes(meshBuilder, v, x, z);
@@ -179,13 +177,13 @@ void Chunk::GenerateEdgeMesh(VoxelFace face)
 		for (size_t y = 0; y < CHUNK_HEIGHT; y++)
 		{
 			Voxel v = m_VoxelGrid[x][x][y];
-			if (face == VoxelFace::FRONT)
+			if (face == FRONT)
 				v = m_VoxelGrid[x][CHUNK_WIDTH - 1][y];
-			else if (face == VoxelFace::BACK)
+			else if (face == BACK)
 				v = m_VoxelGrid[x][0][y];
-			else if (face == VoxelFace::RIGHT)
+			else if (face == RIGHT)
 				v = m_VoxelGrid[CHUNK_WIDTH - 1][x][y];
-			else if (face == VoxelFace::LEFT)
+			else if (face == LEFT)
 				v = m_VoxelGrid[0][x][y];
 			if (!v.IsFaceVisible(face))
 				continue;
@@ -228,25 +226,25 @@ void Chunk::DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& v, size_t 
 	if (x > 0 && x < CHUNK_WIDTH - 1)
 	{
 		if (z == CHUNK_WIDTH - 1)
-			AddEdgeMesh(meshBuilder, v, VoxelFace::FRONT);
+			AddEdgeMesh(meshBuilder, v, FRONT);
 		else if (z == 0)
-			AddEdgeMesh(meshBuilder, v, VoxelFace::BACK);
+			AddEdgeMesh(meshBuilder, v, BACK);
 	}
 	if (z > 0 && z < CHUNK_WIDTH - 1)
 	{
 		if (x == CHUNK_WIDTH - 1)
-			AddEdgeMesh(meshBuilder, v, VoxelFace::RIGHT);
+			AddEdgeMesh(meshBuilder, v, RIGHT);
 		else if (x == 0)
-			AddEdgeMesh(meshBuilder, v, VoxelFace::LEFT);
+			AddEdgeMesh(meshBuilder, v, LEFT);
 	}
 	if (x == 0 && z == 0)
-		AddEdgeMesh(meshBuilder, v, VoxelFace::BACK, VoxelFace::LEFT);
+		AddEdgeMesh(meshBuilder, v, BACK, LEFT);
 	if (x == 0 && z == CHUNK_WIDTH - 1)
-		AddEdgeMesh(meshBuilder, v, VoxelFace::FRONT, VoxelFace::LEFT);
+		AddEdgeMesh(meshBuilder, v, FRONT, LEFT);
 	if (x == CHUNK_WIDTH - 1 && z == 0)
-		AddEdgeMesh(meshBuilder, v, VoxelFace::BACK, VoxelFace::RIGHT);
+		AddEdgeMesh(meshBuilder, v, BACK, RIGHT);
 	if (x == CHUNK_WIDTH - 1 && z == CHUNK_WIDTH - 1)
-		AddEdgeMesh(meshBuilder, v, VoxelFace::FRONT, VoxelFace::RIGHT);
+		AddEdgeMesh(meshBuilder, v, FRONT, RIGHT);
 }
 
 void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f)
@@ -288,11 +286,11 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
 		((double_t)m_Position.y * CHUNK_WIDTH + z) * 0.02,
 		y * 0.02,
 		4);
-	VoxelType type = VoxelType::AIR;
+	VoxelType type = AIR;
 	density += 1 - (double_t)(y + h / 4) / CHUNK_HEIGHT;
 	if (density >= 0)
 	{
-		type = VoxelType::STONE;
+		type = STONE;
 		if (y > snowThreshold)
 		{
 			if (y == snowThreshold + 1)
@@ -303,13 +301,13 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
 		else
 		{
 			if (y > h - 5)
-				type = VoxelType::DIRT;
+				type = DIRT;
 			if (y == h - 1)
-				type = VoxelType::GRASS;
+				type = GRASS;
 		}
 	}
 	if (y == 0)
-		type = VoxelType::STONE;
+		type = STONE;
 	v.SetPosition(Position3D(x, y, z));
 	v.SetVoxelType(type);
 	++y;
@@ -342,8 +340,8 @@ std::mutex& Chunk::GetLock()
 
 glm::mat4 Chunk::GetModelMatrix() const
 {
-	glm::mat4 model(1.0f);
-	glm::vec3 pos = glm::vec3(m_Position.x, 0, m_Position.y);
+	constexpr glm::mat4 model(1.0f);
+	auto pos = glm::vec3(m_Position.x, 0, m_Position.y);
 	pos.x *= CHUNK_WIDTH;
 	pos.y *= CHUNK_HEIGHT;
 	pos.z *= CHUNK_WIDTH;

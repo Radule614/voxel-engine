@@ -13,9 +13,7 @@ SandboxLayer::SandboxLayer(EngineState& state) : m_State(state)
 {
 }
 
-SandboxLayer::~SandboxLayer()
-{
-}
+SandboxLayer::~SandboxLayer() = default;
 
 void SandboxLayer::OnAttach()
 {
@@ -38,8 +36,8 @@ void SandboxLayer::OnEvent(GLCore::Event& event)
 		{
 			if (e.GetKeyCode() == HZ_KEY_T)
 			{
-				glm::vec3 front = m_State.CameraController.GetCamera().GetFront();
-				glm::vec3 position = m_State.CameraController.GetCamera().GetPosition();
+				const glm::vec3 front = m_State.CameraController.GetCamera().GetFront();
+				const glm::vec3 position = m_State.CameraController.GetCamera().GetPosition();
 
 				PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
 				BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
@@ -54,13 +52,13 @@ void SandboxLayer::OnEvent(GLCore::Event& event)
 				registry.emplace<MeshComponent>(entity, m_Shader, m_Model->Meshes);
 				registry.emplace<TransformComponent>(entity, transform);
 				registry.emplace<ColliderComponent>(entity, collider);
-				m_SphereEntities.push_back(std::make_pair(entity, 0));
+				m_SphereEntities.emplace_back(entity, 0);
 			}
 			return false;
 		});
 }
 
-void SandboxLayer::OnUpdate(GLCore::Timestep ts)
+void SandboxLayer::OnUpdate(const GLCore::Timestep ts)
 {
 	for (auto it = m_SphereEntities.begin(); it != m_SphereEntities.end();)
 	{

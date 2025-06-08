@@ -23,9 +23,8 @@ EntityComponentSystem& EntityComponentSystem::Instance()
 	return *g_EntityComponentSystem;
 }
 
-entt::registry& EntityComponentSystem::GetEntityRegistry()
-{
-	return *m_EntityRegistry.get();
+entt::registry& EntityComponentSystem::GetEntityRegistry() const {
+	return *m_EntityRegistry;
 }
 
 }

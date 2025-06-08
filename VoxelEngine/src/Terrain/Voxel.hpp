@@ -43,7 +43,7 @@ public:
 	void SetFaceVisible(VoxelFace face, bool visible);
 	void SetAllFacesVisible(bool visible);
 
-	static VoxelFace GetOpositeFace(VoxelFace face);
+	static VoxelFace GetOppositeFace(VoxelFace face);
 	void SetVoxelType(VoxelType type);
 	VoxelType GetVoxelType() const;
 	void SetPosition(Position3D pos);

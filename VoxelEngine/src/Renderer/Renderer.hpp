@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
 #include "../Ecs/Ecs.hpp"
@@ -105,15 +104,15 @@ private:
 	void Render(GLCore::Utils::PerspectiveCamera& camera, GLCore::Utils::Shader* terrainShader, GLCore::Utils::Shader* meshShader);
 	void RenderPass(GLCore::Utils::PerspectiveCamera& camera);
 
-	void RenderMesh(MeshComponent& meshComponent, GLCore::Utils::PerspectiveCamera& camera, glm::mat4& model, GLCore::Utils::Shader* shader);
-	void RenderTerrain(std::unordered_map<Position2D, ChunkRenderData>& renderDataMap, GLCore::Utils::PerspectiveCamera& camera, GLCore::Utils::Shader* shader);
+	void RenderMesh(MeshComponent& meshComponent, const GLCore::Utils::PerspectiveCamera& camera, const glm::mat4& model, const GLCore::Utils::Shader* shader);
+	void RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap, const GLCore::Utils::PerspectiveCamera& camera, GLCore::Utils::Shader* shader);
 
-	void SetPointLightUniform(GLCore::Utils::Shader& shader, const std::string&, PointLight&);
-	void SetDirectionalLightUniform(GLCore::Utils::Shader& shader, const std::string&, DirectionalLight&);
-	void SetSpotLightUniform(GLCore::Utils::Shader& shader, const std::string&, SpotLight&);
+	void SetPointLightUniform(const GLCore::Utils::Shader& shader, const std::string&, const PointLight&);
+	void SetDirectionalLightUniform(const GLCore::Utils::Shader& shader, const std::string&, const DirectionalLight&);
+	void SetSpotLightUniform(const GLCore::Utils::Shader& shader, const std::string&, const SpotLight&);
 private:
 	GLCore::Window& m_Window;
-	VoxelEngine::Texture m_TextureAtlas;
+	Texture m_TextureAtlas;
 	DirectionalLight m_DirectionalLight;
 
 	GLCore::Utils::Shader* m_TerrainShader;

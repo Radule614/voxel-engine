@@ -17,7 +17,7 @@ public:
 	static void Shutdown();
 	static EntityComponentSystem& Instance();
 
-	entt::registry& GetEntityRegistry();
+	entt::registry& GetEntityRegistry() const;
 
 private:
 	EntityComponentSystem();

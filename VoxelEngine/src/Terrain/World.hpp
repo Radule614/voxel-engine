@@ -27,7 +27,7 @@ public:
 	const std::map<Position2D, std::shared_ptr<Chunk>>& GetChunkMap() const;
 	std::unordered_set<std::shared_ptr<Chunk>>& GetChangedChunks();
 	std::mutex& GetLock();
-	std::map<Position2D, std::queue<Voxel>>& GetDefferedChunkQueue();
+	std::map<Position2D, std::queue<Voxel>>& GetDeferredChunkQueue();
 	std::pair<Position2D, Position3D> GetPositionInWorld(glm::i16vec3 pos) const;
 	Position2D WorldToChunkSpace(const glm::vec3& pos);
 

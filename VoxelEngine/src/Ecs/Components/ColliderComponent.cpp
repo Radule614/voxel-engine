@@ -10,21 +10,19 @@ ColliderComponent::ColliderComponent(JPH::BodyID bodyId) : m_BodyId(bodyId)
 {
 }
 
-ColliderComponent::~ColliderComponent()
-{
-}
+ColliderComponent::~ColliderComponent() = default;
 
 JPH::BodyID ColliderComponent::GetBodyId() const
 {
 	return m_BodyId;
 }
 
-ColliderComponent ColliderFactory::CreateCollider(JPH::ShapeRefC shape, glm::vec3 p, EMotionType motion, EActivation activation)
+ColliderComponent ColliderFactory::CreateCollider(const JPH::ShapeRefC &shape, const glm::vec3 p, const EMotionType motion, const EActivation activation)
 {
 	BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
-	ObjectLayer layer = (motion == EMotionType::Static) ? Layers::NON_MOVING : Layers::MOVING;
-	BodyCreationSettings bodySettings(shape, Vec3(p.x, p.y, p.z), Quat::sIdentity(), motion, layer);
-	BodyID bodyId = bodyInterface.CreateAndAddBody(bodySettings, activation);
+	const ObjectLayer layer = (motion == EMotionType::Static) ? Layers::NON_MOVING : Layers::MOVING;
+	const BodyCreationSettings bodySettings(shape, Vec3(p.x, p.y, p.z), Quat::sIdentity(), motion, layer);
+	const BodyID bodyId = bodyInterface.CreateAndAddBody(bodySettings, activation);
 	ColliderComponent collider(bodyId);
 	return collider;
 }

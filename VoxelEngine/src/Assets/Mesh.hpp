@@ -8,7 +8,7 @@ namespace VoxelEngine
 class Mesh
 {
 public:
-	Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices, std::vector<Texture> textures);
+	Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, const std::vector<Texture>& textures);
 
 	std::vector<Texture>& GetTextures();
 	uint32_t GetVAO() const;

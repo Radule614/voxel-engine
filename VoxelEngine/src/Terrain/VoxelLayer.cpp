@@ -12,8 +12,8 @@ using namespace JPH;
 namespace VoxelEngine
 {
 
-VoxelLayer::VoxelLayer(EngineState& engineState)
-	: Layer("VoxelLayer"), m_EngineState(engineState), m_World(World(engineState.CameraController)), m_VoxelColliders({})
+VoxelLayer::VoxelLayer(EngineState& state)
+	: Layer("VoxelLayer"), m_EngineState(state), m_World(World(state.CameraController)), m_VoxelColliders({})
 {
 	BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
 	boxShapeSettings.SetEmbedded();
@@ -25,9 +25,7 @@ VoxelLayer::VoxelLayer(EngineState& engineState)
 	m_RenderData = &registry.get<TerrainComponent>(m_EntityId).RenderData;
 }
 
-VoxelLayer::~VoxelLayer()
-{
-}
+VoxelLayer::~VoxelLayer() = default;
 
 void VoxelLayer::OnAttach()
 {
@@ -80,7 +78,7 @@ void VoxelLayer::OnEvent(GLCore::Event& event)
 		});
 }
 
-void VoxelLayer::OnUpdate(Timestep ts)
+void VoxelLayer::OnUpdate(const Timestep ts)
 {
 	CheckChunkRenderQueue();
 	timeSinceLastColliderOptimization += ts;
@@ -96,8 +94,8 @@ void VoxelLayer::OnImGuiRender()
 	if (!m_EngineState.MenuActive)
 		return;
 
-	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
-	auto& io = ImGui::GetIO();
+	const ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
+	const auto& io = ImGui::GetIO();
 	ImGui::SetNextWindowSize(ImVec2(400.0, 600.0));
 	ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 400.0, 0));
 
@@ -122,14 +120,13 @@ void VoxelLayer::ApplyState() const
 	glPolygonMode(GL_FRONT_AND_BACK, TerrainConfig::PolygonMode);
 }
 
-void VoxelLayer::OnColliderLocationChanged(glm::vec3 pos)
+void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
 {
 	auto& chunkMap = m_World.GetChunkMap();
-	auto chunkIterator = m_World.GetChunkMap().find(m_World.WorldToChunkSpace(pos));
+	const auto chunkIterator = m_World.GetChunkMap().find(m_World.WorldToChunkSpace(pos));
 	if (chunkIterator == chunkMap.end())
 		return;
-	auto& chunk = chunkIterator->second;
-	int32_t r = 2;
+	constexpr int32_t r = 2;
 	for (int32_t x = -r; x <= r; ++x)
 	{
 		for (int32_t z = -r; z <= r; ++z)
@@ -142,7 +139,7 @@ void VoxelLayer::OnColliderLocationChanged(glm::vec3 pos)
 				if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
 					continue;
 				Voxel& v = it->second->GetVoxelGrid()[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
-				if (v.GetVoxelType() == VoxelType::AIR || m_VoxelColliders.find(p) != m_VoxelColliders.end())
+				if (v.GetVoxelType() == AIR || m_VoxelColliders.contains(p))
 					continue;
 				ColliderComponent collider = ColliderFactory::CreateCollider(m_VoxelShape, p, EMotionType::Static, EActivation::DontActivate);
 				m_VoxelColliders.insert(std::make_pair(p, collider));
@@ -156,21 +153,18 @@ void VoxelLayer::OptimizeColliders()
 	LOG_INFO("Body count before optimization: {0}", PhysicsEngine::Instance().GetSystem().GetNumBodies());
 	PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
 	BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
-	std::unordered_map<glm::i16vec3, ColliderComponent> collidersToRemove(m_VoxelColliders);
+	std::unordered_map collidersToRemove(m_VoxelColliders);
 	BodyIDVector bodies;
 	physicsSystem.GetBodies(bodies);
-	for (size_t i = 0; i < bodies.size(); ++i)
+	for (auto bodyId : bodies)
 	{
-		BodyID bodyId = bodies[i];
-		ObjectLayer layer = bodyInterface.GetObjectLayer(bodyId);
-		if (layer != Layers::MOVING)
+		if (const ObjectLayer layer = bodyInterface.GetObjectLayer(bodyId); layer != Layers::MOVING)
 			continue;
 		Vec3 jphPosition = bodyInterface.GetPosition(bodyId);
 		glm::vec3 p(jphPosition.GetX(), jphPosition.GetY(), jphPosition.GetZ());
 		for (auto& [pos, collider] : m_VoxelColliders)
 		{
-			float_t distance = glm::distance(p, (glm::vec3)pos);
-			if (distance < 3 && collidersToRemove.find(pos) != collidersToRemove.end())
+			if (const float_t distance = glm::distance(p, static_cast<glm::vec3>(pos)); distance < 3 && collidersToRemove.contains(pos))
 				collidersToRemove.erase(pos);
 		}
 	}
@@ -206,12 +200,10 @@ void VoxelLayer::CheckChunkRenderQueue()
 	worldLock.unlock();
 }
 
-void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
-{
+void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const {
 	ChunkRenderData data = {};
 	auto& renderDataMap = *m_RenderData;
-	auto renderData = renderDataMap.find(chunk->GetPosition());
-	if (renderData != renderDataMap.end())
+	if (const auto renderData = renderDataMap.find(chunk->GetPosition()); renderData != renderDataMap.end())
 	{
 		ChunkRenderData& m = renderData->second;
 		glDeleteVertexArrays(1, &m.VertexArray);
@@ -246,14 +238,14 @@ void VoxelLayer::SetupRenderData(std::shared_ptr<Chunk> chunk)
 	glBindBuffer(GL_ARRAY_BUFFER, data.VertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VoxelVertex), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), (void*)(offsetof(VoxelVertex, VoxelVertex::Normal)));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), reinterpret_cast<void *>((offsetof(VoxelVertex, VoxelVertex::Normal))));
 	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), (void*)(offsetof(VoxelVertex, VoxelVertex::TexCoords)));
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), reinterpret_cast<void *>((offsetof(VoxelVertex, VoxelVertex::TexCoords))));
 
 	std::vector<uint32_t> indices = {};
-	uint32_t faceCount = vertices.size() / 4;
+	const uint32_t faceCount = vertices.size() / 4;
 	for (uint32_t i = 0; i < faceCount; ++i)
 	{
 		indices.push_back(i * 4 + 0);

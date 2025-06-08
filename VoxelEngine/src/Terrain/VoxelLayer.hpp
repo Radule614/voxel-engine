@@ -32,7 +32,7 @@ private:
 	};
 
 	void CheckChunkRenderQueue();
-	void SetupRenderData(std::shared_ptr<Chunk> chunk);
+	void SetupRenderData(const std::shared_ptr<Chunk>& chunk) const;
 	void ApplyState() const;
 	void OnColliderLocationChanged(glm::vec3 pos);
 	void OptimizeColliders();
