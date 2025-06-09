@@ -10,11 +10,13 @@ namespace VoxelEngine
 class PhysicsLayer : public GLCore::Layer
 {
 public:
-	PhysicsLayer(EngineState& state);
+    PhysicsLayer(EngineState& state);
 
-	virtual void OnUpdate(GLCore::Timestep ts) override;
+    virtual virtual void OnAttach() override;
+    virtual void OnUpdate(GLCore::Timestep ts) override;
+
 private:
-	EngineState& m_State;
+    EngineState& m_State;
 };
 
 }

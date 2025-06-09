@@ -13,17 +13,17 @@ namespace VoxelEngine
 class EntityComponentSystem
 {
 public:
-	static void Init();
-	static void Shutdown();
-	static EntityComponentSystem& Instance();
+    static void Init();
+    static void Shutdown();
+    static EntityComponentSystem& Instance();
 
-	entt::registry& GetEntityRegistry() const;
-
-private:
-	EntityComponentSystem();
+    entt::registry& GetEntityRegistry() const;
 
 private:
-	std::unique_ptr<entt::registry> m_EntityRegistry;
+    EntityComponentSystem();
+
+private:
+    std::unique_ptr<entt::registry> m_EntityRegistry;
 };
 
 inline EntityComponentSystem* g_EntityComponentSystem = nullptr;

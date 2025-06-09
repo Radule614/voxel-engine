@@ -16,13 +16,14 @@ public:
     PerspectiveCameraController(float_t fov, float_t aspectRatio, float_t speed);
 
     void OnUpdate(Timestep ts);
-    void OnEvent(Event &e);
+    void OnEvent(Event& e);
 
-    PerspectiveCamera &GetCamera()
+    PerspectiveCamera& GetCamera()
     {
         return m_Camera;
     }
-    const PerspectiveCamera &GetCamera() const
+
+    const PerspectiveCamera& GetCamera() const
     {
         return m_Camera;
     }
@@ -31,6 +32,7 @@ public:
     {
         return m_ZoomLevel;
     }
+
     void SetZoomLevel(float_t level)
     {
         m_ZoomLevel = level;
@@ -42,9 +44,9 @@ public:
     }
 
 private:
-    bool OnMouseScrolled(MouseScrolledEvent &e);
-    bool OnWindowResized(WindowResizeEvent &e);
-    bool OnMouseMoved(MouseMovedEvent &e);
+    bool OnMouseScrolled(MouseScrolledEvent& e);
+    bool OnWindowResized(WindowResizeEvent& e);
+    bool OnMouseMoved(MouseMovedEvent& e);
 
 private:
     float_t m_AspectRatio;

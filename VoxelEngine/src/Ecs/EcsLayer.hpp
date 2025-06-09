@@ -9,15 +9,15 @@ namespace VoxelEngine
 class EcsLayer : public GLCore::Layer
 {
 public:
-	EcsLayer(EngineState& state);
-	~EcsLayer();
+    EcsLayer(EngineState& state);
+    ~EcsLayer();
 
-	virtual void OnAttach() override;
-	virtual void OnDetach() override;
-	virtual void OnUpdate(GLCore::Timestep ts) override;
+    virtual void OnAttach() override;
+    virtual void OnDetach() override;
+    virtual void OnUpdate(GLCore::Timestep ts) override;
 
 private:
-	EngineState& m_State;
+    EngineState& m_State;
 };
 
 }

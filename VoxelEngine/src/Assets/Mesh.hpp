@@ -8,20 +8,22 @@ namespace VoxelEngine
 class Mesh
 {
 public:
-	Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices, const std::vector<Texture>& textures);
+    Mesh(const std::vector<Vertex>& vertices,
+         const std::vector<uint32_t>& indices,
+         const std::vector<Texture>& textures);
 
-	std::vector<Texture>& GetTextures();
-	uint32_t GetVAO() const;
-	uint32_t GetIndexCount() const;
+    std::vector<Texture>& GetTextures();
+    uint32_t GetVAO() const;
+    uint32_t GetIndexCount() const;
 
 private:
-	void SetupMesh();
+    void SetupMesh();
 
 private:
-	uint32_t m_VAO, m_VBO, m_EBO;
-	std::vector<Vertex> m_Vertices;
-	std::vector<uint32_t> m_Indices;
-	std::vector<Texture> m_Textures;
+    uint32_t m_VAO, m_VBO, m_EBO;
+    std::vector<Vertex> m_Vertices;
+    std::vector<uint32_t> m_Indices;
+    std::vector<Texture> m_Textures;
 };
 
 }

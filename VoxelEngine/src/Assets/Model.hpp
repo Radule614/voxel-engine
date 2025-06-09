@@ -6,9 +6,15 @@ namespace VoxelEngine
 
 struct Model
 {
-	std::vector<Mesh> Meshes;
-	Model() {}
-	Model(std::vector<Mesh> meshes) : Meshes(meshes) {}
+    std::vector<Mesh> Meshes;
+
+    Model()
+    {
+    }
+
+    Model(const std::vector<Mesh>& meshes) : Meshes(meshes)
+    {
+    }
 };
 
 }

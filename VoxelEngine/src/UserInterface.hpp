@@ -10,15 +10,15 @@ namespace VoxelEngine
 class UserInterface : public GLCore::Layer
 {
 public:
-	UserInterface(EngineState& state);
-	~UserInterface();
+    UserInterface(EngineState& state);
+    ~UserInterface();
 
-	virtual void OnAttach() override;
-	virtual void OnEvent(GLCore::Event& event) override;
-	virtual void OnImGuiRender() override;
-	virtual void OnUpdate(GLCore::Timestep ts) override;
+    virtual void OnAttach() override;
+    virtual void OnEvent(GLCore::Event& event) override;
+    virtual void OnImGuiRender() override;
+    virtual void OnUpdate(GLCore::Timestep ts) override;
 
 private:
-	EngineState& m_State;
+    EngineState& m_State;
 };
 }

@@ -10,8 +10,8 @@ namespace VoxelEngine
 
 struct TerrainConfig
 {
-	static int32_t ThreadCount;
-	static int32_t PolygonMode;
+    static int32_t ThreadCount;
+    static int32_t PolygonMode;
 };
 
 }

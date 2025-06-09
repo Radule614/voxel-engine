@@ -13,23 +13,23 @@ namespace VoxelEngine
 class VoxelMeshBuilder
 {
 public:
-	VoxelMeshBuilder();
-	~VoxelMeshBuilder();
+    VoxelMeshBuilder();
+    ~VoxelMeshBuilder();
 
-	std::vector<VoxelVertex> FromVoxel(Voxel& voxel);
-	std::vector<VoxelVertex> FromVoxel(Voxel& voxel, VoxelFace f);
-	std::vector<VoxelVertex> FromVoxelFaces(Voxel& voxel, bool faces[6]);
-	std::vector<VoxelVertex> FromVoxelExceptFaces(Voxel& voxel, bool faces[6]);
-
-private:
-	static void Init();
+    std::vector<VoxelVertex> FromVoxel(Voxel& voxel);
+    std::vector<VoxelVertex> FromVoxel(Voxel& voxel, VoxelFace f);
+    std::vector<VoxelVertex> FromVoxelFaces(Voxel& voxel, bool faces[6]);
+    std::vector<VoxelVertex> FromVoxelExceptFaces(Voxel& voxel, bool faces[6]);
 
 private:
-	static bool s_Initialized;
-	static std::vector<glm::vec2> s_TextureCoordinates;
-	static std::unordered_map<VoxelFace, std::vector<glm::vec3>> s_PositionMap;
-	static std::unordered_map<VoxelFace, glm::vec3> s_NormalMap;
-	static std::unordered_map<VoxelType, std::vector<int32_t>> s_FaceTextureMap;
+    static void Init();
+
+private:
+    static bool s_Initialized;
+    static std::vector<glm::vec2> s_TextureCoordinates;
+    static std::unordered_map<VoxelFace, std::vector<glm::vec3> > s_PositionMap;
+    static std::unordered_map<VoxelFace, glm::vec3> s_NormalMap;
+    static std::unordered_map<VoxelType, std::vector<int32_t> > s_FaceTextureMap;
 };
 
 };

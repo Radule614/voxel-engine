@@ -15,24 +15,27 @@ namespace VoxelEngine
 class AssetManager
 {
 public:
-	static void Init();
-	static void Shutdown();
-	static AssetManager& Instance();
+    static void Init();
+    static void Shutdown();
+    static AssetManager& Instance();
 
-	Texture& LoadTexture(std::string path, std::string type);
-	uint32_t LoadCubemap(std::vector<std::string> faces);
+    Texture& LoadTexture(std::string path, std::string type);
+    uint32_t LoadCubemap(std::vector<std::string> faces);
 
-	Model* LoadModel(std::string path);
+    Model* LoadModel(std::string path);
 
 private:
-	static std::vector<Texture> m_LoadedTextures;
+    static std::vector<Texture> m_LoadedTextures;
 
-	uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);
-	uint32_t LoadTextureFromFile(const std::string& path, int32_t type, bool flip, const std::string& directory);
+    uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);
+    uint32_t LoadTextureFromFile(const std::string& path, int32_t type, bool flip, const std::string& directory);
 
-	void ProcessNode(aiNode* node, const aiScene* scene, Model& model, std::string directory);
-	Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene, std::string directory);
-	std::vector<Texture> LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, std::string directory);
+    void ProcessNode(aiNode* node, const aiScene* scene, Model& model, std::string directory);
+    Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene, std::string directory);
+    std::vector<Texture> LoadMaterialTextures(aiMaterial* mat,
+                                              aiTextureType type,
+                                              std::string typeName,
+                                              std::string directory);
 };
 
 inline AssetManager* g_AssetManager = nullptr;
