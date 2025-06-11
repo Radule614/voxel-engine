@@ -7,6 +7,7 @@
 #include "World.hpp"
 #include "../EngineState.hpp"
 #include "../Physics/PhysicsEngine.hpp"
+#include "../Physics/Factories/PhysicsFactory.hpp"
 #include "../Renderer/Renderer.hpp"
 
 namespace VoxelEngine
@@ -42,10 +43,12 @@ private:
     UIState m_UIState;
     World m_World;
     std::unordered_map<Position2D, ChunkRenderData>* m_RenderData;
-    JPH::ShapeRefC m_VoxelShape;
     std::unordered_map<glm::i16vec3, ColliderComponent> m_VoxelColliders;
     float_t timeSinceLastColliderOptimization = 0.0f;
-    entt::entity m_EntityId;
+
+    PhysicsFactory m_PhysicsFactory;
+    JPH::ShapeRefC m_VoxelShape;
+    entt::entity m_TerrainEntityId;
 };
 
 };

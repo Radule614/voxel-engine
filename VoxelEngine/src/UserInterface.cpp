@@ -12,9 +12,7 @@ UserInterface::UserInterface(EngineState& state) : m_State(state)
 {
 }
 
-UserInterface::~UserInterface()
-{
-}
+UserInterface::~UserInterface() = default;
 
 void UserInterface::OnAttach()
 {

@@ -15,14 +15,12 @@ namespace VoxelEngine
 VoxelLayer::VoxelLayer(EngineState& state)
     : Layer("VoxelLayer"), m_EngineState(state), m_World(World(state.CameraController)), m_VoxelColliders({})
 {
-    BoxShapeSettings boxShapeSettings(Vec3(0.5f, 0.5f, 0.5f));
-    boxShapeSettings.SetEmbedded();
-    m_VoxelShape = boxShapeSettings.Create().Get();
+    m_VoxelShape = m_PhysicsFactory.CreateBoxShape(glm::vec3(0.5f));
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    m_EntityId = registry.create();
-    registry.emplace<TerrainComponent>(m_EntityId);
-    m_RenderData = &registry.get<TerrainComponent>(m_EntityId).RenderData;
+    m_TerrainEntityId = registry.create();
+    registry.emplace<TerrainComponent>(m_TerrainEntityId);
+    m_RenderData = &registry.get<TerrainComponent>(m_TerrainEntityId).RenderData;
 }
 
 VoxelLayer::~VoxelLayer() = default;
@@ -36,9 +34,9 @@ void VoxelLayer::OnDetach()
 {
     m_World.StopGeneration();
     auto& renderDataMap = *m_RenderData;
-    for (auto it = renderDataMap.begin(); it != renderDataMap.end(); ++it)
+    for (auto& it: renderDataMap)
     {
-        ChunkRenderData& data = it->second;
+        ChunkRenderData& data = it.second;
         glDeleteVertexArrays(1, &data.VertexArray);
         glDeleteBuffers(1, &data.VertexBuffer);
         glDeleteBuffers(1, &data.IndexBuffer);
@@ -58,7 +56,7 @@ void VoxelLayer::OnEvent(GLCore::Event& event)
     dispatcher.Dispatch<StatePauseEvent>(
         [&](StatePauseEvent& e) {
             m_World.StopGeneration();
-            UIState state;
+            const UIState state;
             m_UIState = state;
             return false;
         });
@@ -68,7 +66,7 @@ void VoxelLayer::OnEvent(GLCore::Event& event)
             return false;
         });
     dispatcher.Dispatch<ColliderLocationChangedEvent>(
-        [&](ColliderLocationChangedEvent& e) {
+        [&](const ColliderLocationChangedEvent& e) {
             OnColliderLocationChanged(e.GetLocation());
             return true;
         });
@@ -90,9 +88,9 @@ void VoxelLayer::OnImGuiRender()
     if (!m_EngineState.MenuActive)
         return;
 
-    const ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                                         ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
-                                         ImGuiWindowFlags_NoMove;
+    constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                                             ImGuiWindowFlags_NoMove;
     const auto& io = ImGui::GetIO();
     ImGui::SetNextWindowSize(ImVec2(400.0, 600.0));
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 400.0, 0));
@@ -139,7 +137,7 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
                 Voxel& v = it->second->GetVoxelGrid()[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
                 if (v.GetVoxelType() == AIR || m_VoxelColliders.contains(p))
                     continue;
-                ColliderComponent collider = ColliderFactory::CreateCollider(
+                ColliderComponent collider = m_PhysicsFactory.CreateAndAddCollider(
                     m_VoxelShape,
                     p,
                     EMotionType::Static,
@@ -249,14 +247,14 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
                           GL_FLOAT,
                           GL_FALSE,
                           sizeof(VoxelVertex),
-                          reinterpret_cast<void*>((offsetof(VoxelVertex, VoxelVertex::Normal))));
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Normal)));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2,
                           2,
                           GL_FLOAT,
                           GL_FALSE,
                           sizeof(VoxelVertex),
-                          reinterpret_cast<void*>((offsetof(VoxelVertex, VoxelVertex::TexCoords))));
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::TexCoords)));
 
     std::vector<uint32_t> indices = {};
     const uint32_t faceCount = vertices.size() / 4;

@@ -172,7 +172,7 @@ void Chunk::GenerateMesh()
     }
 }
 
-void Chunk::GenerateEdgeMesh(VoxelFace face)
+void Chunk::GenerateEdgeMesh(const VoxelFace face)
 {
     std::vector<VoxelVertex>& mesh = m_BorderMeshes.at(face);
     mesh.clear();
@@ -286,13 +286,13 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
         v.SetPosition(Position3D(x, y, z));
         return;
     }
-    int32_t snowThreshold = 3 * CHUNK_HEIGHT / 5;
-    double_t density = m_Perlin.octave3D(((double_t) m_Position.x * CHUNK_WIDTH + x) * 0.02,
-                                         ((double_t) m_Position.y * CHUNK_WIDTH + z) * 0.02,
+    const int32_t snowThreshold = 3 * CHUNK_HEIGHT / 5;
+    double_t density = m_Perlin.octave3D((static_cast<double_t>(m_Position.x) * CHUNK_WIDTH + x) * 0.02,
+                                         (static_cast<double_t>(m_Position.y) * CHUNK_WIDTH + z) * 0.02,
                                          y * 0.02,
                                          4);
     VoxelType type = AIR;
-    density += 1 - (double_t) (y + h / 4) / CHUNK_HEIGHT;
+    density += 1 - static_cast<double_t>(y + h / 4) / CHUNK_HEIGHT;
     if (density >= 0)
     {
         type = STONE;
@@ -327,7 +327,7 @@ const std::vector<VoxelVertex>& Chunk::GetMesh() const
     return m_Mesh;
 }
 
-const std::vector<VoxelVertex>& Chunk::GetBorderMesh(VoxelFace face) const
+const std::vector<VoxelVertex>& Chunk::GetBorderMesh(const VoxelFace face) const
 {
     return m_BorderMeshes.at(face);
 }

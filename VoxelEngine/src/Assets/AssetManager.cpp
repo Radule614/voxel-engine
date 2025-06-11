@@ -26,14 +26,14 @@ AssetManager& AssetManager::Instance()
     return *g_AssetManager;
 }
 
-Texture& AssetManager::LoadTexture(std::string path, std::string type)
+Texture& AssetManager::LoadTexture(const std::string& path, const std::string& type)
 {
-    for (uint32_t i = 0; i < m_LoadedTextures.size(); i++)
+    for (auto& m_LoadedTexture: m_LoadedTextures)
     {
-        if (std::strcmp(m_LoadedTextures[i].path.data(), path.c_str()) == 0)
+        if (std::strcmp(m_LoadedTexture.path.data(), path.c_str()) == 0)
         {
-            LOG_INFO("Texture already present: " + m_LoadedTextures[i].path);
-            return m_LoadedTextures[i];
+            LOG_INFO("Texture already present: " + m_LoadedTexture.path);
+            return m_LoadedTexture;
         }
     }
 
@@ -46,7 +46,7 @@ Texture& AssetManager::LoadTexture(std::string path, std::string type)
     return m_LoadedTextures[m_LoadedTextures.size() - 1];
 }
 
-Model* AssetManager::LoadModel(std::string path)
+Model* AssetManager::LoadModel(const std::string& path)
 {
     Assimp::Importer import;
     const aiScene* scene = import.
@@ -62,7 +62,7 @@ Model* AssetManager::LoadModel(std::string path)
     return model;
 }
 
-uint32_t AssetManager::LoadCubemap(std::vector<std::string> faces)
+uint32_t AssetManager::LoadCubemap(const std::vector<std::string>& faces)
 {
     uint32_t textureID;
     glGenTextures(1, &textureID);
@@ -100,7 +100,7 @@ uint32_t AssetManager::LoadCubemap(std::vector<std::string> faces)
     return textureID;
 }
 
-uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip)
+uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, const int32_t type, const bool flip)
 {
     uint32_t id;
     glGenTextures(1, &id);
@@ -128,14 +128,14 @@ uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, int32_t 
 }
 
 uint32_t AssetManager::LoadTextureFromFile(const std::string& path,
-                                           int32_t type,
-                                           bool flip,
+                                           const int32_t type,
+                                           const bool flip,
                                            const std::string& directory)
 {
     return LoadTextureFromFile(directory + "/" + path, flip, type);
 }
 
-void AssetManager::ProcessNode(aiNode* node, const aiScene* scene, Model& model, std::string directory)
+void AssetManager::ProcessNode(const aiNode* node, const aiScene* scene, Model& model, const std::string& directory)
 {
     for (size_t i = 0; i < node->mNumMeshes; i++)
     {
@@ -199,10 +199,10 @@ Mesh AssetManager::ProcessMesh(aiMesh* mesh, const aiScene* scene, std::string d
     return Mesh(vertices, indices, textures);
 }
 
-std::vector<Texture> AssetManager::LoadMaterialTextures(aiMaterial* mat,
-                                                        aiTextureType type,
-                                                        std::string typeName,
-                                                        std::string directory)
+std::vector<Texture> AssetManager::LoadMaterialTextures(const aiMaterial* mat,
+                                                        const aiTextureType type,
+                                                        const std::string& typeName,
+                                                        const std::string& directory)
 {
     std::vector<Texture> textures;
     for (size_t i = 0; i < mat->GetTextureCount(type); i++)
@@ -211,11 +211,11 @@ std::vector<Texture> AssetManager::LoadMaterialTextures(aiMaterial* mat,
         mat->GetTexture(type, i, &str);
         bool skip = false;
         std::string fullPath = directory + "/" + str.C_Str();
-        for (size_t j = 0; j < m_LoadedTextures.size(); j++)
+        for (auto& m_LoadedTexture: m_LoadedTextures)
         {
-            if (std::strcmp(m_LoadedTextures[j].path.data(), fullPath.c_str()) == 0)
+            if (std::strcmp(m_LoadedTexture.path.data(), fullPath.c_str()) == 0)
             {
-                textures.push_back(m_LoadedTextures[j]);
+                textures.push_back(m_LoadedTexture);
                 skip = true;
                 break;
             }
