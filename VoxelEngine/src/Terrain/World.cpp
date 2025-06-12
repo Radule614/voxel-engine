@@ -6,7 +6,7 @@
 namespace VoxelEngine
 {
 
-World::World(GLCore::Utils::PerspectiveCameraController& cameraController)
+World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController)
     : m_ChunkMap({}),
       m_CameraController(cameraController),
       m_Perlin(6512u),
@@ -91,7 +91,7 @@ void World::GenerateWorld()
 {
     while (*m_ShouldGenerationRun)
     {
-        Position2D center = WorldToChunkSpace(m_CameraController.GetCamera().GetPosition());
+        Position2D center = WorldToChunkSpace(m_CameraController->GetCamera().GetPosition());
         std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, TerrainConfig::ThreadCount);
         std::vector<std::thread> threads = {};
 

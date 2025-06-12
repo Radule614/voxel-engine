@@ -7,7 +7,11 @@
 namespace GLCore::Utils
 {
 PerspectiveCameraController::PerspectiveCameraController(float_t fov, float_t aspectRatio, float_t speed)
-    : m_AspectRatio(aspectRatio), m_Camera(fov, aspectRatio), m_Fov(fov), m_CameraTranslationSpeed(speed)
+    : m_AspectRatio(aspectRatio),
+      m_Camera(fov, aspectRatio),
+      m_Fov(fov),
+      m_CameraTranslationSpeed(speed),
+      m_FreeFly(true)
 {
 }
 
@@ -15,8 +19,10 @@ PerspectiveCameraController::PerspectiveCameraController() : PerspectiveCameraCo
 {
 }
 
-void PerspectiveCameraController::OnUpdate(Timestep ts)
+void PerspectiveCameraController::OnUpdate(const Timestep ts)
 {
+    if (m_FreeFly)
+        return;
     auto frontDir = glm::vec3();
     auto rightDir = glm::vec3();
     if (Input::IsKeyPressed(HZ_KEY_A))
@@ -55,14 +61,14 @@ bool PerspectiveCameraController::OnMouseScrolled(MouseScrolledEvent& e)
     return false;
 }
 
-bool PerspectiveCameraController::OnWindowResized(WindowResizeEvent& e)
+bool PerspectiveCameraController::OnWindowResized(const WindowResizeEvent& e)
 {
     m_AspectRatio = static_cast<float_t>(e.GetWidth()) / static_cast<float_t>(e.GetHeight());
     m_Camera.SetProjection(m_Fov, m_AspectRatio);
     return false;
 }
 
-bool PerspectiveCameraController::OnMouseMoved(MouseMovedEvent& e)
+bool PerspectiveCameraController::OnMouseMoved(const MouseMovedEvent& e)
 {
     if (m_First)
     {

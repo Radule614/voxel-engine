@@ -14,7 +14,7 @@ Mesh::Mesh(const std::vector<Vertex>& vertices,
     SetupMesh();
 }
 
-std::vector<Texture>& Mesh::GetTextures()
+const std::vector<Texture>& Mesh::GetTextures() const
 {
     return m_Textures;
 }

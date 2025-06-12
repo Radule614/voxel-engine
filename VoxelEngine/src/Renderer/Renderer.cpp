@@ -83,7 +83,7 @@ void Renderer::RenderPass(const PerspectiveCamera& camera)
     Render(camera, m_TerrainShader, m_MeshShader);
 }
 
-void Renderer::RenderMesh(MeshComponent& meshComponent,
+void Renderer::RenderMesh(const MeshComponent& meshComponent,
                           const PerspectiveCamera& camera,
                           const glm::mat4& model,
                           const Shader* shader)
@@ -92,12 +92,12 @@ void Renderer::RenderMesh(MeshComponent& meshComponent,
     shader->SetVec3("u_CameraPos", camera.GetPosition());
     shader->SetModel(model);
     SetDirectionalLightUniform(*shader, "u_DirectionalLight", m_DirectionalLight);
-    for (Mesh& mesh: meshComponent.GetMeshes())
+    for (const Mesh& mesh: meshComponent.Meshes)
     {
         uint32_t diffuseNr = 1;
         uint32_t specularNr = 1;
         uint32_t normalNr = 1;
-        auto& textures = mesh.GetTextures();
+        const auto& textures = mesh.GetTextures();
         for (size_t i = 0; i < textures.size(); i++)
         {
             glActiveTexture(GL_TEXTURE0 + i);

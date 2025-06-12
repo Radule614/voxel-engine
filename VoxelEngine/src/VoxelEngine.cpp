@@ -1,6 +1,7 @@
 #include "GLCore.hpp"
 #include "Terrain/VoxelLayer.hpp"
 #include "UserInterface.hpp"
+#include "Assets/AssetManager.hpp"
 #include "Physics/PhysicsLayer.hpp"
 #include "Physics/PhysicsEngine.hpp"
 #include "Ecs/Ecs.hpp"
@@ -30,10 +31,14 @@ private:
     void Setup()
     {
         m_State.Application = this;
-        m_State.CameraController = Utils::PerspectiveCameraController(45.0f, 16.0f / 9.0f, 100.0f);
-        m_State.CameraController.GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
 
-        DirectionalLight light = {
+        auto cameraController = std::make_shared<Utils::PerspectiveCameraController>(45.0f, 16.0f / 9.0f, 100.0f);
+        cameraController = std::make_shared<Utils::PerspectiveCameraController>(45.0f, 16.0f / 9.0f, 100.0f);
+        cameraController->GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
+        cameraController->SetFreeFly(false);
+        m_State.CameraController = std::move(cameraController);
+
+        const DirectionalLight light = {
             glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)),
             glm::vec3(0.25f),
             glm::vec3(1.0f),

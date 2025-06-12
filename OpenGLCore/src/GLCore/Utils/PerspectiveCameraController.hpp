@@ -43,10 +43,20 @@ public:
         return m_Fov;
     }
 
+    void SetFreeFly(const bool freeFly)
+    {
+        m_FreeFly = freeFly;
+    }
+
+    bool IsFreeFly() const
+    {
+        return m_FreeFly;
+    }
+
 private:
     bool OnMouseScrolled(MouseScrolledEvent& e);
-    bool OnWindowResized(WindowResizeEvent& e);
-    bool OnMouseMoved(MouseMovedEvent& e);
+    bool OnWindowResized(const WindowResizeEvent& e);
+    bool OnMouseMoved(const MouseMovedEvent& e);
 
 private:
     float_t m_AspectRatio;
@@ -63,5 +73,6 @@ private:
     float_t m_Pitch = 0.0f;
 
     bool m_First = true;
+    bool m_FreeFly;
 };
 }

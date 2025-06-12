@@ -3,6 +3,7 @@
 #include "../Ecs/Ecs.hpp"
 #include "../Renderer/Renderer.hpp"
 #include "../Utils/Utils.hpp"
+#include "Components/CameraComponent.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -31,22 +32,25 @@ void EcsLayer::OnDetach()
 {
 }
 
-void EcsLayer::OnUpdate(GLCore::Timestep ts)
+void EcsLayer::OnUpdate(Timestep ts)
 {
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
     const BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    for (const auto colliderView = registry.view<ColliderComponent>(); const auto entity: colliderView)
+
+    const auto colliderTransformView = registry.view<ColliderComponent, TransformComponent>();
+    for (const auto entity: colliderTransformView)
     {
-        auto& collider = colliderView.get<ColliderComponent>(entity);
-        auto bodyId = collider.GetBodyId();
+        const auto& collider = colliderTransformView.get<ColliderComponent>(entity);
+        auto bodyId = collider.BodyId;
         if (!bodyInterface.IsActive(bodyId))
             continue;
         RVec3 p = bodyInterface.GetCenterOfMassPosition(bodyId);
-        Vec3 r;
+        Vec3 r{};
         float_t angle;
         bodyInterface.GetRotation(bodyId).GetAxisAngle(r, angle);
-        auto& transform = registry.view<TransformComponent>().get<TransformComponent>(entity);
+
+        auto& transform = colliderTransformView.get<TransformComponent>(entity);
         transform.PreviousPosition = transform.Position;
         transform.Position = glm::vec3(p.GetX(), p.GetY(), p.GetZ());
         transform.RotationAngle = angle;
@@ -61,7 +65,19 @@ void EcsLayer::OnUpdate(GLCore::Timestep ts)
             m_State.Application->RaiseEvent(event);
         }
     }
-    Renderer::Instance().RenderScene(m_State.CameraController.GetCamera());
+
+    const auto cameraTransformView = registry.view<CameraComponent, TransformComponent>();
+    for (const auto entity: cameraTransformView)
+    {
+        const auto& cameraComponent = cameraTransformView.get<CameraComponent>(entity);
+        if (cameraComponent.CameraController->IsFreeFly())
+            continue;
+        const auto& transform = cameraTransformView.get<TransformComponent>(entity);
+        auto& camera = cameraComponent.CameraController->GetCamera();
+        camera.SetPosition(transform.Position);
+    }
+
+    Renderer::Instance().RenderScene(m_State.CameraController->GetCamera());
 }
 
 }

@@ -18,7 +18,7 @@ namespace VoxelEngine
 class World
 {
 public:
-    World(GLCore::Utils::PerspectiveCameraController& cameraController);
+    World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController);
     ~World();
 
     void StartGeneration();
@@ -45,7 +45,7 @@ private:
     std::map<Position2D, std::shared_ptr<Chunk> > m_ChunkMap;
     std::unordered_set<std::shared_ptr<Chunk> > m_ChangedChunks;
     std::map<Position2D, std::queue<Voxel> > m_DeferredChunkQueueMap;
-    GLCore::Utils::PerspectiveCameraController& m_CameraController;
+    std::shared_ptr<GLCore::Utils::PerspectiveCameraController> m_CameraController;
 
     siv::PerlinNoise m_Perlin;
 

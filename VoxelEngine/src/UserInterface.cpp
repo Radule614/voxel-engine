@@ -22,7 +22,7 @@ void UserInterface::OnAttach()
 void UserInterface::OnEvent(GLCore::Event& event)
 {
     if (!m_State.MenuActive)
-        m_State.CameraController.OnEvent(event);
+        m_State.CameraController->OnEvent(event);
     EventDispatcher dispatcher(event);
     dispatcher.Dispatch<KeyPressedEvent>(
         [&](KeyPressedEvent& e) {
@@ -67,7 +67,7 @@ void UserInterface::OnImGuiRender()
 void UserInterface::OnUpdate(GLCore::Timestep ts)
 {
     if (!m_State.MenuActive)
-        m_State.CameraController.OnUpdate(ts);
+        m_State.CameraController->OnUpdate(ts);
 }
 
 }

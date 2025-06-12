@@ -12,7 +12,7 @@ public:
          const std::vector<uint32_t>& indices,
          const std::vector<Texture>& textures);
 
-    std::vector<Texture>& GetTextures();
+    const std::vector<Texture>& GetTextures() const;
     uint32_t GetVAO() const;
     uint32_t GetIndexCount() const;
 

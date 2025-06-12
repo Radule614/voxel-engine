@@ -172,8 +172,8 @@ void VoxelLayer::OptimizeColliders()
     for (auto& [pos, collider]: collidersToRemove)
     {
         m_VoxelColliders.erase(m_VoxelColliders.find(pos));
-        bodyInterface.RemoveBody(collider.GetBodyId());
-        bodyInterface.DestroyBody(collider.GetBodyId());
+        bodyInterface.RemoveBody(collider.BodyId);
+        bodyInterface.DestroyBody(collider.BodyId);
     }
     LOG_INFO("Body count after optimization: {0}", PhysicsEngine::Instance().GetSystem().GetNumBodies());
 }

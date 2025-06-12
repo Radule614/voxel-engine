@@ -1,5 +1,7 @@
 #include "SandboxLayer.hpp"
 #include "../Physics/PhysicsEngine.hpp"
+#include "../Assets/AssetManager.hpp"
+#include "../Ecs/Components/CameraComponent.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -27,6 +29,22 @@ void SandboxLayer::OnAttach()
     glCullFace(GL_FRONT);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    const auto& cameraController = m_State.CameraController;
+    ColliderComponent collider = m_PhysicsFactory.CreateAndAddCapsuleCollider(
+        cameraController->GetCamera().GetPosition(),
+        1.0f,
+        0.5f,
+        EMotionType::Dynamic,
+        EActivation::Activate);
+    TransformComponent transform{};
+    transform.Scale = glm::vec3(1.0f);
+
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    const auto entity = registry.create();
+    registry.emplace<TransformComponent>(entity, transform);
+    registry.emplace<ColliderComponent>(entity, collider);
+    registry.emplace<CameraComponent>(entity, cameraController);
 }
 
 void SandboxLayer::OnEvent(Event& event)
@@ -36,8 +54,9 @@ void SandboxLayer::OnEvent(Event& event)
         [&](const KeyPressedEvent& e) {
             if (e.GetKeyCode() == HZ_KEY_T)
             {
-                const glm::vec3 front = m_State.CameraController.GetCamera().GetFront();
-                const glm::vec3 position = m_State.CameraController.GetCamera().GetPosition();
+                const PerspectiveCamera& camera = m_State.CameraController->GetCamera();
+                const glm::vec3 front = camera.GetFront();
+                const glm::vec3 position = camera.GetPosition();
 
                 ColliderComponent collider = m_PhysicsFactory.CreateAndAddSphereCollider(
                     0.4f,
@@ -45,7 +64,7 @@ void SandboxLayer::OnEvent(Event& event)
                     EMotionType::Dynamic,
                     EActivation::Activate);
                 BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
-                bodyInterface.AddLinearVelocity(collider.GetBodyId(), 20 * Vec3(front.x, front.y, front.z));
+                bodyInterface.AddLinearVelocity(collider.BodyId, 20 * Vec3(front.x, front.y, front.z));
                 TransformComponent transform{};
                 transform.Scale = glm::vec3(0.4);
 
@@ -72,8 +91,8 @@ void SandboxLayer::OnUpdate(const Timestep ts)
             BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
             auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
             auto& collider = registry.view<ColliderComponent>().get<ColliderComponent>(sphere);
-            bodyInterface.RemoveBody(collider.GetBodyId());
-            bodyInterface.DestroyBody(collider.GetBodyId());
+            bodyInterface.RemoveBody(collider.BodyId);
+            bodyInterface.DestroyBody(collider.BodyId);
             registry.destroy(sphere);
             it = m_SphereEntities.erase(it);
         } else

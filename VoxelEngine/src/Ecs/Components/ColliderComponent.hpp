@@ -5,16 +5,13 @@
 namespace VoxelEngine
 {
 
-class ColliderComponent
+struct ColliderComponent
 {
-public:
-    ColliderComponent(JPH::BodyID bodyId);
-    ~ColliderComponent();
+    ColliderComponent(const JPH::BodyID bodyId) : BodyId(bodyId)
+    {
+    }
 
-    JPH::BodyID GetBodyId() const;
-
-private:
-    JPH::BodyID m_BodyId;
+    JPH::BodyID BodyId;
 };
 
 }

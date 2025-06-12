@@ -106,7 +106,7 @@ private:
                 const GLCore::Utils::Shader* meshShader);
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera);
 
-    void RenderMesh(MeshComponent& meshComponent,
+    void RenderMesh(const MeshComponent& meshComponent,
                     const GLCore::Utils::PerspectiveCamera& camera,
                     const glm::mat4& model,
                     const GLCore::Utils::Shader* shader);
