@@ -18,40 +18,12 @@ public:
     void OnUpdate(Timestep ts);
     void OnEvent(Event& e);
 
-    PerspectiveCamera& GetCamera()
-    {
-        return m_Camera;
-    }
-
-    const PerspectiveCamera& GetCamera() const
-    {
-        return m_Camera;
-    }
-
-    float_t GetZoomLevel() const
-    {
-        return m_ZoomLevel;
-    }
-
-    void SetZoomLevel(float_t level)
-    {
-        m_ZoomLevel = level;
-    }
-
-    float_t GetFov() const
-    {
-        return m_Fov;
-    }
-
-    void SetFreeFly(const bool freeFly)
-    {
-        m_FreeFly = freeFly;
-    }
-
-    bool IsFreeFly() const
-    {
-        return m_FreeFly;
-    }
+    PerspectiveCamera& GetCamera();
+    const PerspectiveCamera& GetCamera() const;
+    float_t GetZoomLevel() const;
+    void SetZoomLevel(float_t level);
+    float_t GetFov() const;
+    glm::vec3 CalculateMovementVector(Timestep ts) const;
 
 private:
     bool OnMouseScrolled(MouseScrolledEvent& e);
@@ -63,9 +35,7 @@ private:
     float_t m_ZoomLevel = 1.0f;
     PerspectiveCamera m_Camera;
     float_t m_Fov = 1.0f;
-
     float_t m_CameraTranslationSpeed = 20.0f;
-
     float_t m_Sensitivity = 0.05f;
     float_t m_LastX = 0.0f;
     float_t m_LastY = 0.0f;

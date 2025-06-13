@@ -22,10 +22,7 @@ public:
         Setup();
     }
 
-    ~VoxelEngineApp()
-    {
-        Shutdown();
-    }
+    ~VoxelEngineApp() { Shutdown(); }
 
 private:
     void Setup()
@@ -35,7 +32,6 @@ private:
         auto cameraController = std::make_shared<Utils::PerspectiveCameraController>(45.0f, 16.0f / 9.0f, 100.0f);
         cameraController = std::make_shared<Utils::PerspectiveCameraController>(45.0f, 16.0f / 9.0f, 100.0f);
         cameraController->GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
-        cameraController->SetFreeFly(false);
         m_State.CameraController = std::move(cameraController);
 
         const DirectionalLight light = {

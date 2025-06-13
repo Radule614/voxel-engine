@@ -32,16 +32,15 @@ void EcsLayer::OnDetach()
 {
 }
 
-void EcsLayer::OnUpdate(Timestep ts)
+void EcsLayer::OnUpdate(const Timestep ts)
 {
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
-    const BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+    BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    const auto colliderTransformView = registry.view<ColliderComponent, TransformComponent>();
-    for (const auto entity: colliderTransformView)
+    for (const auto view = registry.view<ColliderComponent, TransformComponent>(); const auto entity: view)
     {
-        const auto& collider = colliderTransformView.get<ColliderComponent>(entity);
+        const auto& collider = view.get<ColliderComponent>(entity);
         auto bodyId = collider.BodyId;
         if (!bodyInterface.IsActive(bodyId))
             continue;
@@ -50,7 +49,7 @@ void EcsLayer::OnUpdate(Timestep ts)
         float_t angle;
         bodyInterface.GetRotation(bodyId).GetAxisAngle(r, angle);
 
-        auto& transform = colliderTransformView.get<TransformComponent>(entity);
+        auto& transform = view.get<TransformComponent>(entity);
         transform.PreviousPosition = transform.Position;
         transform.Position = glm::vec3(p.GetX(), p.GetY(), p.GetZ());
         transform.RotationAngle = angle;
@@ -58,24 +57,48 @@ void EcsLayer::OnUpdate(Timestep ts)
             transform.RotationAxis = glm::vec3(r.GetX(), r.GetY(), r.GetZ());
         else
             transform.RotationAxis = glm::vec3(0.0f, 1.0f, 0.0f);
-        if (static_cast<glm::ivec3>(glm::round(transform.PreviousPosition)) != static_cast<glm::ivec3>(glm::round(
-                transform.Position)))
+
+        if (registry.all_of<CameraComponent>(entity))
+        {
+            const auto& cameraComponent = registry.get<CameraComponent>(entity);
+            auto& controller = *cameraComponent.CameraController;
+            if (const auto& v = controller.CalculateMovementVector(ts); v != glm::vec3(0.0f, 0.0f, 0.0f))
+            {
+                bodyInterface.AddLinearVelocity(bodyId, Vec3(v.x, 0.0f, v.z));
+            }
+            controller.GetCamera().SetPosition(transform.Position);
+        }
+
+        if (static_cast<glm::ivec3>(glm::round(transform.PreviousPosition)) !=
+            static_cast<glm::ivec3>(glm::round(transform.Position)))
         {
             ColliderLocationChangedEvent event(transform.Position);
             m_State.Application->RaiseEvent(event);
         }
     }
 
-    const auto cameraTransformView = registry.view<CameraComponent, TransformComponent>();
-    for (const auto entity: cameraTransformView)
-    {
-        const auto& cameraComponent = cameraTransformView.get<CameraComponent>(entity);
-        if (cameraComponent.CameraController->IsFreeFly())
-            continue;
-        const auto& transform = cameraTransformView.get<TransformComponent>(entity);
-        auto& camera = cameraComponent.CameraController->GetCamera();
-        camera.SetPosition(transform.Position);
-    }
+    // for (const auto view = registry.view<CameraComponent, TransformComponent>(); const auto entity: view)
+    // {
+    //     const auto& cameraComponent = view.get<CameraComponent>(entity);
+    //     auto& transform = view.get<TransformComponent>(entity);
+    //     auto& cameraController = *cameraComponent.CameraController;
+    //     auto& camera = cameraController.GetCamera();
+    //
+    //     glm::vec3 movementVector = cameraController.CalculateMovementVector(ts);
+    //     if (movementVector == glm::vec3(0.0f, 0.0f, 0.0f))
+    //         continue;
+    //
+    //     if (registry.all_of<ColliderComponent>(entity))
+    //     {
+    //         glm::vec3 normalizedMovement = glm::normalize(glm::vec3(movementVector.x, 0.0f, movementVector.z));
+    //         camera.SetPosition(transform.Position + normalizedMovement);
+    //     }
+    //     else
+    //     {
+    //         transform.Position += movementVector;
+    //         camera.SetPosition(transform.Position);
+    //     }
+    // }
 
     Renderer::Instance().RenderScene(m_State.CameraController->GetCamera());
 }

@@ -18,7 +18,8 @@ public:
     JPH::BodyID CreateAndAddCollider(const JPH::ShapeRefC& shape,
                                      glm::vec3 position,
                                      JPH::EMotionType motion,
-                                     JPH::EActivation activation) const;
+                                     JPH::EActivation activation,
+                                     JPH::EAllowedDOFs constraints = JPH::EAllowedDOFs::None) const;
     JPH::BodyID CreateAndAddSphereCollider(float_t radius,
                                            glm::vec3 position,
                                            JPH::EMotionType motion,

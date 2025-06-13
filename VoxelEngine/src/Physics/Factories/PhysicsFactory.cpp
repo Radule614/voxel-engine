@@ -21,12 +21,14 @@ PhysicsFactory::~PhysicsFactory() = default;
 BodyID PhysicsFactory::CreateAndAddCollider(const ShapeRefC& shape,
                                             const glm::vec3 position,
                                             const EMotionType motion,
-                                            const EActivation activation) const
+                                            const EActivation activation,
+                                            const EAllowedDOFs constraints) const
 {
     BodyInterface& bodyInterface = m_PhysicsSystem.GetBodyInterface();
     const ObjectLayer layer = motion == EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING;
     const auto jphPosition = Vec3(position.x, position.y, position.z);
-    const BodyCreationSettings bodySettings(shape, jphPosition, Quat::sIdentity(), motion, layer);
+    BodyCreationSettings bodySettings(shape, jphPosition, Quat::sIdentity(), motion, layer);
+    bodySettings.mAllowedDOFs = constraints;
     return bodyInterface.CreateAndAddBody(bodySettings, activation);
 }
 
@@ -61,7 +63,11 @@ BodyID PhysicsFactory::CreateAndAddCapsuleCollider(const glm::vec3 position,
     const CapsuleShapeSettings shapeSettings(height, radius);
     shapeSettings.SetEmbedded();
     const ShapeRefC shape = shapeSettings.Create().Get();
-    return CreateAndAddCollider(shape, position, motion, activation);
+
+    //move this somewhere else
+    auto constraints = EAllowedDOFs::TranslationX | EAllowedDOFs::TranslationY | EAllowedDOFs::TranslationZ;
+
+    return CreateAndAddCollider(shape, position, motion, activation, constraints);
 }
 
 ShapeRefC PhysicsFactory::CreateBoxShape(const glm::vec3 halfSize) const

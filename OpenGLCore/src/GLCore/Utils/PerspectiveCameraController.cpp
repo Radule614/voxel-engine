@@ -21,8 +21,10 @@ PerspectiveCameraController::PerspectiveCameraController() : PerspectiveCameraCo
 
 void PerspectiveCameraController::OnUpdate(const Timestep ts)
 {
-    if (m_FreeFly)
-        return;
+}
+
+glm::vec3 PerspectiveCameraController::CalculateMovementVector(const Timestep ts) const
+{
     auto frontDir = glm::vec3();
     auto rightDir = glm::vec3();
     if (Input::IsKeyPressed(HZ_KEY_A))
@@ -35,11 +37,11 @@ void PerspectiveCameraController::OnUpdate(const Timestep ts)
     else if (Input::IsKeyPressed(HZ_KEY_S))
         frontDir = -m_Camera.GetFront();
 
-    if (frontDir != glm::vec3(0) || rightDir != glm::vec3(0))
-    {
-        const glm::vec3 direction = glm::normalize(frontDir + rightDir);
-        m_Camera.SetPosition(m_Camera.GetPosition() + static_cast<float_t>(ts) * m_CameraTranslationSpeed * direction);
-    }
+    if (frontDir == glm::vec3(0.0f) && rightDir == glm::vec3(0.0f))
+        return glm::vec3(0.0f);
+
+    const glm::vec3 direction = glm::normalize(frontDir + rightDir);
+    return static_cast<float_t>(ts) * m_CameraTranslationSpeed * direction;
 }
 
 void PerspectiveCameraController::OnEvent(Event& e)
@@ -74,7 +76,7 @@ bool PerspectiveCameraController::OnMouseMoved(const MouseMovedEvent& e)
     {
         m_LastX = e.GetX();
         m_LastY = e.GetY();
-        glm::vec3 front = m_Camera.GetFront();
+        const glm::vec3 front = m_Camera.GetFront();
         m_Yaw = glm::degrees(glm::atan(front.z, front.x));
         m_Pitch = glm::degrees(glm::asin(front.y));
         m_First = false;
@@ -98,5 +100,15 @@ bool PerspectiveCameraController::OnMouseMoved(const MouseMovedEvent& e)
 
     return false;
 }
+
+PerspectiveCamera& PerspectiveCameraController::GetCamera() { return m_Camera; }
+
+const PerspectiveCamera& PerspectiveCameraController::GetCamera() const { return m_Camera; }
+
+float_t PerspectiveCameraController::GetZoomLevel() const { return m_ZoomLevel; }
+
+void PerspectiveCameraController::SetZoomLevel(const float_t level) { m_ZoomLevel = level; }
+
+float_t PerspectiveCameraController::GetFov() const { return m_Fov; }
 
 }
