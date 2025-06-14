@@ -13,11 +13,13 @@ class BodyBuilder
 {
 public:
     BodyBuilder();
+    ~BodyBuilder();
 
     BodyBuilder& SetShape(const JPH::ShapeRefC& shape);
-    BodyBuilder& SetMotionType(const JPH::EMotionType& motion);
+    BodyBuilder& SetMotionType(const JPH::EMotionType& motionType);
+    BodyBuilder& SetMotionQuality(const JPH::EMotionQuality& motionQuality);
     BodyBuilder& SetActivation(const JPH::EActivation& activation);
-    BodyBuilder& SetConstraints(const JPH::EAllowedDOFs& constraints);
+    BodyBuilder& SetAllowedMovement(const JPH::EAllowedDOFs& allowedMovement);
     BodyBuilder& SetPosition(const glm::vec3& position);
     BodyBuilder& SetAllowSleeping(const bool& allowSleeping);
 
@@ -26,8 +28,9 @@ public:
 private:
     JPH::ShapeRefC m_Shape = nullptr;
     JPH::EMotionType m_MotionType = JPH::EMotionType::Static;
+    JPH::EMotionQuality m_MotionQuality = JPH::EMotionQuality::Discrete;
     JPH::EActivation m_Activation = JPH::EActivation::DontActivate;
-    JPH::EAllowedDOFs m_Constraints = JPH::EAllowedDOFs::All;
+    JPH::EAllowedDOFs m_AllowedMovement = JPH::EAllowedDOFs::All;
     bool m_AllowSleeping = true;
     glm::vec3 m_Position = glm::vec3(0, 0, 0);
 };

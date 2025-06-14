@@ -13,15 +13,23 @@ BodyBuilder::BodyBuilder()
 {
 }
 
+BodyBuilder::~BodyBuilder() = default;
+
 BodyBuilder& BodyBuilder::SetShape(const ShapeRefC& shape)
 {
     m_Shape = shape;
     return *this;
 }
 
-BodyBuilder& BodyBuilder::SetMotionType(const EMotionType& motion)
+BodyBuilder& BodyBuilder::SetMotionType(const EMotionType& motionType)
 {
-    m_MotionType = motion;
+    m_MotionType = motionType;
+    return *this;
+}
+
+BodyBuilder& BodyBuilder::SetMotionQuality(const EMotionQuality& motionQuality)
+{
+    m_MotionQuality = motionQuality;
     return *this;
 }
 
@@ -31,9 +39,9 @@ BodyBuilder& BodyBuilder::SetActivation(const EActivation& activation)
     return *this;
 }
 
-BodyBuilder& BodyBuilder::SetConstraints(const EAllowedDOFs& constraints)
+BodyBuilder& BodyBuilder::SetAllowedMovement(const EAllowedDOFs& allowedMovement)
 {
-    m_Constraints = constraints;
+    m_AllowedMovement = allowedMovement;
     return *this;
 }
 
@@ -54,7 +62,7 @@ BodyID BodyBuilder::BuildAndAdd()
     const ObjectLayer layer = m_MotionType == EMotionType::Static ? Layers::NON_MOVING : Layers::MOVING;
     const auto jphPosition = Vec3(m_Position.x, m_Position.y, m_Position.z);
     BodyCreationSettings bodySettings(m_Shape, jphPosition, Quat::sIdentity(), m_MotionType, layer);
-    bodySettings.mAllowedDOFs = m_Constraints;
+    bodySettings.mAllowedDOFs = m_AllowedMovement;
     bodySettings.mAllowSleeping = m_AllowSleeping;
     return PhysicsEngine::Instance().GetSystem().GetBodyInterface().CreateAndAddBody(bodySettings, m_Activation);
 }

@@ -161,6 +161,9 @@ namespace VoxelEngine
 void PhysicsEngine::Init()
 {
     g_PhysicsEngine = new PhysicsEngine();
+    // PhysicsSettings settings;
+    // settings.mLinearCastMaxPenetration = 0.05f;
+    // g_PhysicsEngine->GetSystem().SetPhysicsSettings(settings);
 }
 
 void PhysicsEngine::Shutdown()
@@ -249,10 +252,9 @@ PhysicsEngine::~PhysicsEngine()
     Factory::sInstance = nullptr;
 }
 
-void PhysicsEngine::OnUpdate(GLCore::Timestep ts)
+void PhysicsEngine::OnUpdate(const GLCore::Timestep ts)
 {
     m_AccumulatedTime += ts;
-    const int cCollisionSteps = 1;
     while (m_AccumulatedTime >= m_FixedTimestep)
     {
         m_PhysicsSystem->Update(1.0f / 60.0f, 1, m_TempAllocator.get(), m_JobSystem.get());
@@ -260,7 +262,7 @@ void PhysicsEngine::OnUpdate(GLCore::Timestep ts)
     }
 }
 
-JPH::PhysicsSystem& PhysicsEngine::GetSystem()
+PhysicsSystem& PhysicsEngine::GetSystem() const
 {
     return *m_PhysicsSystem.get();
 }

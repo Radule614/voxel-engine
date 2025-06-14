@@ -4,7 +4,7 @@
 
 #include "../Assets/Vertex.hpp"
 #include "World.hpp"
-#include "../Physics/Builders/BodyBuilder.hpp"
+#include "../Physics/Utils/BodyBuilder.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;

@@ -5,7 +5,7 @@
 #include "../EngineState.hpp"
 #include "../Assets/Model.hpp"
 #include "../Ecs/Ecs.hpp"
-#include "../Physics/Builders/ShapeFactory.hpp"
+#include "../Physics/Utils/ShapeFactory.hpp"
 
 //TODO: This should be a different project, and it should be using Voxel Engine as the dependency
 namespace Sandbox

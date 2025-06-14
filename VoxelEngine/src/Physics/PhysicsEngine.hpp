@@ -46,7 +46,7 @@ public:
     static PhysicsEngine& Instance();
 
     void OnUpdate(GLCore::Timestep ts);
-    JPH::PhysicsSystem& GetSystem();
+    JPH::PhysicsSystem& GetSystem() const;
 
 private:
     PhysicsEngine();

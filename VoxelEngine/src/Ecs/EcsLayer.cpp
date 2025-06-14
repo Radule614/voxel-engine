@@ -2,7 +2,6 @@
 #include "../Physics/PhysicsEngine.hpp"
 #include "../Ecs/Ecs.hpp"
 #include "../Renderer/Renderer.hpp"
-#include "../Utils/Utils.hpp"
 #include "Components/CameraComponent.hpp"
 
 using namespace GLCore;
@@ -60,13 +59,21 @@ void EcsLayer::OnUpdate(const Timestep ts)
 
         if (registry.all_of<CameraComponent>(entity))
         {
-            const auto& cameraComponent = registry.get<CameraComponent>(entity);
-            auto& controller = *cameraComponent.CameraController;
-            if (const auto& v = controller.CalculateMovementVector(ts); v != glm::vec3(0.0f, 0.0f, 0.0f))
+            auto& controller = *registry.get<CameraComponent>(entity).CameraController;
+            const auto& movementVector = controller.CalculateMovementVector(ts);
+            Vec3 currentVelocity = bodyInterface.GetLinearVelocity(bodyId);
+            auto xz = glm::vec2(movementVector.x, movementVector.z);
+            if (xz != glm::vec2(0.0f, 0.0f))
             {
-                bodyInterface.AddLinearVelocity(bodyId, Vec3(v.x, 0.0f, v.z));
+                xz = 10.0f * glm::normalize(xz);
+
+                if (glm::abs(currentVelocity.GetY()) < 0.1f)
+                {
+                    bodyInterface.SetLinearVelocity(bodyId, Vec3(xz.x, -0.1f, xz.y));
+                }
+                else { bodyInterface.AddLinearVelocity(bodyId, Vec3(xz.x / 1000.0f, 0.0f, xz.y / 1000.0f)); }
             }
-            controller.GetCamera().SetPosition(transform.Position);
+            controller.GetCamera().SetPosition(transform.Position + glm::vec3(0.0f, 0.7f, 0.0f));
         }
 
         if (static_cast<glm::ivec3>(glm::round(transform.PreviousPosition)) !=

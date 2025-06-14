@@ -2,7 +2,8 @@
 #include "../Physics/PhysicsEngine.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Components/CameraComponent.hpp"
-#include "../Physics/Builders/BodyBuilder.hpp"
+#include "../Physics/Utils/BodyBuilder.hpp"
+#include "Jolt/Physics/Character/CharacterVirtual.h"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -32,15 +33,28 @@ void SandboxLayer::OnAttach()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     const auto& cameraController = m_State.CameraController;
-    const ShapeRefC shape = ShapeFactory().CreateCapsuleShape(1.0f, 0.5f);
+    const ShapeRefC shape = ShapeFactory().CreateCapsuleShape(1.0f, 0.45f);
     const BodyID bodyId = BodyBuilder()
             .SetShape(shape)
-            .SetPosition(cameraController->GetCamera().GetPosition())
+            .SetPosition(cameraController->GetCamera().GetPosition() - glm::vec3(0.0f, 0.7f, 0.0f))
             .SetMotionType(EMotionType::Dynamic)
+            .SetMotionQuality(EMotionQuality::LinearCast)
             .SetActivation(EActivation::Activate)
-            .SetConstraints(EAllowedDOFs::TranslationX | EAllowedDOFs::TranslationY | EAllowedDOFs::TranslationZ)
+            .SetAllowedMovement(EAllowedDOFs::TranslationX | EAllowedDOFs::TranslationY | EAllowedDOFs::TranslationZ)
             .SetAllowSleeping(false)
             .BuildAndAdd();
+
+    CharacterVirtualSettings settings;
+    settings.mShape = shape;
+    settings.mMaxSlopeAngle = DegreesToRadians(45.0f);
+
+    glm::vec3 position = cameraController->GetCamera().GetPosition() - glm::vec3(0.0f, 0.7f, 0.0f);
+
+    // CharacterVirtual character(&settings, Vec3(p.x, p.y, p.z), Quat::sIdentity(), );
+    // BodyID characterId = character.GetBodyID();
+    // characters.emplace(characterId, std::move(character));
+
+
 
     TransformComponent transform{};
     transform.Scale = glm::vec3(1.0f);
