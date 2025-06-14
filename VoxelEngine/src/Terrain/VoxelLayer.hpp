@@ -7,7 +7,7 @@
 #include "World.hpp"
 #include "../EngineState.hpp"
 #include "../Physics/PhysicsEngine.hpp"
-#include "../Physics/Factories/PhysicsFactory.hpp"
+#include "../Physics/Builders/ShapeFactory.hpp"
 #include "../Renderer/Renderer.hpp"
 
 namespace VoxelEngine
@@ -46,7 +46,6 @@ private:
     std::unordered_map<glm::i16vec3, ColliderComponent> m_VoxelColliders;
     float_t timeSinceLastColliderOptimization = 0.0f;
 
-    PhysicsFactory m_PhysicsFactory;
     JPH::ShapeRefC m_VoxelShape;
     entt::entity m_TerrainEntityId;
 };

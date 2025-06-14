@@ -5,7 +5,7 @@
 #include "../EngineState.hpp"
 #include "../Assets/Model.hpp"
 #include "../Ecs/Ecs.hpp"
-#include "../Physics/Factories/PhysicsFactory.hpp"
+#include "../Physics/Builders/ShapeFactory.hpp"
 
 //TODO: This should be a different project, and it should be using Voxel Engine as the dependency
 namespace Sandbox
@@ -27,7 +27,7 @@ private:
     VoxelEngine::Texture m_TextureAtlas;
     VoxelEngine::Model* m_Model;
     std::vector<std::pair<entt::entity, float_t> > m_SphereEntities{};
-    VoxelEngine::PhysicsFactory m_PhysicsFactory;
+    VoxelEngine::ShapeFactory m_PhysicsFactory;
 };
 
 }

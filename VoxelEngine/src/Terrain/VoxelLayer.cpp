@@ -4,6 +4,7 @@
 
 #include "../Assets/Vertex.hpp"
 #include "World.hpp"
+#include "../Physics/Builders/BodyBuilder.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -13,9 +14,12 @@ namespace VoxelEngine
 {
 
 VoxelLayer::VoxelLayer(EngineState& state)
-    : Layer("VoxelLayer"), m_EngineState(state), m_World(World(state.CameraController)), m_VoxelColliders({})
+    : Layer("VoxelLayer"),
+      m_EngineState(state),
+      m_World(World(state.CameraController)),
+      m_VoxelColliders({})
 {
-    m_VoxelShape = m_PhysicsFactory.CreateBoxShape(glm::vec3(0.5f));
+    m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     m_TerrainEntityId = registry.create();
@@ -25,10 +29,7 @@ VoxelLayer::VoxelLayer(EngineState& state)
 
 VoxelLayer::~VoxelLayer() = default;
 
-void VoxelLayer::OnAttach()
-{
-    m_World.StartGeneration();
-}
+void VoxelLayer::OnAttach() { m_World.StartGeneration(); }
 
 void VoxelLayer::OnDetach()
 {
@@ -137,12 +138,9 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
                 Voxel& v = it->second->GetVoxelGrid()[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
                 if (v.GetVoxelType() == AIR || m_VoxelColliders.contains(p))
                     continue;
-                ColliderComponent collider = m_PhysicsFactory.CreateAndAddCollider(
-                    m_VoxelShape,
-                    p,
-                    EMotionType::Static,
-                    EActivation::DontActivate);
-                m_VoxelColliders.insert(std::make_pair(p, collider));
+
+                const BodyID bodyId = BodyBuilder().SetShape(m_VoxelShape).SetPosition(p).BuildAndAdd();
+                m_VoxelColliders.insert(std::make_pair(p, ColliderComponent(bodyId)));
             }
         }
     }
