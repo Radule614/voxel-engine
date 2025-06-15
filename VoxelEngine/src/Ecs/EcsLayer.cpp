@@ -4,7 +4,7 @@
 #include "../Physics/Utils/JoltUtils.hpp"
 #include "../Renderer/Renderer.hpp"
 #include "Components/CameraComponent.hpp"
-#include "Components/CharacterComponent.hpp"
+#include "Components/PlayerComponent.hpp"
 #include "GLCore/Core/Input.hpp"
 
 using namespace GLCore;
@@ -38,6 +38,7 @@ void EcsLayer::OnUpdate(const Timestep ts)
 {
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
     BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+    PlayerCharacterManager& playerCharacterManager = PhysicsEngine::Instance().GetPlayerCharacterManager();
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     for (const auto view = registry.view<ColliderComponent, TransformComponent>(); const auto entity: view)
@@ -46,25 +47,21 @@ void EcsLayer::OnUpdate(const Timestep ts)
         auto& transform = view.get<TransformComponent>(entity);
         if (!bodyInterface.IsActive(collider.BodyId))
             continue;
-        UpdateTranslationComponentFromBody(collider.BodyId, transform);
+        UpdateTransformComponent(transform, collider.BodyId);
         RaiseColliderLocationChangedEvent(transform);
     }
 
-    for (const auto view = registry.view<TransformComponent, CharacterComponent>(); const auto entity: view)
+    for (const auto view = registry.view<TransformComponent, PlayerComponent>(); const auto entity: view)
     {
-        auto& character = *view.get<CharacterComponent>(entity).Character;
+        auto& character = *view.get<PlayerComponent>(entity).Character;
         auto& transform = view.get<TransformComponent>(entity);
-        const auto& bodyId = character.GetBodyID();
 
-        character.Activate();
-        character.PostSimulation(0.05f);
-        UpdateTranslationComponentFromBody(bodyId, transform);
+        glm::vec3 v = JoltUtils::JoltToGlmVec3(character.GetLinearVelocity());
 
         if (registry.all_of<CameraComponent>(entity))
         {
             auto& controller = *registry.get<CameraComponent>(entity).CameraController;
             const auto& movement = controller.CalculateMovementVector(ts);
-            glm::vec3 v = JoltUtils::JoltToGlmVec3(character.GetLinearVelocity());
 
             glm::vec2 xz(0.0f);
             if (movement.x != 0.0f || movement.z != 0.0f)
@@ -75,33 +72,53 @@ void EcsLayer::OnUpdate(const Timestep ts)
             v.x = xz.x;
             v.z = xz.y;
 
-            if (Input::IsKeyPressed(HZ_KEY_SPACE) && character.GetGroundState() == Character::EGroundState::OnGround)
+            if (Input::IsKeyPressed(HZ_KEY_SPACE) && character.GetGroundState() ==
+                CharacterVirtual::EGroundState::OnGround)
                 v.y = 10.0f;
 
-            character.SetLinearVelocity(JoltUtils::GlmToJoltVec3(v));
+            v.y = physicsSystem.GetGravity().GetY();
+
             controller.GetCamera().SetPosition(transform.Position);
         }
 
+        character.SetLinearVelocity(JoltUtils::GlmToJoltVec3(v));
+        playerCharacterManager.UpdateCharacterVirtual(character, ts, physicsSystem.GetGravity());
+        UpdateTransformComponent(transform, character);
         RaiseColliderLocationChangedEvent(transform);
     }
 
     Renderer::Instance().RenderScene(m_State.CameraController->GetCamera());
 }
 
-void EcsLayer::UpdateTranslationComponentFromBody(const BodyID& bodyId, TransformComponent& transform)
+void EcsLayer::UpdateTransformComponent(TransformComponent& transform, const BodyID& bodyId)
 {
-    BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
-
-    const RVec3 p = bodyInterface.GetCenterOfMassPosition(bodyId);
-    Vec3 r{};
+    const BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
+    const Vec3 position = bodyInterface.GetCenterOfMassPosition(bodyId);
+    Vec3 axis{};
     float_t angle;
-    bodyInterface.GetRotation(bodyId).GetAxisAngle(r, angle);
+    bodyInterface.GetRotation(bodyId).GetAxisAngle(axis, angle);
+    UpdateTransformComponent(transform, JoltUtils::JoltToGlmVec3(position), angle, JoltUtils::JoltToGlmVec3(axis));
+}
 
+void EcsLayer::UpdateTransformComponent(TransformComponent& transform, const CharacterVirtual& character)
+{
+    const Vec3 position = character.GetPosition();
+    Vec3 axis{};
+    float_t angle;
+    character.GetRotation().GetAxisAngle(axis, angle);
+    UpdateTransformComponent(transform, JoltUtils::JoltToGlmVec3(position), angle, JoltUtils::JoltToGlmVec3(axis));
+}
+
+void EcsLayer::UpdateTransformComponent(TransformComponent& transform,
+                                        const glm::vec3 position,
+                                        const float_t angle,
+                                        const glm::vec3 axis)
+{
     transform.PreviousPosition = transform.Position;
-    transform.Position = glm::vec3(p.GetX(), p.GetY(), p.GetZ());
+    transform.Position = position;
     transform.RotationAngle = angle;
-    if (r != Vec3(0.0f, 0.0f, 0.0f))
-        transform.RotationAxis = glm::vec3(r.GetX(), r.GetY(), r.GetZ());
+    if (axis != glm::vec3(0.0f))
+        transform.RotationAxis = axis;
     else
         transform.RotationAxis = glm::vec3(0.0f, 1.0f, 0.0f);
 }

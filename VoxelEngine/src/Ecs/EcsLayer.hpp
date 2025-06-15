@@ -18,7 +18,12 @@ public:
     virtual void OnUpdate(GLCore::Timestep ts) override;
 
 private:
-    void UpdateTranslationComponentFromBody(const JPH::BodyID& bodyId, TransformComponent& transform);
+    void UpdateTransformComponent(TransformComponent& transform, const JPH::BodyID& bodyId);
+    void UpdateTransformComponent(TransformComponent& transform, const JPH::CharacterVirtual& character);
+    void UpdateTransformComponent(TransformComponent& transform,
+                                  glm::vec3 position,
+                                  float_t angle,
+                                  glm::vec3 axis);
     void RaiseColliderLocationChangedEvent(const TransformComponent& transform);
 
 private:

@@ -2,7 +2,7 @@
 #include "../Physics/PhysicsEngine.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Components/CameraComponent.hpp"
-#include "../Ecs/Components/CharacterComponent.hpp"
+#include "../Ecs/Components/PlayerComponent.hpp"
 #include "../Physics/Utils/BodyBuilder.hpp"
 #include "../Physics/Utils/CharacterBuilder.hpp"
 #include "Jolt/Physics/Character/Character.h"
@@ -36,11 +36,11 @@ void SandboxLayer::OnAttach()
 
     const auto& cameraController = m_State.CameraController;
     const ShapeRefC shape = ShapeFactory().CreateCapsuleShape(0.9f, 0.40f);
-    Character* character = CharacterBuilder()
+    CharacterVirtual* character = CharacterBuilder()
             .SetShape(shape)
             .SetPosition(cameraController->GetCamera().GetPosition())
             .SetMaxSlopeAngle(45.0f)
-            .BuildAndAdd();
+            .BuildAndAddVirtual();
 
     TransformComponent transform{};
     transform.Scale = glm::vec3(1.0f);
@@ -48,7 +48,7 @@ void SandboxLayer::OnAttach()
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();
     registry.emplace<TransformComponent>(entity, transform);
-    registry.emplace<CharacterComponent>(entity, character);
+    registry.emplace<PlayerComponent>(entity, character);
     registry.emplace<CameraComponent>(entity, cameraController);
 }
 

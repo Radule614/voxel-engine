@@ -6,6 +6,7 @@
 
 #include "../PhysicsEngine.hpp"
 #include "Jolt/Physics/Character/Character.h"
+#include "Jolt/Physics/Character/CharacterVirtual.h"
 
 namespace VoxelEngine
 {
@@ -21,6 +22,7 @@ public:
     CharacterBuilder& SetPosition(const glm::vec3& position);
 
     JPH::Character* BuildAndAdd() const;
+    JPH::CharacterVirtual* BuildAndAddVirtual() const;
 
 private:
     JPH::ShapeRefC m_Shape = nullptr;

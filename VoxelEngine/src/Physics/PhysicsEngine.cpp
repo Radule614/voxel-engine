@@ -1,8 +1,13 @@
 #include "PhysicsEngine.hpp"
 #include <GLCoreUtils.hpp>
 
+#include "PhysicsEngineLayers.hpp"
+
 using namespace JPH;
 using namespace JPH::literals;
+
+namespace VoxelEngine
+{
 
 static void TraceImpl(const char* inFMT, ...)
 {
@@ -20,8 +25,8 @@ static void TraceImpl(const char* inFMT, ...)
 
 static bool AssertFailedImpl(const char* inExpression, const char* inMessage, const char* inFile, uint32_t inLine)
 {
-	LOG_WARN("{0}:{1}:({2})", inFile, inLine, inMessage != nullptr ? inMessage : "");
-	return true;
+    LOG_WARN("{0}:{1}:({2})", inFile, inLine, inMessage != nullptr ? inMessage : "");
+    return true;
 };
 
 #endif // JPH_ENABLE_ASSERTS
@@ -57,10 +62,7 @@ public:
         mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
     }
 
-    virtual uint GetNumBroadPhaseLayers() const override
-    {
-        return BroadPhaseLayers::NUM_LAYERS;
-    }
+    virtual uint GetNumBroadPhaseLayers() const override { return BroadPhaseLayers::NUM_LAYERS; }
 
     virtual BroadPhaseLayer GetBroadPhaseLayer(ObjectLayer inLayer) const override
     {
@@ -121,23 +123,14 @@ public:
     virtual void OnContactAdded(const Body& inBody1,
                                 const Body& inBody2,
                                 const ContactManifold& inManifold,
-                                ContactSettings& ioSettings) override
-    {
-        LOG_INFO("A contact was added");
-    }
+                                ContactSettings& ioSettings) override { LOG_INFO("A contact was added"); }
 
     virtual void OnContactPersisted(const Body& inBody1,
                                     const Body& inBody2,
                                     const ContactManifold& inManifold,
-                                    ContactSettings& ioSettings) override
-    {
-        LOG_INFO("A contact was persisted");
-    }
+                                    ContactSettings& ioSettings) override { LOG_INFO("A contact was persisted"); }
 
-    virtual void OnContactRemoved(const SubShapeIDPair& inSubShapePair) override
-    {
-        LOG_INFO("A contact was removed");
-    }
+    virtual void OnContactRemoved(const SubShapeIDPair& inSubShapePair) override { LOG_INFO("A contact was removed"); }
 };
 
 // An example activation listener
@@ -154,9 +147,6 @@ public:
         LOG_INFO("A body went to sleep");
     }
 };
-
-namespace VoxelEngine
-{
 
 void PhysicsEngine::Init()
 {
@@ -199,7 +189,6 @@ PhysicsEngine::PhysicsEngine() : m_AccumulatedTime(0.0),
 
     // We need a temp allocator for temporary allocations during the physics update. We're
     // pre-allocating 10 MB to avoid having to do allocations during the physics update.
-    // B.t.w. 10 MB is way too much for this example but it is a typical value you can use.
     // If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
     // malloc / free.
     m_TempAllocator = std::make_unique<TempAllocatorImpl>(10 * 1024 * 1024);
@@ -240,6 +229,8 @@ PhysicsEngine::PhysicsEngine() : m_AccumulatedTime(0.0),
                           *m_ObjectVsObjectLayerFilter.get());
     //m_PhysicsSystem->SetBodyActivationListener(m_BodyActivationListener.get());
     //m_PhysicsSystem->SetContactListener(m_ContactListener.get());
+
+    m_PlayerCharacterManager = std::make_unique<PlayerCharacterManager>();
 }
 
 PhysicsEngine::~PhysicsEngine()
@@ -252,6 +243,8 @@ PhysicsEngine::~PhysicsEngine()
     Factory::sInstance = nullptr;
 }
 
+PlayerCharacterManager& PhysicsEngine::GetPlayerCharacterManager() const { return *m_PlayerCharacterManager; }
+
 void PhysicsEngine::OnUpdate(const GLCore::Timestep ts)
 {
     m_AccumulatedTime += ts;
@@ -262,14 +255,8 @@ void PhysicsEngine::OnUpdate(const GLCore::Timestep ts)
     }
 }
 
-PhysicsSystem& PhysicsEngine::GetSystem() const
-{
-    return *m_PhysicsSystem.get();
-}
+PhysicsSystem& PhysicsEngine::GetSystem() const { return *m_PhysicsSystem.get(); }
 
-PhysicsEngine& PhysicsEngine::Instance()
-{
-    return *g_PhysicsEngine;
-}
+PhysicsEngine& PhysicsEngine::Instance() { return *g_PhysicsEngine; }
 
 }

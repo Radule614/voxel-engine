@@ -4,6 +4,8 @@
 
 #include "CharacterBuilder.hpp"
 
+#include "JoltUtils.hpp"
+
 using namespace JPH;
 
 namespace VoxelEngine
@@ -42,7 +44,7 @@ Character* CharacterBuilder::BuildAndAdd() const
     settings.mShape = m_Shape;
     settings.mMaxSlopeAngle = DegreesToRadians(45.0f);
     settings.mGravityFactor = 3.0f;
-    const auto position = Vec3(m_Position.x, m_Position.y, m_Position.z);
+    const Vec3 position = JoltUtils::GlmToJoltVec3(m_Position);
 
     const auto character = new Character(&settings,
                                          position,
@@ -51,6 +53,21 @@ Character* CharacterBuilder::BuildAndAdd() const
                                          system);
     character->SetLayer(Layers::MOVING);
     character->AddToPhysicsSystem(EActivation::Activate);
+    return character;
+}
+
+CharacterVirtual* CharacterBuilder::BuildAndAddVirtual() const
+{
+    PhysicsSystem* system = &PhysicsEngine::Instance().GetSystem();
+    CharacterVirtualSettings settings;
+    settings.mShape = m_Shape;
+    settings.mMaxSlopeAngle = DegreesToRadians(45.0f);
+    const Vec3 position = JoltUtils::GlmToJoltVec3(m_Position);
+
+    const auto character = new CharacterVirtual(&settings,
+                                         position,
+                                         Quat::sIdentity(),
+                                         system);
     return character;
 }
 
