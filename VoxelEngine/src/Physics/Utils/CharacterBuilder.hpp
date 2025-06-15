@@ -5,7 +5,7 @@
 #pragma once
 
 #include "../PhysicsEngine.hpp"
-#include "Jolt/Physics/Character/CharacterVirtual.h"
+#include "Jolt/Physics/Character/Character.h"
 
 namespace VoxelEngine
 {
@@ -20,7 +20,7 @@ public:
     CharacterBuilder& SetMaxSlopeAngle(const float_t& degrees);
     CharacterBuilder& SetPosition(const glm::vec3& position);
 
-    JPH::CharacterVirtual BuildAndAdd() const;
+    JPH::Character* BuildAndAdd() const;
 
 private:
     JPH::ShapeRefC m_Shape = nullptr;

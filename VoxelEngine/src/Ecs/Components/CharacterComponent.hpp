@@ -5,18 +5,18 @@
 #pragma once
 
 #include "../../Physics/PhysicsEngine.hpp"
-#include "Jolt/Physics/Character/CharacterVirtual.h"
+#include "Jolt/Physics/Character/Character.h"
 
 namespace VoxelEngine
 {
 
 struct CharacterComponent
 {
-    CharacterComponent(const std::shared_ptr<JPH::CharacterVirtual>& character) : Character(character)
+    CharacterComponent(JPH::Character* character) : Character(character)
     {
     }
 
-    std::shared_ptr<JPH::CharacterVirtual> Character;
+    JPH::Character* Character;
 };
 
 }

@@ -35,14 +35,23 @@ CharacterBuilder& CharacterBuilder::SetPosition(const glm::vec3& position)
     return *this;
 }
 
-CharacterVirtual CharacterBuilder::BuildAndAdd() const
+Character* CharacterBuilder::BuildAndAdd() const
 {
-    CharacterVirtualSettings settings;
+    PhysicsSystem* system = &PhysicsEngine::Instance().GetSystem();
+    CharacterSettings settings;
     settings.mShape = m_Shape;
     settings.mMaxSlopeAngle = DegreesToRadians(45.0f);
-
+    settings.mGravityFactor = 3.0f;
     const auto position = Vec3(m_Position.x, m_Position.y, m_Position.z);
-    return CharacterVirtual(&settings, position, Quat::sIdentity(), &PhysicsEngine::Instance().GetSystem());
+
+    const auto character = new Character(&settings,
+                                         position,
+                                         Quat::sIdentity(),
+                                         0,
+                                         system);
+    character->SetLayer(Layers::MOVING);
+    character->AddToPhysicsSystem(EActivation::Activate);
+    return character;
 }
 
 }
