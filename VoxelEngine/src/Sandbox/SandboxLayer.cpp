@@ -4,7 +4,7 @@
 #include "../Ecs/Components/CameraComponent.hpp"
 #include "../Ecs/Components/PlayerComponent.hpp"
 #include "../Physics/Utils/BodyBuilder.hpp"
-#include "../Physics/Utils/CharacterBuilder.hpp"
+#include "../Physics/Character/CharacterBuilder.hpp"
 #include "Jolt/Physics/Character/Character.h"
 
 using namespace GLCore;
@@ -36,7 +36,7 @@ void SandboxLayer::OnAttach()
 
     const auto& cameraController = m_State.CameraController;
     const ShapeRefC shape = ShapeFactory().CreateCapsuleShape(0.9f, 0.40f);
-    CharacterVirtual* character = CharacterBuilder()
+    std::unique_ptr<CharacterVirtual> character = CharacterBuilder()
             .SetShape(shape)
             .SetPosition(cameraController->GetCamera().GetPosition())
             .SetMaxSlopeAngle(45.0f)

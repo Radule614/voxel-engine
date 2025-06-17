@@ -51,12 +51,12 @@ void EcsLayer::OnUpdate(const Timestep ts)
         RaiseColliderLocationChangedEvent(transform);
     }
 
-    for (const auto view = registry.view<TransformComponent, PlayerComponent>(); const auto entity: view)
+    for (const auto& view = registry.view<TransformComponent, PlayerComponent>(); const auto entity: view)
     {
         auto& character = *view.get<PlayerComponent>(entity).Character;
+        auto& velocity = view.get<PlayerComponent>(entity).Velocity;
         auto& transform = view.get<TransformComponent>(entity);
-
-        glm::vec3 v = JoltUtils::JoltToGlmVec3(character.GetLinearVelocity());
+        const auto& characterGravity = 1.0f * physicsSystem.GetGravity();
 
         if (registry.all_of<CameraComponent>(entity))
         {
@@ -65,24 +65,21 @@ void EcsLayer::OnUpdate(const Timestep ts)
 
             glm::vec2 xz(0.0f);
             if (movement.x != 0.0f || movement.z != 0.0f)
-                xz = 10.0f * glm::normalize(glm::vec2(movement.x, movement.z));
-            else if (glm::abs(v.x) > 1.0f || glm::abs(v.z) > 1.0f)
-                xz = glm::normalize(glm::vec2(v.x, v.z));
+                xz = 8.0f * glm::normalize(glm::vec2(movement.x, movement.z));
 
-            v.x = xz.x;
-            v.z = xz.y;
+            velocity.x = xz.x;
+            velocity.z = xz.y;
+            velocity.y = velocity.y + ts * characterGravity.GetY();
 
             if (Input::IsKeyPressed(HZ_KEY_SPACE) && character.GetGroundState() ==
                 CharacterVirtual::EGroundState::OnGround)
-                v.y = 10.0f;
-
-            v.y = physicsSystem.GetGravity().GetY();
+                velocity.y = 6.0f;
 
             controller.GetCamera().SetPosition(transform.Position);
         }
 
-        character.SetLinearVelocity(JoltUtils::GlmToJoltVec3(v));
-        playerCharacterManager.UpdateCharacterVirtual(character, ts, physicsSystem.GetGravity());
+        character.SetLinearVelocity(JoltUtils::GlmToJoltVec3(velocity));
+        playerCharacterManager.UpdateCharacterVirtual(character, ts, characterGravity);
         UpdateTransformComponent(transform, character);
         RaiseColliderLocationChangedEvent(transform);
     }

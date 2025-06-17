@@ -4,7 +4,7 @@
 
 #include "CharacterBuilder.hpp"
 
-#include "JoltUtils.hpp"
+#include "../Utils/JoltUtils.hpp"
 
 using namespace JPH;
 
@@ -56,7 +56,7 @@ Character* CharacterBuilder::BuildAndAdd() const
     return character;
 }
 
-CharacterVirtual* CharacterBuilder::BuildAndAddVirtual() const
+std::unique_ptr<CharacterVirtual> CharacterBuilder::BuildAndAddVirtual() const
 {
     PhysicsSystem* system = &PhysicsEngine::Instance().GetSystem();
     CharacterVirtualSettings settings;
@@ -64,11 +64,10 @@ CharacterVirtual* CharacterBuilder::BuildAndAddVirtual() const
     settings.mMaxSlopeAngle = DegreesToRadians(45.0f);
     const Vec3 position = JoltUtils::GlmToJoltVec3(m_Position);
 
-    const auto character = new CharacterVirtual(&settings,
-                                         position,
-                                         Quat::sIdentity(),
-                                         system);
-    return character;
+    return std::make_unique<CharacterVirtual>(&settings,
+                                              position,
+                                              Quat::sIdentity(),
+                                              system);
 }
 
 }

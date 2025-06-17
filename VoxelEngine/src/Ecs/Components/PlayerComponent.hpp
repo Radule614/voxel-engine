@@ -12,11 +12,12 @@ namespace VoxelEngine
 
 struct PlayerComponent
 {
-    PlayerComponent(JPH::CharacterVirtual* character) : Character(character)
+    PlayerComponent(std::unique_ptr<JPH::CharacterVirtual>& character) : Character(std::move(character))
     {
     }
 
-    JPH::CharacterVirtual* Character;
+    std::unique_ptr<JPH::CharacterVirtual> Character;
+    glm::vec3 Velocity = glm::vec3(0.0f);
 };
 
 }

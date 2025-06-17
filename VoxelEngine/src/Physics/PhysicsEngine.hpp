@@ -11,7 +11,7 @@
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
 #include "GLCore.hpp"
-#include "PlayerCharacterManager.hpp"
+#include "Character/PlayerCharacterManager.hpp"
 
 namespace VoxelEngine
 {

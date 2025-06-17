@@ -2,9 +2,6 @@
 
 #include "Log.hpp"
 
-//temp
-#define GLCORE_DEBUG
-
 #ifdef GLCORE_DEBUG
 #define GLCORE_ENABLE_ASSERTS
 #endif

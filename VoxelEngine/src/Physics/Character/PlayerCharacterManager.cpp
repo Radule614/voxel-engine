@@ -29,7 +29,6 @@ public:
         switch (inLayer)
         {
             case Layers::NON_MOVING:
-                return true;
             case Layers::MOVING:
                 return true;
             default:
@@ -64,11 +63,11 @@ void PlayerCharacterManager::UpdateCharacterVirtual(CharacterVirtual& character,
 {
     character.Update(deltaTime,
                      inGravity,
-                     *m_BroadPhaseLayerFilter.get(),
-                     *m_ObjectLayerFilter.get(),
-                     *m_BodyFilter.get(),
-                     *m_ShapeFilter.get(),
-                     *m_TempAllocator.get());
+                     *m_BroadPhaseLayerFilter,
+                     *m_ObjectLayerFilter,
+                     *m_BodyFilter,
+                     *m_ShapeFilter,
+                     *m_TempAllocator);
 }
 
 }

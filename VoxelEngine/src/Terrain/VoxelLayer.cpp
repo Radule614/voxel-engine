@@ -4,7 +4,9 @@
 
 #include "../Assets/Vertex.hpp"
 #include "World.hpp"
+#include "../Ecs/Components/PlayerComponent.hpp"
 #include "../Physics/Utils/BodyBuilder.hpp"
+#include "../Physics/Utils/JoltUtils.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -154,19 +156,31 @@ void VoxelLayer::OptimizeColliders()
     std::unordered_map collidersToRemove(m_VoxelColliders);
     BodyIDVector bodies;
     physicsSystem.GetBodies(bodies);
-    for (auto bodyId: bodies)
+
+    const auto& playerView = EntityComponentSystem::Instance().GetEntityRegistry().view<PlayerComponent>();
+
+    for (auto& [voxelPosition, collider]: m_VoxelColliders)
     {
-        if (const ObjectLayer layer = bodyInterface.GetObjectLayer(bodyId); layer != Layers::MOVING)
-            continue;
-        Vec3 jphPosition = bodyInterface.GetPosition(bodyId);
-        glm::vec3 p(jphPosition.GetX(), jphPosition.GetY(), jphPosition.GetZ());
-        for (auto& [pos, collider]: m_VoxelColliders)
+        for (auto bodyId: bodies)
         {
-            if (const float_t distance = glm::distance(p, static_cast<glm::vec3>(pos));
-                distance < 3 && collidersToRemove.contains(pos))
-                collidersToRemove.erase(pos);
+            if (const ObjectLayer layer = bodyInterface.GetObjectLayer(bodyId); layer != Layers::MOVING)
+                continue;
+            glm::vec3 position = JoltUtils::JoltToGlmVec3(bodyInterface.GetPosition(bodyId));
+            const float_t distance = glm::distance(position, static_cast<glm::vec3>(voxelPosition));
+            if (distance < 3 && collidersToRemove.contains(voxelPosition))
+                collidersToRemove.erase(voxelPosition);
+        }
+
+        for (const auto& entity: playerView)
+        {
+            const auto& character = *playerView.get<PlayerComponent>(entity).Character;
+            glm::vec3 position = JoltUtils::JoltToGlmVec3(character.GetPosition());
+            const float_t distance = glm::distance(position, static_cast<glm::vec3>(voxelPosition));
+            if (distance < 3 && collidersToRemove.contains(voxelPosition))
+                collidersToRemove.erase(voxelPosition);
         }
     }
+
     for (auto& [pos, collider]: collidersToRemove)
     {
         m_VoxelColliders.erase(m_VoxelColliders.find(pos));

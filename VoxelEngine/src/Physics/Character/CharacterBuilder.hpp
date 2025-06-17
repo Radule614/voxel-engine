@@ -22,7 +22,7 @@ public:
     CharacterBuilder& SetPosition(const glm::vec3& position);
 
     JPH::Character* BuildAndAdd() const;
-    JPH::CharacterVirtual* BuildAndAddVirtual() const;
+    std::unique_ptr<JPH::CharacterVirtual> BuildAndAddVirtual() const;
 
 private:
     JPH::ShapeRefC m_Shape = nullptr;
