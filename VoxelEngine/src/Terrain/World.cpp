@@ -26,7 +26,7 @@ void World::StartGeneration()
     m_GenerationThread = std::thread([this] { this->GenerateWorld(); });
 }
 
-void World::CheckChunkEdges(Chunk& chunk, Chunk::Neighbours& neighbours)
+void World::CheckChunkEdges(Chunk& chunk, const Chunk::Neighbours& neighbours)
 {
     auto& voxelGrid = chunk.GetVoxelGrid();
     for (size_t x = 0; x < CHUNK_WIDTH; x++)
@@ -50,7 +50,7 @@ void World::CheckChunkEdges(Chunk& chunk, Chunk::Neighbours& neighbours)
     }
 }
 
-void World::CheckVoxelEdge(Voxel& v1, Voxel& v2, VoxelFace face)
+void World::CheckVoxelEdge(Voxel& v1, Voxel& v2, const VoxelFace face)
 {
     if (!v1.IsTransparent() && v2.IsTransparent())
         v1.SetFaceVisible(face, true);
@@ -65,13 +65,13 @@ void World::StopGeneration()
         m_GenerationThread.join();
 }
 
-Chunk::Neighbours World::GetNeighbours(Chunk& chunk)
+Chunk::Neighbours World::GetNeighbours(const Chunk& chunk)
 {
-    Position2D pos = chunk.GetPosition();
-    auto front = m_ChunkMap.find(Position2D(pos.x, pos.y + 1));
-    auto back = m_ChunkMap.find(Position2D(pos.x, pos.y - 1));
-    auto right = m_ChunkMap.find(Position2D(pos.x + 1, pos.y));
-    auto left = m_ChunkMap.find(Position2D(pos.x - 1, pos.y));
+    const Position2D pos = chunk.GetPosition();
+    const auto front = m_ChunkMap.find(Position2D(pos.x, pos.y + 1));
+    const auto back = m_ChunkMap.find(Position2D(pos.x, pos.y - 1));
+    const auto right = m_ChunkMap.find(Position2D(pos.x + 1, pos.y));
+    const auto left = m_ChunkMap.find(Position2D(pos.x - 1, pos.y));
 
     Chunk::Neighbours neighbours = {};
 
@@ -134,7 +134,7 @@ void World::GenerateChunk(Position2D position)
         m_Mutex.unlock();
     }
 
-    Chunk::Neighbours neighbours = GetNeighbours(*chunk);
+    const Chunk::Neighbours neighbours = GetNeighbours(*chunk);
     if (neighbours.front != nullptr)
         neighbours.front->GetLock().lock();
     if (neighbours.back != nullptr)
@@ -147,13 +147,13 @@ void World::GenerateChunk(Position2D position)
     CheckChunkEdges(*chunk, neighbours);
     chunk->GenerateMesh();
     if (neighbours.front != nullptr)
-        neighbours.front->GenerateEdgeMesh(VoxelFace::BACK);
+        neighbours.front->GenerateEdgeMesh(BACK);
     if (neighbours.back != nullptr)
-        neighbours.back->GenerateEdgeMesh(VoxelFace::FRONT);
+        neighbours.back->GenerateEdgeMesh(FRONT);
     if (neighbours.right != nullptr)
-        neighbours.right->GenerateEdgeMesh(VoxelFace::LEFT);
+        neighbours.right->GenerateEdgeMesh(LEFT);
     if (neighbours.left != nullptr)
-        neighbours.left->GenerateEdgeMesh(VoxelFace::RIGHT);
+        neighbours.left->GenerateEdgeMesh(RIGHT);
 
     m_Mutex.lock();
     m_ChangedChunks.insert(chunk);
@@ -181,9 +181,9 @@ void World::GenerateChunk(Position2D position)
     chunk->GetLock().unlock();
 }
 
-std::queue<Position2D> World::FindNextChunkLocations(Position2D center, size_t count)
+std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, const size_t count)
 {
-    int32_t maxDistance = 20;
+    const int32_t maxDistance = 24;
     std::queue<Position2D> positions = {};
     std::unordered_set<Position2D> existing = {};
     for (int32_t r = 0; r < maxDistance; ++r)
@@ -221,7 +221,7 @@ std::queue<Position2D> World::FindNextChunkLocations(Position2D center, size_t c
     return positions;
 }
 
-bool World::IsPositionValid(std::unordered_set<Position2D>& existing, Position2D p)
+bool World::IsPositionValid(const std::unordered_set<Position2D>& existing, const Position2D p)
 {
     Position2D locations[12] = {
         Position2D(p.x, p.y + 2),
@@ -271,7 +271,7 @@ std::map<Position2D, std::queue<Voxel> >& World::GetDeferredChunkQueue()
     return m_DeferredChunkQueueMap;
 }
 
-std::pair<Position2D, Position3D> World::GetPositionInWorld(glm::i16vec3 pos) const
+std::pair<Position2D, Position3D> World::GetPositionInWorld(glm::i32vec3 pos) const
 {
     if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
         return {Position2D(0, 0), Position3D(pos.x, pos.y, pos.z)};

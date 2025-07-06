@@ -16,11 +16,11 @@ struct Position3D
     {
     }
 
-    Position3D(uint8_t x, uint8_t y, uint8_t z) : xz((x & 0xF) | ((z & 0xF) << 4)), y(y)
+    Position3D(const uint8_t x, const uint8_t y, const uint8_t z) : xz((x & 0xF) | ((z & 0xF) << 4)), y(y)
     {
     }
 
-    Position3D(glm::i16vec3 v) : Position3D(v.x, v.y, v.z)
+    Position3D(const glm::i32vec3 v) : Position3D(v.x, v.y, v.z)
     {
     }
 
@@ -72,9 +72,9 @@ struct Position3D
         return glm::sqrt(glm::pow(GetX(), 2) + glm::pow(y, 2) + glm::pow(GetZ(), 2));
     }
 
-    operator glm::i16vec3() const
+    operator glm::i32vec3() const
     {
-        return glm::i16vec3(GetX(), y, GetZ());
+        return glm::i32vec3(GetX(), y, GetZ());
     }
 
     operator glm::vec3() const

@@ -96,7 +96,7 @@ void Chunk::AddStructures(std::vector<Structure> structures)
         m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
         for (auto& v: s.GetVoxelData())
         {
-            glm::i16vec3 position = static_cast<glm::i16vec3>(p) + v.first;
+            glm::i32vec3 position = static_cast<glm::i32vec3>(p) + v.first;
             auto [chunkPosition, voxelPosition] = GetPositionRelativeToWorld(position);
             if (chunkPosition == m_Position)
             {
@@ -198,7 +198,7 @@ void Chunk::GenerateEdgeMesh(const VoxelFace face)
     }
 }
 
-std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(glm::i16vec3 pos) const
+std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(glm::i32vec3 pos) const
 {
     if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
         return {m_Position, Position3D(pos.x, pos.y, pos.z)};

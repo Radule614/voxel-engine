@@ -163,7 +163,7 @@ void PhysicsEngine::Shutdown()
 }
 
 PhysicsEngine::PhysicsEngine() : m_AccumulatedTime(0.0),
-                                 m_FixedTimestep(1.0 / 60.0),
+                                 m_FixedTimestep(1.0 / 90.0),
                                  m_BroadPhaseLayerInterface(std::make_unique<BPLayerInterfaceImpl>()),
                                  m_ObjectVsBroadPhaseLayerFilter(std::make_unique<ObjectVsBroadPhaseLayerFilterImpl>()),
                                  m_ObjectVsObjectLayerFilter(std::make_unique<ObjectLayerPairFilterImpl>()),
@@ -250,12 +250,12 @@ void PhysicsEngine::OnUpdate(const GLCore::Timestep ts)
     m_AccumulatedTime += ts;
     while (m_AccumulatedTime >= m_FixedTimestep)
     {
-        m_PhysicsSystem->Update(1.0f / 60.0f, 1, m_TempAllocator.get(), m_JobSystem.get());
+        m_PhysicsSystem->Update(m_FixedTimestep, 1, m_TempAllocator.get(), m_JobSystem.get());
         m_AccumulatedTime -= m_FixedTimestep;
     }
 }
 
-PhysicsSystem& PhysicsEngine::GetSystem() const { return *m_PhysicsSystem.get(); }
+PhysicsSystem& PhysicsEngine::GetSystem() const { return *m_PhysicsSystem; }
 
 PhysicsEngine& PhysicsEngine::Instance() { return *g_PhysicsEngine; }
 

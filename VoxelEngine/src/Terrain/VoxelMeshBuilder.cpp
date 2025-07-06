@@ -129,7 +129,7 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
     float_t textureUnit = 1.0f / 16.0f;
     for (size_t i = 0; i < 6; ++i)
     {
-        VoxelFace face = static_cast<VoxelFace>(i);
+        auto face = static_cast<VoxelFace>(i);
         if (!voxel.IsFaceVisible(face) || !faces[face])
             continue;
 
@@ -157,8 +157,8 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             if (texCoord.y == 1.0f)
                 atlasTexCoord.y += textureUnit;
 
-            VoxelVertex v;
-            v.Position = pos + static_cast<glm::vec3>(static_cast<glm::i16vec3>(voxel.GetPosition()));
+            VoxelVertex v{};
+            v.Position = pos + static_cast<glm::vec3>(static_cast<glm::i32vec3>(voxel.GetPosition()));
             v.Normal = normal;
             v.TexCoords = atlasTexCoord;
             v.Light = voxel.GetLight();

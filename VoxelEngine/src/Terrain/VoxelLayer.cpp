@@ -1,7 +1,6 @@
 #include "VoxelLayer.hpp"
 #include "VoxelMeshBuilder.hpp"
 #include <vector>
-
 #include "../Assets/Vertex.hpp"
 #include "World.hpp"
 #include "../Ecs/Components/PlayerComponent.hpp"
@@ -40,15 +39,15 @@ void VoxelLayer::OnDetach()
     for (auto& it: renderDataMap)
     {
         ChunkRenderData& data = it.second;
-        glDeleteVertexArrays(1, &data.VertexArray);
         glDeleteBuffers(1, &data.VertexBuffer);
         glDeleteBuffers(1, &data.IndexBuffer);
+        glDeleteVertexArrays(1, &data.VertexArray);
         data.Indices.clear();
     }
     renderDataMap.clear();
 }
 
-void VoxelLayer::OnEvent(GLCore::Event& event)
+void VoxelLayer::OnEvent(Event& event)
 {
     EventDispatcher dispatcher(event);
     dispatcher.Dispatch<WindowCloseEvent>(
@@ -132,7 +131,7 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
         {
             for (int32_t y = -r; y <= r; ++y)
             {
-                glm::i16vec3 p = glm::i16vec3(glm::round(pos)) + glm::i16vec3(x, y, z);
+                auto p = glm::i32vec3(glm::round(pos)) + glm::i32vec3(x, y, z);
                 auto [chunkPosition, voxelPosition] = m_World.GetPositionInWorld(p);
                 auto it = chunkMap.find(chunkPosition);
                 if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
@@ -230,17 +229,17 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     std::vector<VoxelVertex> vertices = {};
     vertices.insert(vertices.end(), chunk->GetMesh().begin(), chunk->GetMesh().end());
     vertices.insert(vertices.end(),
-                    chunk->GetBorderMesh(VoxelFace::FRONT).begin(),
-                    chunk->GetBorderMesh(VoxelFace::FRONT).end());
+                    chunk->GetBorderMesh(FRONT).begin(),
+                    chunk->GetBorderMesh(FRONT).end());
     vertices.insert(vertices.end(),
-                    chunk->GetBorderMesh(VoxelFace::RIGHT).begin(),
-                    chunk->GetBorderMesh(VoxelFace::RIGHT).end());
+                    chunk->GetBorderMesh(RIGHT).begin(),
+                    chunk->GetBorderMesh(RIGHT).end());
     vertices.insert(vertices.end(),
-                    chunk->GetBorderMesh(VoxelFace::BACK).begin(),
-                    chunk->GetBorderMesh(VoxelFace::BACK).end());
+                    chunk->GetBorderMesh(BACK).begin(),
+                    chunk->GetBorderMesh(BACK).end());
     vertices.insert(vertices.end(),
-                    chunk->GetBorderMesh(VoxelFace::LEFT).begin(),
-                    chunk->GetBorderMesh(VoxelFace::LEFT).end());
+                    chunk->GetBorderMesh(LEFT).begin(),
+                    chunk->GetBorderMesh(LEFT).end());
 
     if (vertices.empty())
         return;

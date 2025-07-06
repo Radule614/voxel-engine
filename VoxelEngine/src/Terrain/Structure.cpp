@@ -17,7 +17,7 @@ int32_t Structure::GetRadius() const
     return m_Radius;
 }
 
-const std::vector<std::pair<glm::i16vec3, VoxelType> >& Structure::GetVoxelData()
+const std::vector<std::pair<glm::i32vec3, VoxelType> >& Structure::GetVoxelData()
 {
     return m_VoxelData;
 }

@@ -38,7 +38,7 @@ public:
     void Generate();
     void GenerateMesh();
     void GenerateEdgeMesh(VoxelFace face);
-    std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::i16vec3 pos) const;
+    std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::i32vec3 pos) const;
 
     VoxelGrid& GetVoxelGrid();
     const std::vector<VoxelVertex>& GetMesh() const;
