@@ -35,6 +35,8 @@ private:
     void CheckChunkRenderQueue();
     void SetupRenderData(const std::shared_ptr<Chunk>& chunk) const;
     void ApplyState() const;
+
+    void CreateTerrainCollider() const;
     void OnColliderLocationChanged(glm::vec3 pos);
     void OptimizeColliders();
 
@@ -43,7 +45,7 @@ private:
     UIState m_UIState;
     World m_World;
     std::unordered_map<Position2D, ChunkRenderData>* m_RenderData;
-    std::unordered_map<glm::i32vec3, ColliderComponent> m_VoxelColliders;
+    std::unordered_set<glm::i32vec3> m_ColliderPositions;
     float_t timeSinceLastColliderOptimization = 0.0f;
 
     JPH::ShapeRefC m_VoxelShape;

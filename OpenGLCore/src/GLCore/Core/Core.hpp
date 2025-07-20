@@ -16,7 +16,7 @@
         }                                                                                                              \
     }
 #else
-#define GLCORE_ASSERT (x, ...)
+#define GLCORE_ASSERT(x, ...)
 #endif
 
 #define BIT(x) (1 << x)

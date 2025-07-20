@@ -41,12 +41,16 @@ void EcsLayer::OnUpdate(const Timestep ts)
     PlayerCharacterManager& playerCharacterManager = PhysicsEngine::Instance().GetPlayerCharacterManager();
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
+    // TODO:    Voxel terrain entity doesn't have a transform component so it won't go into this loop
+    //          Add a check for static collider so it doesn't break things if said entity gets Transform component
+
     for (const auto view = registry.view<ColliderComponent, TransformComponent>(); const auto entity: view)
     {
         const auto& collider = view.get<ColliderComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
         if (!bodyInterface.IsActive(collider.BodyId))
             continue;
+
         UpdateTransformComponent(transform, collider.BodyId);
         RaiseColliderLocationChangedEvent(transform);
     }

@@ -6,6 +6,7 @@
 #include "../Ecs/Components/PlayerComponent.hpp"
 #include "../Physics/Utils/BodyBuilder.hpp"
 #include "../Physics/Utils/JoltUtils.hpp"
+#include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -18,7 +19,7 @@ VoxelLayer::VoxelLayer(EngineState& state)
     : Layer("VoxelLayer"),
       m_EngineState(state),
       m_World(World(state.CameraController)),
-      m_VoxelColliders({})
+      m_ColliderPositions({})
 {
     m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
 
@@ -118,12 +119,46 @@ void VoxelLayer::ApplyState() const
     glPolygonMode(GL_FRONT_AND_BACK, TerrainConfig::PolygonMode);
 }
 
+void VoxelLayer::CreateTerrainCollider() const
+{
+    if (m_ColliderPositions.empty())
+        return;
+
+    entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
+    BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
+
+    StaticCompoundShapeSettings compoundSettings{};
+    for (auto position: m_ColliderPositions)
+        compoundSettings.AddShape(JoltUtils::GlmToJoltVec3(position), Quat::sIdentity(), m_VoxelShape);
+    const ShapeRefC shape = compoundSettings.Create().Get();
+
+    ColliderComponent* collider = nullptr;
+    if (const auto c = registry.try_get<ColliderComponent>(m_TerrainEntityId))
+    {
+        bodyInterface.RemoveBody(c->BodyId);
+        bodyInterface.DestroyBody(c->BodyId);
+        collider = c;
+    }
+    else
+    {
+        collider = &registry.emplace<ColliderComponent>(m_TerrainEntityId);
+    }
+
+    const auto bodySettings = BodyCreationSettings(shape,
+                                                   Vec3::sZero(),
+                                                   Quat::sIdentity(),
+                                                   EMotionType::Static,
+                                                   Layers::NON_MOVING);
+    collider->BodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
+}
+
 void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
 {
     auto& chunkMap = m_World.GetChunkMap();
-    const auto chunkIterator = m_World.GetChunkMap().find(m_World.WorldToChunkSpace(pos));
-    if (chunkIterator == chunkMap.end())
+    if (!chunkMap.contains(m_World.WorldToChunkSpace(pos)))
         return;
+
     constexpr int32_t r = 2;
     for (int32_t x = -r; x <= r; ++x)
     {
@@ -137,28 +172,29 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
                 if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
                     continue;
                 Voxel& v = it->second->GetVoxelGrid()[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
-                if (v.GetVoxelType() == AIR || m_VoxelColliders.contains(p))
+                if (v.GetVoxelType() == AIR || m_ColliderPositions.contains(p))
                     continue;
 
-                const BodyID bodyId = BodyBuilder().SetShape(m_VoxelShape).SetPosition(p).BuildAndAdd();
-                m_VoxelColliders.insert(std::make_pair(p, ColliderComponent(bodyId)));
+                m_ColliderPositions.insert(p);
             }
         }
     }
+
+    CreateTerrainCollider();
 }
 
 void VoxelLayer::OptimizeColliders()
 {
-    LOG_INFO("Body count before optimization: {0}", PhysicsEngine::Instance().GetSystem().GetNumBodies());
+    LOG_INFO("Terrain voxel collider count before optimization: {0}", m_ColliderPositions.size());
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
     BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
-    std::unordered_map collidersToRemove(m_VoxelColliders);
+    std::unordered_set collidersToRemove(m_ColliderPositions);
     BodyIDVector bodies;
     physicsSystem.GetBodies(bodies);
 
     const auto& playerView = EntityComponentSystem::Instance().GetEntityRegistry().view<PlayerComponent>();
 
-    for (auto& [voxelPosition, collider]: m_VoxelColliders)
+    for (auto& voxelPosition: m_ColliderPositions)
     {
         for (auto bodyId: bodies)
         {
@@ -180,13 +216,12 @@ void VoxelLayer::OptimizeColliders()
         }
     }
 
-    for (auto& [pos, collider]: collidersToRemove)
-    {
-        m_VoxelColliders.erase(m_VoxelColliders.find(pos));
-        bodyInterface.RemoveBody(collider.BodyId);
-        bodyInterface.DestroyBody(collider.BodyId);
-    }
-    LOG_INFO("Body count after optimization: {0}", PhysicsEngine::Instance().GetSystem().GetNumBodies());
+    for (auto& pos: collidersToRemove)
+        m_ColliderPositions.erase(m_ColliderPositions.find(pos));
+
+    CreateTerrainCollider();
+
+    LOG_INFO("Terrain voxel collider count after optimization: {0}", m_ColliderPositions.size());
 }
 
 void VoxelLayer::CheckChunkRenderQueue()
