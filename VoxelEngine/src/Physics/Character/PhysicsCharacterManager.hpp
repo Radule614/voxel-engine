@@ -11,15 +11,19 @@
 namespace VoxelEngine
 {
 
-class PlayerCharacterManager
+class PhysicsEngine;
+
+class PhysicsCharacterManager
 {
 public:
-    PlayerCharacterManager();
-    ~PlayerCharacterManager();
+    PhysicsCharacterManager(const PhysicsEngine& physicsEngine);
+    ~PhysicsCharacterManager();
 
-    void UpdateCharacterVirtual(JPH::CharacterVirtual& character, float_t deltaTime, JPH::Vec3 inGravity) const;
+    void UpdateCharacterVirtual(JPH::CharacterVirtual& character, float_t deltaTime, float_t gravityStrength = 1.0f) const;
 
 private:
+    const PhysicsEngine& m_PhysicsEngine;
+
     std::unique_ptr<JPH::TempAllocator> m_TempAllocator;
     std::unique_ptr<JPH::BroadPhaseLayerFilter> m_BroadPhaseLayerFilter;
     std::unique_ptr<JPH::ObjectLayerFilter> m_ObjectLayerFilter;

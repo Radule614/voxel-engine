@@ -2,10 +2,9 @@
 #include "../Physics/PhysicsEngine.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Components/CameraComponent.hpp"
-#include "../Ecs/Components/PlayerComponent.hpp"
+#include "../Ecs/Components/CharacterComponent.hpp"
 #include "../Physics/Utils/BodyBuilder.hpp"
 #include "../Physics/Character/CharacterBuilder.hpp"
-#include "Jolt/Physics/Character/Character.h"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -35,12 +34,10 @@ void SandboxLayer::OnAttach()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     const auto& cameraController = m_State.CameraController;
-    const ShapeRefC shape = ShapeFactory().CreateCapsuleShape(0.9f, 0.40f);
-    std::unique_ptr<CharacterVirtual> character = CharacterBuilder()
-            .SetShape(shape)
+    auto character = CharacterBuilder()
             .SetPosition(cameraController->GetCamera().GetPosition())
-            .SetMaxSlopeAngle(45.0f)
             .BuildAndAddVirtual();
+    auto characterController = std::make_unique<CharacterController>(std::move(character));
 
     TransformComponent transform{};
     transform.Scale = glm::vec3(1.0f);
@@ -48,7 +45,7 @@ void SandboxLayer::OnAttach()
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();
     registry.emplace<TransformComponent>(entity, transform);
-    registry.emplace<PlayerComponent>(entity, character);
+    registry.emplace<CharacterComponent>(entity, std::move(characterController));
     registry.emplace<CameraComponent>(entity, cameraController);
 }
 
@@ -57,13 +54,13 @@ void SandboxLayer::OnEvent(Event& event)
     EventDispatcher dispatcher(event);
     dispatcher.Dispatch<KeyPressedEvent>(
         [&](const KeyPressedEvent& e) {
-            if (e.GetKeyCode() == HZ_KEY_T)
+            if (e.GetKeyCode() == VE_KEY_T)
             {
                 const PerspectiveCamera& camera = m_State.CameraController->GetCamera();
                 const glm::vec3 front = camera.GetFront();
                 const glm::vec3 position = camera.GetPosition();
 
-                const ShapeRefC shape = ShapeFactory().CreateSphereShape(0.4f);
+                const ShapeRefC shape{ShapeFactory().CreateSphereShape(0.4f)};
                 const BodyID bodyId = BodyBuilder()
                         .SetShape(shape)
                         .SetPosition(position)

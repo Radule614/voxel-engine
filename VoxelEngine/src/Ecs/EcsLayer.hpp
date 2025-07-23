@@ -3,6 +3,7 @@
 #include <GLCoreUtils.hpp>
 #include "../EngineState.hpp"
 #include "../Ecs/Ecs.hpp"
+#include "Components/CharacterComponent.hpp"
 
 namespace VoxelEngine
 {
@@ -19,7 +20,7 @@ public:
 
 private:
     void UpdateTransformComponent(TransformComponent& transform, const JPH::BodyID& bodyId);
-    void UpdateTransformComponent(TransformComponent& transform, const JPH::CharacterVirtual& character);
+    void UpdateTransformComponent(TransformComponent& transform, const CharacterController& controller);
     void UpdateTransformComponent(TransformComponent& transform,
                                   glm::vec3 position,
                                   float_t angle,

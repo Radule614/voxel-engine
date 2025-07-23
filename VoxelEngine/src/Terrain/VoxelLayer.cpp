@@ -3,7 +3,7 @@
 #include <vector>
 #include "../Assets/Vertex.hpp"
 #include "World.hpp"
-#include "../Ecs/Components/PlayerComponent.hpp"
+#include "../Ecs/Components/CharacterComponent.hpp"
 #include "../Physics/Utils/BodyBuilder.hpp"
 #include "../Physics/Utils/JoltUtils.hpp"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
@@ -128,7 +128,9 @@ void VoxelLayer::CreateTerrainCollider() const
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
     BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
 
+    // TODO: Change this to mutable compound shape since it's constantly changed
     StaticCompoundShapeSettings compoundSettings{};
+
     for (auto position: m_ColliderPositions)
         compoundSettings.AddShape(JoltUtils::GlmToJoltVec3(position), Quat::sIdentity(), m_VoxelShape);
     const ShapeRefC shape = compoundSettings.Create().Get();
@@ -145,11 +147,12 @@ void VoxelLayer::CreateTerrainCollider() const
         collider = &registry.emplace<ColliderComponent>(m_TerrainEntityId);
     }
 
-    const auto bodySettings = BodyCreationSettings(shape,
+    auto bodySettings = BodyCreationSettings(shape,
                                                    Vec3::sZero(),
                                                    Quat::sIdentity(),
                                                    EMotionType::Static,
                                                    Layers::NON_MOVING);
+    bodySettings.mEnhancedInternalEdgeRemoval = true;
     collider->BodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
 }
 
@@ -192,7 +195,7 @@ void VoxelLayer::OptimizeColliders()
     BodyIDVector bodies;
     physicsSystem.GetBodies(bodies);
 
-    const auto& playerView = EntityComponentSystem::Instance().GetEntityRegistry().view<PlayerComponent>();
+    const auto& characterView = EntityComponentSystem::Instance().GetEntityRegistry().view<CharacterComponent>();
 
     for (auto& voxelPosition: m_ColliderPositions)
     {
@@ -206,10 +209,10 @@ void VoxelLayer::OptimizeColliders()
                 collidersToRemove.erase(voxelPosition);
         }
 
-        for (const auto& entity: playerView)
+        for (const auto& entity: characterView)
         {
-            const auto& character = *playerView.get<PlayerComponent>(entity).Character;
-            glm::vec3 position = JoltUtils::JoltToGlmVec3(character.GetPosition());
+            const auto& characterController = *characterView.get<CharacterComponent>(entity).Controller;
+            glm::vec3 position = JoltUtils::JoltToGlmVec3(characterController.GetCharacter().GetPosition());
             const float_t distance = glm::distance(position, static_cast<glm::vec3>(voxelPosition));
             if (distance < 3 && collidersToRemove.contains(voxelPosition))
                 collidersToRemove.erase(voxelPosition);

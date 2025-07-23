@@ -18,25 +18,25 @@ ShapeFactory::ShapeFactory()
 
 ShapeFactory::~ShapeFactory() = default;
 
-ShapeRefC ShapeFactory::CreateSphereShape(const float_t radius) const
+RefConst<SphereShape> ShapeFactory::CreateSphereShape(const float_t radius) const
 {
     const SphereShapeSettings shapeSettings(radius);
     shapeSettings.SetEmbedded();
-    return shapeSettings.Create().Get();
+    return RefConst(dynamic_cast<const SphereShape*>(shapeSettings.Create().Get().GetPtr()));
 }
 
-ShapeRefC ShapeFactory::CreateBoxShape(const glm::vec3 halfSize) const
+RefConst<BoxShape> ShapeFactory::CreateBoxShape(const glm::vec3 halfSize) const
 {
     const BoxShapeSettings shapeSettings(Vec3(halfSize.x, halfSize.y, halfSize.z));
     shapeSettings.SetEmbedded();
-    return shapeSettings.Create().Get();
+    return RefConst(dynamic_cast<const BoxShape*>(shapeSettings.Create().Get().GetPtr()));
 }
 
-ShapeRefC ShapeFactory::CreateCapsuleShape(const float_t height, const float_t radius) const
+RefConst<CapsuleShape> ShapeFactory::CreateCapsuleShape(const float_t height, const float_t radius) const
 {
-    const CapsuleShapeSettings shapeSettings(height, radius);
+    const CapsuleShapeSettings shapeSettings(height / 2.0f, radius);
     shapeSettings.SetEmbedded();
-    return shapeSettings.Create().Get();
+    return RefConst(dynamic_cast<const CapsuleShape*>(shapeSettings.Create().Get().GetPtr()));
 }
 
 }

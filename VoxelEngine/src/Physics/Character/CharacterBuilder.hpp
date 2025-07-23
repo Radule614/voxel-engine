@@ -17,16 +17,18 @@ public:
     CharacterBuilder();
     ~CharacterBuilder();
 
-    CharacterBuilder& SetShape(const JPH::ShapeRefC& shape);
     CharacterBuilder& SetMaxSlopeAngle(const float_t& degrees);
     CharacterBuilder& SetPosition(const glm::vec3& position);
+    CharacterBuilder& SetHeight(float_t height);
+    CharacterBuilder& SetRadius(float_t radius);
 
     JPH::Character* BuildAndAdd() const;
     std::unique_ptr<JPH::CharacterVirtual> BuildAndAddVirtual() const;
 
 private:
-    JPH::ShapeRefC m_Shape = nullptr;
-    float m_MaxSlopeAngleInDegrees = 0.0f;
+    float m_CharacterHeight = 2.0f;
+    float m_CharacterRadius = 0.3f;
+    float m_MaxSlopeAngleInDegrees = 15.0f; // TODO: Find the right value for this
     glm::vec3 m_Position = glm::vec3(0, 0, 0);
 };
 
