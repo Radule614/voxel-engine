@@ -2,7 +2,9 @@
 // Created by RadU on 15-Jun-25.
 //
 
-#include "PlayerCharacterManager.hpp"
+#include "PhysicsCharacterManager.hpp"
+
+#include "../PhysicsEngine.hpp"
 
 using namespace JPH;
 
@@ -46,8 +48,9 @@ class PlayerShapeFilter final : public ShapeFilter
 {
 };
 
-PlayerCharacterManager::PlayerCharacterManager()
-    : m_TempAllocator(std::make_unique<TempAllocatorImpl>(10 * 1024 * 1024)),
+PhysicsCharacterManager::PhysicsCharacterManager(const PhysicsEngine& physicsEngine)
+    : m_PhysicsEngine(physicsEngine),
+      m_TempAllocator(std::make_unique<TempAllocatorImpl>(10 * 1024 * 1024)),
       m_BroadPhaseLayerFilter(std::make_unique<PlayerBroadPhaseLayerFilter>()),
       m_ObjectLayerFilter(std::make_unique<PlayerObjectLayerFilter>()),
       m_BodyFilter(std::make_unique<PlayerBodyFilter>()),
@@ -55,14 +58,12 @@ PlayerCharacterManager::PlayerCharacterManager()
 {
 }
 
-PlayerCharacterManager::~PlayerCharacterManager() = default;
+PhysicsCharacterManager::~PhysicsCharacterManager() = default;
 
-void PlayerCharacterManager::UpdateCharacterVirtual(CharacterVirtual& character,
-                                                    const float_t deltaTime,
-                                                    const Vec3 inGravity) const
+void PhysicsCharacterManager::UpdateCharacterVirtual(CharacterVirtual& character, const float_t deltaTime, const float_t gravityStrength) const
 {
     character.Update(deltaTime,
-                     inGravity,
+                     m_PhysicsEngine.GetSystem().GetGravity() * gravityStrength,
                      *m_BroadPhaseLayerFilter,
                      *m_ObjectLayerFilter,
                      *m_BodyFilter,

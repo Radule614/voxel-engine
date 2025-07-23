@@ -11,7 +11,7 @@
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
 #include "GLCore.hpp"
-#include "Character/PlayerCharacterManager.hpp"
+#include "Character/PhysicsCharacterManager.hpp"
 
 namespace VoxelEngine
 {
@@ -25,7 +25,7 @@ public:
 
     void OnUpdate(GLCore::Timestep ts);
     JPH::PhysicsSystem& GetSystem() const;
-    PlayerCharacterManager& GetPlayerCharacterManager() const;
+    PhysicsCharacterManager& GetPlayerCharacterManager() const;
 
 private:
     PhysicsEngine();
@@ -56,7 +56,7 @@ private:
     // Registering one is entirely optional.
     std::unique_ptr<JPH::BodyActivationListener> m_BodyActivationListener;
 
-    std::unique_ptr<PlayerCharacterManager> m_PlayerCharacterManager;
+    std::unique_ptr<PhysicsCharacterManager> m_PlayerCharacterManager;
 };
 
 inline PhysicsEngine* g_PhysicsEngine = nullptr;

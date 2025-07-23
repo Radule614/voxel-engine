@@ -23,7 +23,7 @@ public:
     float_t GetZoomLevel() const;
     void SetZoomLevel(float_t level);
     float_t GetFov() const;
-    glm::vec3 CalculateMovementVector(Timestep ts) const;
+    glm::vec3 CalculateMovementDirection() const;
 
 private:
     bool OnMouseScrolled(MouseScrolledEvent& e);
@@ -43,6 +43,6 @@ private:
     float_t m_Pitch = 0.0f;
 
     bool m_First = true;
-    bool m_FreeFly;
+    bool m_FreeFly = false;
 };
 }

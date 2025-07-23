@@ -26,7 +26,7 @@ void UserInterface::OnEvent(GLCore::Event& event)
     EventDispatcher dispatcher(event);
     dispatcher.Dispatch<KeyPressedEvent>(
         [&](KeyPressedEvent& e) {
-            if (e.GetKeyCode() == HZ_KEY_ESCAPE)
+            if (e.GetKeyCode() == VE_KEY_ESCAPE)
             {
                 m_State.MenuActive = !m_State.MenuActive;
                 if (!m_State.MenuActive)

@@ -4,7 +4,6 @@
 #include "../Physics/Utils/JoltUtils.hpp"
 #include "../Renderer/Renderer.hpp"
 #include "Components/CameraComponent.hpp"
-#include "Components/PlayerComponent.hpp"
 #include "GLCore/Core/Input.hpp"
 
 using namespace GLCore;
@@ -38,8 +37,11 @@ void EcsLayer::OnUpdate(const Timestep ts)
 {
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
     BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
-    PlayerCharacterManager& playerCharacterManager = PhysicsEngine::Instance().GetPlayerCharacterManager();
+    PhysicsCharacterManager& physicsCharacterManager = PhysicsEngine::Instance().GetPlayerCharacterManager();
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    // TODO:    Voxel terrain entity doesn't have a transform component so it won't go into this loop
+    //          Add a check for static collider so it doesn't break things if said entity gets Transform component
 
     for (const auto view = registry.view<ColliderComponent, TransformComponent>(); const auto entity: view)
     {
@@ -47,40 +49,30 @@ void EcsLayer::OnUpdate(const Timestep ts)
         auto& transform = view.get<TransformComponent>(entity);
         if (!bodyInterface.IsActive(collider.BodyId))
             continue;
+
         UpdateTransformComponent(transform, collider.BodyId);
         RaiseColliderLocationChangedEvent(transform);
     }
 
-    for (const auto& view = registry.view<TransformComponent, PlayerComponent>(); const auto entity: view)
+    for (const auto& view = registry.view<TransformComponent, CharacterComponent>(); const auto entity: view)
     {
-        auto& character = *view.get<PlayerComponent>(entity).Character;
-        auto& velocity = view.get<PlayerComponent>(entity).Velocity;
+        auto& characterController = *view.get<CharacterComponent>(entity).Controller;
+        auto& velocity = view.get<CharacterComponent>(entity).Velocity;
         auto& transform = view.get<TransformComponent>(entity);
-        const auto& characterGravity = 1.0f * physicsSystem.GetGravity();
 
         if (registry.all_of<CameraComponent>(entity))
         {
-            auto& controller = *registry.get<CameraComponent>(entity).CameraController;
-            const auto& movement = controller.CalculateMovementVector(ts);
+            auto& cameraController = *registry.get<CameraComponent>(entity).CameraController;
+            cameraController.GetCamera().SetPosition(transform.Position);
 
-            glm::vec2 xz(0.0f);
-            if (movement.x != 0.0f || movement.z != 0.0f)
-                xz = 8.0f * glm::normalize(glm::vec2(movement.x, movement.z));
-
-            velocity.x = xz.x;
-            velocity.z = xz.y;
-            velocity.y = velocity.y + ts * characterGravity.GetY();
-
-            if (Input::IsKeyPressed(HZ_KEY_SPACE) && character.GetGroundState() ==
-                CharacterVirtual::EGroundState::OnGround)
-                velocity.y = 6.0f;
-
-            controller.GetCamera().SetPosition(transform.Position);
+            velocity = cameraController.CalculateMovementDirection();
+            characterController.HandleInput(JoltUtils::GlmToJoltVec3(velocity), Input::IsKeyPressed(VE_KEY_SPACE), ts);
         }
 
-        character.SetLinearVelocity(JoltUtils::GlmToJoltVec3(velocity));
-        playerCharacterManager.UpdateCharacterVirtual(character, ts, characterGravity);
-        UpdateTransformComponent(transform, character);
+        physicsCharacterManager.UpdateCharacterVirtual(characterController.GetCharacter(),
+                                                       ts,
+                                                       characterController.m_GravityStrength);
+        UpdateTransformComponent(transform, characterController);
         RaiseColliderLocationChangedEvent(transform);
     }
 
@@ -97,12 +89,12 @@ void EcsLayer::UpdateTransformComponent(TransformComponent& transform, const Bod
     UpdateTransformComponent(transform, JoltUtils::JoltToGlmVec3(position), angle, JoltUtils::JoltToGlmVec3(axis));
 }
 
-void EcsLayer::UpdateTransformComponent(TransformComponent& transform, const CharacterVirtual& character)
+void EcsLayer::UpdateTransformComponent(TransformComponent& transform, const CharacterController& controller)
 {
-    const Vec3 position = character.GetPosition();
+    const Vec3 position = controller.GetCharacter().GetPosition();
     Vec3 axis{};
     float_t angle;
-    character.GetRotation().GetAxisAngle(axis, angle);
+    controller.GetCharacter().GetRotation().GetAxisAngle(axis, angle);
     UpdateTransformComponent(transform, JoltUtils::JoltToGlmVec3(position), angle, JoltUtils::JoltToGlmVec3(axis));
 }
 

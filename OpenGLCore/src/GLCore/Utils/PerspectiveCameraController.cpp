@@ -10,8 +10,7 @@ PerspectiveCameraController::PerspectiveCameraController(float_t fov, float_t as
     : m_AspectRatio(aspectRatio),
       m_Camera(fov, aspectRatio),
       m_Fov(fov),
-      m_CameraTranslationSpeed(speed),
-      m_FreeFly(true)
+      m_CameraTranslationSpeed(speed)
 {
 }
 
@@ -23,25 +22,29 @@ void PerspectiveCameraController::OnUpdate(const Timestep ts)
 {
 }
 
-glm::vec3 PerspectiveCameraController::CalculateMovementVector(const Timestep ts) const
+glm::vec3 PerspectiveCameraController::CalculateMovementDirection() const
 {
     auto frontDir = glm::vec3();
     auto rightDir = glm::vec3();
-    if (Input::IsKeyPressed(HZ_KEY_A))
+
+    if (Input::IsKeyPressed(VE_KEY_A))
         rightDir = -glm::normalize(glm::cross(m_Camera.GetFront(), m_Camera.GetUp()));
-    else if (Input::IsKeyPressed(HZ_KEY_D))
+    else if (Input::IsKeyPressed(VE_KEY_D))
         rightDir = glm::normalize(glm::cross(m_Camera.GetFront(), m_Camera.GetUp()));
 
-    if (Input::IsKeyPressed(HZ_KEY_W))
+    if (Input::IsKeyPressed(VE_KEY_W))
         frontDir = m_Camera.GetFront();
-    else if (Input::IsKeyPressed(HZ_KEY_S))
+    else if (Input::IsKeyPressed(VE_KEY_S))
         frontDir = -m_Camera.GetFront();
 
-    if (frontDir == glm::vec3(0.0f) && rightDir == glm::vec3(0.0f))
-        return glm::vec3(0.0f);
+    auto direction = frontDir + rightDir;
 
-    const glm::vec3 direction = glm::normalize(frontDir + rightDir);
-    return static_cast<float_t>(ts) * m_CameraTranslationSpeed * direction;
+    if (!m_FreeFly)
+        direction.y = 0.0f;
+
+    return direction == glm::vec3(0.0f)
+               ? glm::vec3(0.0f)
+               : glm::normalize(direction);
 }
 
 void PerspectiveCameraController::OnEvent(Event& e)

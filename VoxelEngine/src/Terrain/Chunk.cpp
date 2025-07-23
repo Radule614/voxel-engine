@@ -302,7 +302,8 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
                 type = DIRT_SNOW;
             else
                 type = SNOW;
-        } else
+        }
+        else
         {
             if (y > h - 5)
                 type = DIRT;
@@ -317,30 +318,15 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
     ++y;
 }
 
-VoxelGrid& Chunk::GetVoxelGrid()
-{
-    return m_VoxelGrid;
-}
+VoxelGrid& Chunk::GetVoxelGrid() { return m_VoxelGrid; }
 
-const std::vector<VoxelVertex>& Chunk::GetMesh() const
-{
-    return m_Mesh;
-}
+const std::vector<VoxelVertex>& Chunk::GetMesh() const { return m_Mesh; }
 
-const std::vector<VoxelVertex>& Chunk::GetBorderMesh(const VoxelFace face) const
-{
-    return m_BorderMeshes.at(face);
-}
+const std::vector<VoxelVertex>& Chunk::GetBorderMesh(const VoxelFace face) const { return m_BorderMeshes.at(face); }
 
-Position2D Chunk::GetPosition() const
-{
-    return m_Position;
-}
+Position2D Chunk::GetPosition() const { return m_Position; }
 
-std::mutex& Chunk::GetLock()
-{
-    return m_Mutex;
-}
+std::mutex& Chunk::GetLock() { return m_Mutex; }
 
 glm::mat4 Chunk::GetModelMatrix() const
 {

@@ -230,7 +230,7 @@ PhysicsEngine::PhysicsEngine() : m_AccumulatedTime(0.0),
     //m_PhysicsSystem->SetBodyActivationListener(m_BodyActivationListener.get());
     //m_PhysicsSystem->SetContactListener(m_ContactListener.get());
 
-    m_PlayerCharacterManager = std::make_unique<PlayerCharacterManager>();
+    m_PlayerCharacterManager = std::make_unique<PhysicsCharacterManager>(*this);
 }
 
 PhysicsEngine::~PhysicsEngine()
@@ -243,7 +243,7 @@ PhysicsEngine::~PhysicsEngine()
     Factory::sInstance = nullptr;
 }
 
-PlayerCharacterManager& PhysicsEngine::GetPlayerCharacterManager() const { return *m_PlayerCharacterManager; }
+PhysicsCharacterManager& PhysicsEngine::GetPlayerCharacterManager() const { return *m_PlayerCharacterManager; }
 
 void PhysicsEngine::OnUpdate(const GLCore::Timestep ts)
 {
