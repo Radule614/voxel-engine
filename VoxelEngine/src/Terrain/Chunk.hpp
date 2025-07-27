@@ -13,6 +13,7 @@
 #include "Position3D.hpp"
 #include "Structure.hpp"
 #include "TerrainConfig.hpp"
+#include "VoxelVertex.hpp"
 
 namespace VoxelEngine
 {

@@ -107,10 +107,10 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel)
     return FromVoxelFaces(voxel, faces);
 }
 
-std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel, VoxelFace f)
+std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel, VoxelFace face)
 {
     bool faces[6] = {false, false, false, false, false, false};
-    faces[f] = true;
+    faces[face] = true;
     return FromVoxelFaces(voxel, faces);
 }
 
@@ -134,7 +134,6 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             continue;
 
         std::vector<glm::vec3>& positions = s_PositionMap.at(face);
-        glm::vec3 normal = s_NormalMap.at(face);
         int32_t texMapX = texMap[4];
         int32_t texMapY = texMap[5];
         if (i == 0)
@@ -158,10 +157,10 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
                 atlasTexCoord.y += textureUnit;
 
             VoxelVertex v{};
-            v.Position = pos + static_cast<glm::vec3>(static_cast<glm::i32vec3>(voxel.GetPosition()));
-            v.Normal = normal;
+            v.Position = pos + static_cast<glm::vec3>(voxel.GetPosition());
             v.TexCoords = atlasTexCoord;
-            v.Light = voxel.GetLight();
+            v.SetFace(face);
+
             data.push_back(v);
         }
     }

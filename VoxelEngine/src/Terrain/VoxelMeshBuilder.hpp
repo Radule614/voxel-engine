@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 
 #include "Voxel.hpp"
-#include "../Assets/Vertex.hpp"
+#include "VoxelVertex.hpp"
 
 namespace VoxelEngine
 {
@@ -17,7 +17,7 @@ public:
     ~VoxelMeshBuilder();
 
     std::vector<VoxelVertex> FromVoxel(Voxel& voxel);
-    std::vector<VoxelVertex> FromVoxel(Voxel& voxel, VoxelFace f);
+    std::vector<VoxelVertex> FromVoxel(Voxel& voxel, VoxelFace face);
     std::vector<VoxelVertex> FromVoxelFaces(Voxel& voxel, bool faces[6]);
     std::vector<VoxelVertex> FromVoxelExceptFaces(Voxel& voxel, bool faces[6]);
 

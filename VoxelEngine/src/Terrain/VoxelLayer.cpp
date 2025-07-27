@@ -1,7 +1,7 @@
 #include "VoxelLayer.hpp"
 #include "VoxelMeshBuilder.hpp"
 #include <vector>
-#include "../Assets/Vertex.hpp"
+#include "VoxelVertex.hpp"
 #include "World.hpp"
 #include "../Ecs/Components/CharacterComponent.hpp"
 #include "../Physics/Utils/BodyBuilder.hpp"
@@ -88,13 +88,27 @@ void VoxelLayer::OnUpdate(const Timestep ts)
 
 void VoxelLayer::OnImGuiRender()
 {
-    if (!m_EngineState.MenuActive)
-        return;
-
     constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
                                              ImGuiWindowFlags_NoMove;
     const auto& io = ImGui::GetIO();
+
+    ImGui::SetNextWindowSize(ImVec2(300.0, 200.0));
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+
+    ImGui::Begin("DEBUG", nullptr, windowFlags);
+
+    auto worldPosition = m_World.GetPositionInWorld(m_EngineState.CameraController->GetCamera().GetPosition());
+
+    ImGui::Text("Generated Chunk Count: %zu", m_World.GetChunkMap().size());
+    ImGui::Text("Current Chunk: %s", VecToString(worldPosition.first).c_str());
+    ImGui::Text("Current Voxel: %s", VecToString(worldPosition.second).c_str());
+
+    ImGui::End();
+
+    if (!m_EngineState.MenuActive)
+        return;
+
     ImGui::SetNextWindowSize(ImVec2(400.0, 600.0));
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 400.0, 0));
 
@@ -142,16 +156,13 @@ void VoxelLayer::CreateTerrainCollider() const
         bodyInterface.DestroyBody(c->BodyId);
         collider = c;
     }
-    else
-    {
-        collider = &registry.emplace<ColliderComponent>(m_TerrainEntityId);
-    }
+    else { collider = &registry.emplace<ColliderComponent>(m_TerrainEntityId); }
 
     auto bodySettings = BodyCreationSettings(shape,
-                                                   Vec3::sZero(),
-                                                   Quat::sIdentity(),
-                                                   EMotionType::Static,
-                                                   Layers::NON_MOVING);
+                                             Vec3::sZero(),
+                                             Quat::sIdentity(),
+                                             EMotionType::Static,
+                                             Layers::NON_MOVING);
     bodySettings.mEnhancedInternalEdgeRemoval = true;
     collider->BodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
 }
@@ -292,11 +303,11 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1,
-                          3,
-                          GL_FLOAT,
+                          1,
+                          GL_UNSIGNED_BYTE,
                           GL_FALSE,
                           sizeof(VoxelVertex),
-                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Normal)));
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Face)));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2,
                           2,

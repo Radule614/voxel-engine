@@ -24,6 +24,8 @@ public:
     void SetZoomLevel(float_t level);
     float_t GetFov() const;
     glm::vec3 CalculateMovementDirection() const;
+    void SetFreeFly(bool value);
+    bool IsFreeFly() const;
 
 private:
     bool OnMouseScrolled(MouseScrolledEvent& e);
@@ -43,6 +45,6 @@ private:
     float_t m_Pitch = 0.0f;
 
     bool m_First = true;
-    bool m_FreeFly = false;
+    bool m_FreeFly = true;
 };
 }

@@ -1,35 +1,11 @@
 #pragma once
 
-#include <vector>
-
 #include <glm/glm.hpp>
+#include "VoxelConstants.hpp"
 #include "Position3D.hpp"
 
 namespace VoxelEngine
 {
-
-enum VoxelType
-{
-    AIR = 0,
-    DIRT,
-    GRASS,
-    STONE,
-    LOG,
-    LEAVES,
-    SNOW,
-    DIRT_SNOW,
-    LAMP
-};
-
-enum VoxelFace
-{
-    TOP = 0,
-    BOTTOM,
-    FRONT,
-    RIGHT,
-    BACK,
-    LEFT
-};
 
 class Voxel
 {

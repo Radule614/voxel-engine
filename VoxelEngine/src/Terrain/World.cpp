@@ -15,10 +15,7 @@ World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& 
 {
 }
 
-World::~World()
-{
-    StopGeneration();
-}
+World::~World() { StopGeneration(); }
 
 void World::StartGeneration()
 {
@@ -183,7 +180,7 @@ void World::GenerateChunk(Position2D position)
 
 std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, const size_t count)
 {
-    const int32_t maxDistance = 24;
+    const int32_t maxDistance = 10;
     std::queue<Position2D> positions = {};
     std::unordered_set<Position2D> existing = {};
     for (int32_t r = 0; r < maxDistance; ++r)
@@ -251,25 +248,13 @@ Position2D World::WorldToChunkSpace(const glm::vec3& pos)
     };
 }
 
-const std::map<Position2D, std::shared_ptr<Chunk> >& World::GetChunkMap() const
-{
-    return m_ChunkMap;
-}
+const std::map<Position2D, std::shared_ptr<Chunk> >& World::GetChunkMap() const { return m_ChunkMap; }
 
-std::unordered_set<std::shared_ptr<Chunk> >& World::GetChangedChunks()
-{
-    return m_ChangedChunks;
-}
+std::unordered_set<std::shared_ptr<Chunk> >& World::GetChangedChunks() { return m_ChangedChunks; }
 
-std::mutex& World::GetLock()
-{
-    return m_Mutex;
-}
+std::mutex& World::GetLock() { return m_Mutex; }
 
-std::map<Position2D, std::queue<Voxel> >& World::GetDeferredChunkQueue()
-{
-    return m_DeferredChunkQueueMap;
-}
+std::map<Position2D, std::queue<Voxel> >& World::GetDeferredChunkQueue() { return m_DeferredChunkQueueMap; }
 
 std::pair<Position2D, Position3D> World::GetPositionInWorld(glm::i32vec3 pos) const
 {
