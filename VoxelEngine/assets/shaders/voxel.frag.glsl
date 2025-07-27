@@ -3,8 +3,8 @@
 layout(location = 0) out vec4 o_Color;
 
 in o_Vertex {
-    vec3 FragPos;
-    uint Face;
+    flat uint VoxelIndex;
+    flat uint Face;
     vec2 FragTexCoords;
 } i_Fragment;
 

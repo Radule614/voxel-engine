@@ -304,12 +304,19 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1,
                           1,
+                          GL_UNSIGNED_INT,
+                          GL_FALSE,
+                          sizeof(VoxelVertex),
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::VoxelIndex)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2,
+                          1,
                           GL_UNSIGNED_BYTE,
                           GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Face)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2,
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3,
                           2,
                           GL_FLOAT,
                           GL_FALSE,

@@ -13,6 +13,7 @@ namespace VoxelEngine
 struct VoxelVertex
 {
     glm::vec3 Position;
+    uint32_t VoxelIndex;
     uint8_t Face;
     glm::vec2 TexCoords;
 

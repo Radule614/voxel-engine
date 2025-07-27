@@ -1,6 +1,8 @@
 #include "VoxelMeshBuilder.hpp"
 #include <GLCoreUtils.hpp>
 
+#include "TerrainConfig.hpp"
+
 namespace VoxelEngine
 {
 
@@ -160,6 +162,7 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             v.Position = pos + static_cast<glm::vec3>(voxel.GetPosition());
             v.TexCoords = atlasTexCoord;
             v.SetFace(face);
+            v.VoxelIndex = v.Position.x * CHUNK_WIDTH * CHUNK_HEIGHT + v.Position.z * CHUNK_HEIGHT + v.Position.y;
 
             data.push_back(v);
         }

@@ -20,6 +20,7 @@ namespace VoxelEngine
 
 class World;
 using VoxelGrid = Voxel[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
+using RadianceGrid = float_t[CHUNK_WIDTH + 2][CHUNK_WIDTH + 2][CHUNK_HEIGHT + 2];
 
 class Chunk
 {
@@ -54,6 +55,7 @@ private:
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2);
     void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h);
     void AddStructures(std::vector<Structure> structures);
+    void CalculateRadiance();
 
 private:
     World& m_World;
@@ -63,6 +65,8 @@ private:
     std::unordered_map<VoxelFace, std::vector<VoxelVertex> > m_BorderMeshes;
     const siv::PerlinNoise& m_Perlin;
     std::mutex m_Mutex;
+
+    RadianceGrid m_RadianceGrid;
 };
 
 };
