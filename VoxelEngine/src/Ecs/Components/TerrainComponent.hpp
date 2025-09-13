@@ -12,6 +12,7 @@ struct ChunkRenderData
     GLuint VertexArray;
     GLuint VertexBuffer;
     GLuint IndexBuffer;
+    GLuint RadianceStorageBuffer;
     std::vector<uint32_t> Indices;
     glm::mat4 ModelMatrix;
 };

@@ -25,16 +25,6 @@ public:
     void SetPosition(Position3D pos);
     Position3D GetPosition() const;
     bool IsTransparent() const;
-    uint8_t GetLight() const;
-
-    // Get the bits XXXX0000
-    int GetSunlight() const;
-    // Set the bits XXXX0000
-    void SetSunlight(int32_t val);
-    // Get the bits 0000XXXX
-    int GetTorchlight() const;
-    // Set the bits 0000XXXX
-    void SetTorchlight(int32_t val);
 
 private:
     Position3D m_Position;

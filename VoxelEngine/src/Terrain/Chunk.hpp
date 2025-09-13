@@ -43,6 +43,7 @@ public:
     std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::i32vec3 pos) const;
 
     VoxelGrid& GetVoxelGrid();
+    RadianceGrid& GetRadianceGrid();
     const std::vector<VoxelVertex>& GetMesh() const;
     const std::vector<VoxelVertex>& GetBorderMesh(VoxelFace face) const;
     Position2D GetPosition() const;
@@ -55,7 +56,7 @@ private:
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2);
     void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h);
     void AddStructures(std::vector<Structure> structures);
-    void CalculateRadiance();
+    void CalculateRadianceGrid();
 
 private:
     World& m_World;

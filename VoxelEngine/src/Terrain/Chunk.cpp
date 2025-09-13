@@ -80,7 +80,7 @@ void Chunk::Generate()
         }
     }
     AddStructures(structures);
-    CalculateRadiance();
+    CalculateRadianceGrid();
 }
 
 void Chunk::AddStructures(std::vector<Structure> structures)
@@ -95,14 +95,14 @@ void Chunk::AddStructures(std::vector<Structure> structures)
             continue;
         m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
         m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
-        for (auto& v: s.GetVoxelData())
+        for (auto& [positionInStructure, voxelType]: s.GetVoxelData())
         {
-            glm::i32vec3 position = static_cast<glm::i32vec3>(p) + v.first;
+            glm::i32vec3 position = static_cast<glm::i32vec3>(p) + positionInStructure;
             auto [chunkPosition, voxelPosition] = GetPositionRelativeToWorld(position);
             if (chunkPosition == m_Position)
             {
                 Voxel& voxel = m_VoxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
-                voxel.SetVoxelType(v.second);
+                voxel.SetVoxelType(voxelType);
                 voxel.SetPosition(voxelPosition);
                 continue;
             }
@@ -112,13 +112,13 @@ void Chunk::AddStructures(std::vector<Structure> structures)
                 chunk->GetLock().lock();
                 auto& voxelGrid = chunk->GetVoxelGrid();
                 Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
-                voxel.SetVoxelType(v.second);
+                voxel.SetVoxelType(voxelType);
                 voxel.SetPosition(voxelPosition);
                 changedChunks.insert(chunk);
                 chunk->GetLock().unlock();
                 continue;
             }
-            deferredQueueMap[chunkPosition].emplace(v.second, voxelPosition);
+            deferredQueueMap[chunkPosition].emplace(voxelType, voxelPosition);
         }
     }
     m_World.GetLock().lock();
@@ -132,51 +132,51 @@ void Chunk::AddStructures(std::vector<Structure> structures)
     m_World.GetLock().unlock();
 }
 
-void Chunk::CalculateRadiance()
+void Chunk::CalculateRadianceGrid()
 {
     std::queue<std::tuple<uint16_t, uint16_t, uint16_t> > queue{};
 
-    for (size_t x = 1; x < CHUNK_WIDTH; ++x)
+    for (size_t x = 1; x < CHUNK_WIDTH + 1; ++x)
     {
-        for (size_t z = 1; z < CHUNK_WIDTH; ++z)
+        for (size_t z = 1; z < CHUNK_WIDTH + 1; ++z)
         {
-            m_RadianceGrid[x][z][CHUNK_HEIGHT + 1] = 1.0f;
             size_t y = CHUNK_HEIGHT;
-            while (y != 0 && m_VoxelGrid[x - 1][z - 1][y - 1].GetVoxelType() == AIR)
-            {
-                m_RadianceGrid[x][z][y] = 1.0f;
-                --y;
-            }
-            queue.emplace(x, z, y + 1);
+            m_RadianceGrid[x][z][y] = 1.0f;
+            while (y > 0 && m_VoxelGrid[x - 1][z - 1][y - 1].GetVoxelType() == AIR)
+                m_RadianceGrid[x][z][--y] = 1.0f;
+
+            queue.emplace(x, z, y);
         }
     }
 
-    const int dirs[6][3] = {{1,0,0},{-1,0,0},{0,1,0},{0,-1,0},{0,0,1},{0,0,-1}};
-    while (!queue.empty()) {
+    const int dirs[6][3] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+    while (!queue.empty())
+    {
         auto [x, z, y] = queue.front();
         queue.pop();
 
-        float currentRad = m_RadianceGrid[x][z][y];
-        if (currentRad < 0.01f) continue;
+        const float_t currentRadiance = m_RadianceGrid[x][z][y];
+        if (currentRadiance < 0.05f) continue;
 
-        for (auto& dir : dirs) {
+        for (auto& dir: dirs)
+        {
             int nx = x + dir[0];
             int nz = z + dir[1];
             int ny = y + dir[2];
 
-            if (InRange(nx, 1, CHUNK_WIDTH) && InRange(nz, 1, CHUNK_WIDTH) && InRange(ny, 1, CHUNK_HEIGHT))
+            if (!InRange(nx, 1, CHUNK_WIDTH) ||
+                !InRange(nz, 1, CHUNK_WIDTH) ||
+                !InRange(ny, 1, CHUNK_HEIGHT)) { continue; }
+
+            auto& voxel = m_VoxelGrid[nx - 1][nz - 1][ny - 1];
+            if (voxel.GetVoxelType() != AIR) continue;
+
+            float_t radiance = m_RadianceGrid[nx][nz][ny];
+
+            if (radiance > currentRadiance)
             {
-                auto& voxel = m_VoxelGrid[nx - 1][nz - 1][ny - 1];
-                if (voxel.GetVoxelType() != AIR) continue;
-            }
-
-            if (!InRange(nx, 0, CHUNK_WIDTH + 1) || !InRange(nz, 0, CHUNK_WIDTH + 1) || !InRange(ny, 0, CHUNK_HEIGHT + 1))
-                continue;
-
-            float newRad = currentRad * 0.9f;
-            if (newRad > m_RadianceGrid[nx][nz][ny]) {
-                m_RadianceGrid[nx][nz][ny] = newRad;
-                queue.push({nx, nz, ny});
+                m_RadianceGrid[nx][nz][ny] = 0.9f * radiance;
+                queue.emplace(nx, nz, ny);
             }
         }
     }
@@ -315,10 +315,9 @@ void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f)
 
 void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2)
 {
-    std::vector<VoxelVertex> data;
     bool faces[6] = {false, false, false, false, false, false};
     faces[f1] = true;
-    data = meshBuilder.FromVoxelFaces(v, faces);
+    std::vector<VoxelVertex> data = meshBuilder.FromVoxelFaces(v, faces);
     m_BorderMeshes.at(f1).insert(m_BorderMeshes.at(f1).begin(), data.begin(), data.end());
     faces[f1] = false;
     faces[f2] = true;
@@ -336,7 +335,7 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
     if (y >= h)
         return;
 
-    const int32_t snowThreshold = 3 * CHUNK_HEIGHT / 5;
+    constexpr int32_t snowThreshold = 3 * CHUNK_HEIGHT / 5;
     double_t density = m_Perlin.octave3D((static_cast<double_t>(m_Position.x) * CHUNK_WIDTH + x) * 0.02,
                                          (static_cast<double_t>(m_Position.y) * CHUNK_WIDTH + z) * 0.02,
                                          y * 0.02,
@@ -367,6 +366,8 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
 }
 
 VoxelGrid& Chunk::GetVoxelGrid() { return m_VoxelGrid; }
+
+RadianceGrid& Chunk::GetRadianceGrid() { return m_RadianceGrid; }
 
 const std::vector<VoxelVertex>& Chunk::GetMesh() const { return m_Mesh; }
 

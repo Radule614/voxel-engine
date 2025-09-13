@@ -37,9 +37,9 @@ void VoxelLayer::OnDetach()
 {
     m_World.StopGeneration();
     auto& renderDataMap = *m_RenderData;
-    for (auto& it: renderDataMap)
+    for (auto& [_, chunkRenderData]: renderDataMap)
     {
-        ChunkRenderData& data = it.second;
+        ChunkRenderData& data = chunkRenderData;
         glDeleteBuffers(1, &data.VertexBuffer);
         glDeleteBuffers(1, &data.IndexBuffer);
         glDeleteVertexArrays(1, &data.VertexArray);
@@ -271,6 +271,7 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
         glDeleteVertexArrays(1, &m.VertexArray);
         glDeleteBuffers(1, &m.VertexBuffer);
         glDeleteBuffers(1, &m.IndexBuffer);
+        glDeleteBuffers(1, &m.RadianceStorageBuffer);
         m.Indices.clear();
         renderDataMap.erase(chunk->GetPosition());
     }
@@ -322,6 +323,11 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
                           GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::TexCoords)));
+
+    glCreateBuffers(1, &data.RadianceStorageBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, data.RadianceStorageBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(RadianceGrid), &chunk->GetRadianceGrid()[0][0][0], GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, data.RadianceStorageBuffer);
 
     std::vector<uint32_t> indices = {};
     const uint32_t faceCount = vertices.size() / 4;
