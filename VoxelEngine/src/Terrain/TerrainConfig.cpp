@@ -1,4 +1,5 @@
 #include "TerrainConfig.hpp"
+#include <glad/glad.h>
 
 namespace VoxelEngine
 {

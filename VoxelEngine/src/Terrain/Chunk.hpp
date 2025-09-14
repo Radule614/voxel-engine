@@ -20,7 +20,7 @@ namespace VoxelEngine
 
 class World;
 using VoxelGrid = Voxel[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
-using RadianceGrid = float_t[CHUNK_WIDTH + 2][CHUNK_WIDTH + 2][CHUNK_HEIGHT + 2];
+using RadianceArray = float_t[RADIANCE_WIDTH * RADIANCE_WIDTH * RADIANCE_HEIGHT];
 
 class Chunk
 {
@@ -40,15 +40,18 @@ public:
     void Generate();
     void GenerateMesh();
     void GenerateEdgeMesh(VoxelFace face);
-    std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::i32vec3 pos) const;
+    std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::ivec3 pos) const;
 
     VoxelGrid& GetVoxelGrid();
-    RadianceGrid& GetRadianceGrid();
+    RadianceArray& GetRadianceGrid();
     const std::vector<VoxelVertex>& GetMesh() const;
     const std::vector<VoxelVertex>& GetBorderMesh(VoxelFace face) const;
     Position2D GetPosition() const;
     std::mutex& GetLock();
     glm::mat4 GetModelMatrix() const;
+
+    float_t GetRadiance(size_t x, size_t z, size_t y) const;
+    void SetRadiance(size_t x, size_t z, size_t y, float_t radiance);
 
 private:
     void DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& v, size_t x, size_t z);
@@ -67,7 +70,7 @@ private:
     const siv::PerlinNoise& m_Perlin;
     std::mutex m_Mutex;
 
-    RadianceGrid m_RadianceGrid;
+    RadianceArray m_RadianceGrid;
 };
 
 };

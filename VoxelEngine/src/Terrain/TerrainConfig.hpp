@@ -1,9 +1,10 @@
 #pragma once
 #include <cstdint>
-#include <glad/glad.h>
 
 #define CHUNK_WIDTH 16
 #define CHUNK_HEIGHT 128
+#define RADIANCE_WIDTH 18
+#define RADIANCE_HEIGHT 130
 
 namespace VoxelEngine
 {

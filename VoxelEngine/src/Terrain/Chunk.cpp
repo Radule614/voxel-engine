@@ -136,50 +136,67 @@ void Chunk::CalculateRadianceGrid()
 {
     std::queue<std::tuple<uint16_t, uint16_t, uint16_t> > queue{};
 
-    for (size_t x = 1; x < CHUNK_WIDTH + 1; ++x)
+    for (size_t rx = 1; rx < RADIANCE_WIDTH - 1; ++rx)
     {
-        for (size_t z = 1; z < CHUNK_WIDTH + 1; ++z)
+        for (size_t rz = 1; rz < RADIANCE_WIDTH - 1; ++rz)
         {
-            size_t y = CHUNK_HEIGHT;
-            m_RadianceGrid[x][z][y] = 1.0f;
-            while (y > 0 && m_VoxelGrid[x - 1][z - 1][y - 1].GetVoxelType() == AIR)
-                m_RadianceGrid[x][z][--y] = 1.0f;
+            size_t ry = RADIANCE_HEIGHT - 1;
+            SetRadiance(rx, rz, ry--, 1.0f);
 
-            queue.emplace(x, z, y);
-        }
-    }
+            size_t x = rx - 1;
+            size_t z = rz - 1;
+            size_t y = ry - 1;
 
-    const int dirs[6][3] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
-    while (!queue.empty())
-    {
-        auto [x, z, y] = queue.front();
-        queue.pop();
-
-        const float_t currentRadiance = m_RadianceGrid[x][z][y];
-        if (currentRadiance < 0.05f) continue;
-
-        for (auto& dir: dirs)
-        {
-            int nx = x + dir[0];
-            int nz = z + dir[1];
-            int ny = y + dir[2];
-
-            if (!InRange(nx, 1, CHUNK_WIDTH) ||
-                !InRange(nz, 1, CHUNK_WIDTH) ||
-                !InRange(ny, 1, CHUNK_HEIGHT)) { continue; }
-
-            auto& voxel = m_VoxelGrid[nx - 1][nz - 1][ny - 1];
-            if (voxel.GetVoxelType() != AIR) continue;
-
-            float_t radiance = m_RadianceGrid[nx][nz][ny];
-
-            if (radiance > currentRadiance)
+            while (ry > 0 && m_VoxelGrid[x][z][y].GetVoxelType() == AIR)
             {
-                m_RadianceGrid[nx][nz][ny] = 0.9f * radiance;
-                queue.emplace(nx, nz, ny);
+                SetRadiance(rx, rz, ry, 1.0f);
+                queue.emplace(rx, rz, ry);
+                --ry;
+                --y;
             }
         }
     }
+
+    // size_t ry = RADIANCE_HEIGHT - 2;
+    // size_t y = ry - 1;
+    // while (ry > 0 && m_VoxelGrid[0][0][y].GetVoxelType() == AIR)
+    // {
+    //     SetRadiance(1, 1, ry, 1.0f);
+    //     --ry;
+    //     --y;
+    // }
+
+    // const int dirs[6][3] = {{1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}};
+    // while (!queue.empty())
+    // {
+    //     auto [x, z, y] = queue.front();
+    //     queue.pop();
+    //
+    //     const float_t currentRadiance = GetRadiance(x, z, y);
+    //     if (currentRadiance < 0.05f) continue;
+    //
+    //     for (auto& dir: dirs)
+    //     {
+    //         int nx = x - 1 + dir[0];
+    //         int nz = z - 1 + dir[1];
+    //         int ny = y - 1 + dir[2];
+    //
+    //         if (!InRange(nx, 1, CHUNK_WIDTH) ||
+    //             !InRange(nz, 1, CHUNK_WIDTH) ||
+    //             !InRange(ny, 1, CHUNK_HEIGHT)) { continue; }
+    //
+    //         auto& voxel = m_VoxelGrid[nx][nz][ny];
+    //         if (voxel.GetVoxelType() != AIR) continue;
+    //
+    //         float_t radiance = GetRadiance(nx, nz, ny);
+    //
+    //         if (currentRadiance > radiance)
+    //         {
+    //             SetRadiance(nx, nz, ny, 0.9f * currentRadiance);
+    //             queue.emplace(nx, nz, ny);
+    //         }
+    //     }
+    // }
 }
 
 void Chunk::GenerateMesh()
@@ -367,7 +384,7 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h)
 
 VoxelGrid& Chunk::GetVoxelGrid() { return m_VoxelGrid; }
 
-RadianceGrid& Chunk::GetRadianceGrid() { return m_RadianceGrid; }
+RadianceArray& Chunk::GetRadianceGrid() { return m_RadianceGrid; }
 
 const std::vector<VoxelVertex>& Chunk::GetMesh() const { return m_Mesh; }
 
@@ -379,12 +396,21 @@ std::mutex& Chunk::GetLock() { return m_Mutex; }
 
 glm::mat4 Chunk::GetModelMatrix() const
 {
-    constexpr glm::mat4 model(1.0f);
     auto pos = glm::vec3(m_Position.x, 0, m_Position.y);
     pos.x *= CHUNK_WIDTH;
     pos.y *= CHUNK_HEIGHT;
     pos.z *= CHUNK_WIDTH;
-    return glm::translate(model, pos);
+    return glm::translate(glm::mat4(1.0f), pos);
+}
+
+float_t Chunk::GetRadiance(const size_t x, const size_t z, const size_t y) const
+{
+    return m_RadianceGrid[x * RADIANCE_WIDTH * RADIANCE_HEIGHT + z * RADIANCE_HEIGHT + y];
+}
+
+void Chunk::SetRadiance(const size_t x, const size_t z, const size_t y, const float_t radiance)
+{
+    m_RadianceGrid[x * RADIANCE_WIDTH * RADIANCE_HEIGHT + z * RADIANCE_HEIGHT + y] = radiance;
 }
 
 };

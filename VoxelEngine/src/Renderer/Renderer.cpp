@@ -139,7 +139,9 @@ void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderDat
         glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
 
         glBindVertexArray(metadata.VertexArray);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, metadata.RadianceStorageBuffer);
         glDrawElements(GL_TRIANGLES, metadata.Indices.size(), GL_UNSIGNED_INT, nullptr);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
         glBindVertexArray(0);
     }
 }

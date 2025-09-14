@@ -42,6 +42,7 @@ void VoxelLayer::OnDetach()
         ChunkRenderData& data = chunkRenderData;
         glDeleteBuffers(1, &data.VertexBuffer);
         glDeleteBuffers(1, &data.IndexBuffer);
+        glDeleteBuffers(1, &data.RadianceStorageBuffer);
         glDeleteVertexArrays(1, &data.VertexArray);
         data.Indices.clear();
     }
@@ -303,17 +304,15 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1,
+    glVertexAttribIPointer(1,
                           1,
                           GL_UNSIGNED_INT,
-                          GL_FALSE,
                           sizeof(VoxelVertex),
-                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::VoxelIndex)));
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::RadianceBaseIndex)));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2,
+    glVertexAttribIPointer(2,
                           1,
                           GL_UNSIGNED_BYTE,
-                          GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Face)));
     glEnableVertexAttribArray(3);
@@ -326,7 +325,7 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
 
     glCreateBuffers(1, &data.RadianceStorageBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, data.RadianceStorageBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(RadianceGrid), &chunk->GetRadianceGrid()[0][0][0], GL_DYNAMIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(RadianceArray), chunk->GetRadianceGrid(), GL_STATIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, data.RadianceStorageBuffer);
 
     std::vector<uint32_t> indices = {};
@@ -344,6 +343,7 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.IndexBuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), &indices[0], GL_STATIC_DRAW);
 
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
     glBindVertexArray(0);
 
     data.Indices = indices;

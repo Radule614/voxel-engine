@@ -142,7 +142,8 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
         {
             texMapX = texMap[0];
             texMapY = texMap[1];
-        } else if (i == 1)
+        }
+        else if (i == 1)
         {
             texMapX = texMap[2];
             texMapY = texMap[3];
@@ -158,11 +159,16 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             if (texCoord.y == 1.0f)
                 atlasTexCoord.y += textureUnit;
 
+            auto voxelPosition = voxel.GetPosition();
+
             VoxelVertex v{};
-            v.Position = pos + static_cast<glm::vec3>(voxel.GetPosition());
+            v.Position = pos + static_cast<glm::vec3>(voxelPosition);
             v.TexCoords = atlasTexCoord;
-            v.SetFace(face);
-            v.VoxelIndex = v.Position.x * CHUNK_WIDTH * CHUNK_HEIGHT + v.Position.z * CHUNK_HEIGHT + v.Position.y;
+            v.Face = static_cast<uint8_t>(face);
+            v.RadianceBaseIndex =
+                    (voxelPosition.GetX() + 1) * RADIANCE_WIDTH * RADIANCE_HEIGHT +
+                    (voxelPosition.GetZ() + 1) * RADIANCE_HEIGHT +
+                    (voxelPosition.y + 1);
 
             data.push_back(v);
         }
