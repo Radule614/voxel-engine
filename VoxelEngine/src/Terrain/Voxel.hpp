@@ -1,35 +1,11 @@
 #pragma once
 
-#include <vector>
-
 #include <glm/glm.hpp>
+#include "VoxelConstants.hpp"
 #include "Position3D.hpp"
 
 namespace VoxelEngine
 {
-
-enum VoxelType
-{
-    AIR = 0,
-    DIRT,
-    GRASS,
-    STONE,
-    LOG,
-    LEAVES,
-    SNOW,
-    DIRT_SNOW,
-    LAMP
-};
-
-enum VoxelFace
-{
-    TOP = 0,
-    BOTTOM,
-    FRONT,
-    RIGHT,
-    BACK,
-    LEFT
-};
 
 class Voxel
 {
@@ -49,16 +25,6 @@ public:
     void SetPosition(Position3D pos);
     Position3D GetPosition() const;
     bool IsTransparent() const;
-    uint8_t GetLight() const;
-
-    // Get the bits XXXX0000
-    int GetSunlight() const;
-    // Set the bits XXXX0000
-    void SetSunlight(int32_t val);
-    // Get the bits 0000XXXX
-    int GetTorchlight() const;
-    // Set the bits 0000XXXX
-    void SetTorchlight(int32_t val);
 
 private:
     Position3D m_Position;

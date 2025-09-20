@@ -29,15 +29,9 @@ void Voxel::SetFaceVisible(VoxelFace face, bool visible)
         m_VisibleFaces &= ~(1 << static_cast<uint8_t>(face));
 }
 
-bool Voxel::IsFaceVisible(VoxelFace face) const
-{
-    return m_VisibleFaces & (1 << static_cast<uint8_t>(face));
-}
+bool Voxel::IsFaceVisible(VoxelFace face) const { return m_VisibleFaces & (1 << static_cast<uint8_t>(face)); }
 
-void Voxel::SetAllFacesVisible(bool visible)
-{
-    m_VisibleFaces = visible ? 0x3F : 0;
-}
+void Voxel::SetAllFacesVisible(bool visible) { m_VisibleFaces = visible ? 0x3F : 0; }
 
 VoxelFace Voxel::GetOppositeFace(VoxelFace face)
 {
@@ -59,54 +53,14 @@ VoxelFace Voxel::GetOppositeFace(VoxelFace face)
     return face;
 }
 
-void Voxel::SetVoxelType(VoxelType type)
-{
-    m_VoxelType = type;
-}
+void Voxel::SetVoxelType(VoxelType type) { m_VoxelType = type; }
 
-VoxelType Voxel::GetVoxelType() const
-{
-    return static_cast<VoxelType>(m_VoxelType);
-}
+VoxelType Voxel::GetVoxelType() const { return static_cast<VoxelType>(m_VoxelType); }
 
-void Voxel::SetPosition(Position3D pos)
-{
-    m_Position = pos;
-}
+void Voxel::SetPosition(Position3D pos) { m_Position = pos; }
 
-Position3D Voxel::GetPosition() const
-{
-    return m_Position;
-}
+Position3D Voxel::GetPosition() const { return m_Position; }
 
-bool Voxel::IsTransparent() const
-{
-    return m_VoxelType == AIR || m_VoxelType == LEAVES;
-}
-
-int Voxel::GetSunlight() const
-{
-    return (m_Light >> 4) & 0xF;
-}
-
-void Voxel::SetSunlight(const int32_t val)
-{
-    m_Light = (m_Light & 0xF) | (val << 4);
-}
-
-int Voxel::GetTorchlight() const
-{
-    return m_Light & 0xF;
-}
-
-void Voxel::SetTorchlight(const int32_t val)
-{
-    m_Light = (m_Light & 0xF0) | val;
-}
-
-uint8_t Voxel::GetLight() const
-{
-    return m_Light;
-}
+bool Voxel::IsTransparent() const { return m_VoxelType == AIR || m_VoxelType == LEAVES; }
 
 };

@@ -33,20 +33,24 @@ void SandboxLayer::OnAttach()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    const auto& cameraController = m_State.CameraController;
-    auto character = CharacterBuilder()
-            .SetPosition(cameraController->GetCamera().GetPosition())
-            .BuildAndAddVirtual();
-    auto characterController = std::make_unique<CharacterController>(std::move(character));
-
     TransformComponent transform{};
     transform.Scale = glm::vec3(1.0f);
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();
     registry.emplace<TransformComponent>(entity, transform);
-    registry.emplace<CharacterComponent>(entity, std::move(characterController));
-    registry.emplace<CameraComponent>(entity, cameraController);
+
+    const auto& cameraController = m_State.CameraController;
+    if (!cameraController->IsFreeFly())
+    {
+        auto character = CharacterBuilder()
+                .SetPosition(cameraController->GetCamera().GetPosition())
+                .BuildAndAddVirtual();
+        auto characterController = std::make_unique<CharacterController>(std::move(character));
+
+        registry.emplace<CharacterComponent>(entity, std::move(characterController));
+        registry.emplace<CameraComponent>(entity, cameraController);
+    }
 }
 
 void SandboxLayer::OnEvent(Event& event)

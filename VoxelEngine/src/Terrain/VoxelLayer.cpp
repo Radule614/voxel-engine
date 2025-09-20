@@ -1,7 +1,7 @@
 #include "VoxelLayer.hpp"
 #include "VoxelMeshBuilder.hpp"
 #include <vector>
-#include "../Assets/Vertex.hpp"
+#include "VoxelVertex.hpp"
 #include "World.hpp"
 #include "../Ecs/Components/CharacterComponent.hpp"
 #include "../Physics/Utils/BodyBuilder.hpp"
@@ -37,11 +37,12 @@ void VoxelLayer::OnDetach()
 {
     m_World.StopGeneration();
     auto& renderDataMap = *m_RenderData;
-    for (auto& it: renderDataMap)
+    for (auto& [_, chunkRenderData]: renderDataMap)
     {
-        ChunkRenderData& data = it.second;
+        ChunkRenderData& data = chunkRenderData;
         glDeleteBuffers(1, &data.VertexBuffer);
         glDeleteBuffers(1, &data.IndexBuffer);
+        glDeleteBuffers(1, &data.RadianceStorageBuffer);
         glDeleteVertexArrays(1, &data.VertexArray);
         data.Indices.clear();
     }
@@ -88,13 +89,27 @@ void VoxelLayer::OnUpdate(const Timestep ts)
 
 void VoxelLayer::OnImGuiRender()
 {
-    if (!m_EngineState.MenuActive)
-        return;
-
     constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
                                              ImGuiWindowFlags_NoMove;
     const auto& io = ImGui::GetIO();
+
+    ImGui::SetNextWindowSize(ImVec2(300.0, 200.0));
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+
+    ImGui::Begin("DEBUG", nullptr, windowFlags);
+
+    auto worldPosition = World::ConvertToWorldSpace(m_EngineState.CameraController->GetCamera().GetPosition());
+
+    ImGui::Text("Generated Chunk Count: %zu", m_World.GetChunkMap().size());
+    ImGui::Text("Current Chunk: %s", VecToString(glm::vec2(worldPosition.first)).c_str());
+    ImGui::Text("Current Voxel: %s", VecToString(glm::vec3(worldPosition.second)).c_str());
+
+    ImGui::End();
+
+    if (!m_EngineState.MenuActive)
+        return;
+
     ImGui::SetNextWindowSize(ImVec2(400.0, 600.0));
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 400.0, 0));
 
@@ -142,16 +157,13 @@ void VoxelLayer::CreateTerrainCollider() const
         bodyInterface.DestroyBody(c->BodyId);
         collider = c;
     }
-    else
-    {
-        collider = &registry.emplace<ColliderComponent>(m_TerrainEntityId);
-    }
+    else { collider = &registry.emplace<ColliderComponent>(m_TerrainEntityId); }
 
     auto bodySettings = BodyCreationSettings(shape,
-                                                   Vec3::sZero(),
-                                                   Quat::sIdentity(),
-                                                   EMotionType::Static,
-                                                   Layers::NON_MOVING);
+                                             Vec3::sZero(),
+                                             Quat::sIdentity(),
+                                             EMotionType::Static,
+                                             Layers::NON_MOVING);
     bodySettings.mEnhancedInternalEdgeRemoval = true;
     collider->BodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
 }
@@ -159,7 +171,7 @@ void VoxelLayer::CreateTerrainCollider() const
 void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
 {
     auto& chunkMap = m_World.GetChunkMap();
-    if (!chunkMap.contains(m_World.WorldToChunkSpace(pos)))
+    if (!chunkMap.contains(World::WorldToChunkSpace(pos)))
         return;
 
     constexpr int32_t r = 2;
@@ -170,7 +182,7 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
             for (int32_t y = -r; y <= r; ++y)
             {
                 auto p = glm::i32vec3(glm::round(pos)) + glm::i32vec3(x, y, z);
-                auto [chunkPosition, voxelPosition] = m_World.GetPositionInWorld(p);
+                auto [chunkPosition, voxelPosition] = World::ConvertToWorldSpace(p);
                 auto it = chunkMap.find(chunkPosition);
                 if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
                     continue;
@@ -260,6 +272,7 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
         glDeleteVertexArrays(1, &m.VertexArray);
         glDeleteBuffers(1, &m.VertexBuffer);
         glDeleteBuffers(1, &m.IndexBuffer);
+        glDeleteBuffers(1, &m.RadianceStorageBuffer);
         m.Indices.clear();
         renderDataMap.erase(chunk->GetPosition());
     }
@@ -291,19 +304,29 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1,
-                          3,
-                          GL_FLOAT,
-                          GL_FALSE,
+    glVertexAttribIPointer(1,
+                          1,
+                          GL_UNSIGNED_INT,
                           sizeof(VoxelVertex),
-                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Normal)));
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::RadianceBaseIndex)));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2,
+    glVertexAttribIPointer(2,
+                          1,
+                          GL_UNSIGNED_BYTE,
+                          sizeof(VoxelVertex),
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Face)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3,
                           2,
                           GL_FLOAT,
                           GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::TexCoords)));
+
+    glCreateBuffers(1, &data.RadianceStorageBuffer);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, data.RadianceStorageBuffer);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(RadianceArray), chunk->GetRadianceGrid(), GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, data.RadianceStorageBuffer);
 
     std::vector<uint32_t> indices = {};
     const uint32_t faceCount = vertices.size() / 4;
@@ -320,6 +343,7 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.IndexBuffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), &indices[0], GL_STATIC_DRAW);
 
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
     glBindVertexArray(0);
 
     data.Indices = indices;

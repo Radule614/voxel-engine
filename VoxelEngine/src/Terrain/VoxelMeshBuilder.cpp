@@ -1,6 +1,8 @@
 #include "VoxelMeshBuilder.hpp"
 #include <GLCoreUtils.hpp>
 
+#include "TerrainConfig.hpp"
+
 namespace VoxelEngine
 {
 
@@ -107,10 +109,10 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel)
     return FromVoxelFaces(voxel, faces);
 }
 
-std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel, VoxelFace f)
+std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxel(Voxel& voxel, VoxelFace face)
 {
     bool faces[6] = {false, false, false, false, false, false};
-    faces[f] = true;
+    faces[face] = true;
     return FromVoxelFaces(voxel, faces);
 }
 
@@ -134,14 +136,14 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             continue;
 
         std::vector<glm::vec3>& positions = s_PositionMap.at(face);
-        glm::vec3 normal = s_NormalMap.at(face);
         int32_t texMapX = texMap[4];
         int32_t texMapY = texMap[5];
         if (i == 0)
         {
             texMapX = texMap[0];
             texMapY = texMap[1];
-        } else if (i == 1)
+        }
+        else if (i == 1)
         {
             texMapX = texMap[2];
             texMapY = texMap[3];
@@ -157,11 +159,17 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             if (texCoord.y == 1.0f)
                 atlasTexCoord.y += textureUnit;
 
+            auto voxelPosition = voxel.GetPosition();
+
             VoxelVertex v{};
-            v.Position = pos + static_cast<glm::vec3>(static_cast<glm::i32vec3>(voxel.GetPosition()));
-            v.Normal = normal;
+            v.Position = pos + static_cast<glm::vec3>(voxelPosition);
             v.TexCoords = atlasTexCoord;
-            v.Light = voxel.GetLight();
+            v.Face = static_cast<uint8_t>(face);
+            v.RadianceBaseIndex =
+                    (voxelPosition.GetX() + 1) * RADIANCE_WIDTH * RADIANCE_HEIGHT +
+                    (voxelPosition.GetZ() + 1) * RADIANCE_HEIGHT +
+                    (voxelPosition.y + 1);
+
             data.push_back(v);
         }
     }

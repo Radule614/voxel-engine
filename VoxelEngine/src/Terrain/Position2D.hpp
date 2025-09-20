@@ -26,12 +26,9 @@ struct Position2D
         return x < pos.x;
     }
 
-    bool operator==(const Position2D& pos) const noexcept
-    {
-        return x == pos.x && y == pos.y;
-    }
+    bool operator==(const Position2D& pos) const noexcept { return x == pos.x && y == pos.y; }
 
-    Position2D operator+(Position2D const& other)
+    Position2D operator+(Position2D const& other) const
     {
         Position2D res;
         res.x = x + other.x;
@@ -39,39 +36,20 @@ struct Position2D
         return res;
     }
 
-    inline double_t GetLength() const
-    {
-        return glm::sqrt(glm::pow(x, 2) + glm::pow(y, 2));
-    }
+    double_t GetLength() const { return glm::sqrt(glm::pow(x, 2) + glm::pow(y, 2)); }
 
-    operator glm::i32vec2() const
-    {
-        return glm::i32vec2(x, y);
-    }
+    explicit operator glm::i32vec2() const { return {x, y}; }
 
-    operator glm::vec2() const
-    {
-        return glm::vec2(x, y);
-    }
+    explicit operator glm::vec2() const { return {x, y}; }
 
-    std::string ToString() const
-    {
-        return "(" + std::to_string(x) + ", " + std::to_string(y) + ")";
-    }
+    std::string ToString() const { return "(" + std::to_string(x) + ", " + std::to_string(y) + ")"; }
 };
 
 };
 
-namespace std
-{
-using namespace VoxelEngine;
 
 template<>
-struct std::hash<Position2D>
+struct std::hash<VoxelEngine::Position2D>
 {
-    std::size_t operator()(const Position2D& p) const
-    {
-        return Cantor(p.x, p.y);
-    }
-};
+    std::size_t operator()(const VoxelEngine::Position2D& p) const noexcept { return VoxelEngine::Cantor(p.x, p.y); }
 };

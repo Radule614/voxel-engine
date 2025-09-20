@@ -20,6 +20,11 @@ PerspectiveCameraController::PerspectiveCameraController() : PerspectiveCameraCo
 
 void PerspectiveCameraController::OnUpdate(const Timestep ts)
 {
+    if (!m_FreeFly)
+        return;
+    const auto oldPos = GetCamera().GetPosition();
+    const auto direction = CalculateMovementDirection();
+    GetCamera().SetPosition(oldPos + direction * m_CameraTranslationSpeed * static_cast<float_t>(ts));
 }
 
 glm::vec3 PerspectiveCameraController::CalculateMovementDirection() const
@@ -46,6 +51,10 @@ glm::vec3 PerspectiveCameraController::CalculateMovementDirection() const
                ? glm::vec3(0.0f)
                : glm::normalize(direction);
 }
+
+void PerspectiveCameraController::SetFreeFly(bool value) { m_FreeFly = value; }
+
+bool PerspectiveCameraController::IsFreeFly() const { return m_FreeFly; }
 
 void PerspectiveCameraController::OnEvent(Event& e)
 {

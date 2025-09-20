@@ -95,33 +95,37 @@ public:
     static void Shutdown();
     static Renderer& Instance();
 
-    Renderer(GLCore::Window& window);
+    explicit Renderer(GLCore::Window& window);
 
     void SetDirectionalLight(const DirectionalLight& light);
-    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera);
+    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
 
 private:
     void Render(const GLCore::Utils::PerspectiveCamera& camera,
                 const GLCore::Utils::Shader* terrainShader,
-                const GLCore::Utils::Shader* meshShader);
-    void RenderPass(const GLCore::Utils::PerspectiveCamera& camera);
+                const GLCore::Utils::Shader* meshShader) const;
+
+    void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
 
     void RenderMesh(const MeshComponent& meshComponent,
                     const GLCore::Utils::PerspectiveCamera& camera,
                     const glm::mat4& model,
-                    const GLCore::Utils::Shader* shader);
+                    const GLCore::Utils::Shader* shader) const;
     void RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap,
-                       const GLCore::Utils::PerspectiveCamera& camera,
-                       const GLCore::Utils::Shader* shader);
+                       const GLCore::Utils::Shader* shader) const;
 
-    void SetPointLightUniform(const GLCore::Utils::Shader& shader, const std::string&, const PointLight&);
-    void SetDirectionalLightUniform(const GLCore::Utils::Shader& shader, const std::string&, const DirectionalLight&);
-    void SetSpotLightUniform(const GLCore::Utils::Shader& shader, const std::string&, const SpotLight&);
+    static void SetPointLightUniform(const GLCore::Utils::Shader& shader, const std::string&, const PointLight&);
+
+    static void SetDirectionalLightUniform(const GLCore::Utils::Shader& shader,
+                                           const std::string&,
+                                           const DirectionalLight&);
+
+    static void SetSpotLightUniform(const GLCore::Utils::Shader& shader, const std::string&, const SpotLight&);
 
 private:
     GLCore::Window& m_Window;
     Texture m_TextureAtlas;
-    DirectionalLight m_DirectionalLight;
+    DirectionalLight m_DirectionalLight{};
 
     GLCore::Utils::Shader* m_TerrainShader;
     GLCore::Utils::Shader* m_MeshShader;
