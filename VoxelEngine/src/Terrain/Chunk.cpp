@@ -152,7 +152,7 @@ void Chunk::InitRadiance()
 
             size_t ry = RADIANCE_HEIGHT - 1;
             while (ry == RADIANCE_HEIGHT - 1 || ry > 0 && m_VoxelGrid[rx - 1][rz - 1][ry - 1].GetVoxelType() == AIR)
-                UpdateRadiance(rx, rz, ry--, TerrainConfig::MaxRadiance);
+                UpdateRadiance(rx, rz, ry--, TerrainConfig::SunRadiance);
         }
     }
 
@@ -183,9 +183,6 @@ void Chunk::CommitRadianceChanges()
             if (!InRange(nrx, 1, RADIANCE_WIDTH - 2) ||
                 !InRange(nrz, 1, RADIANCE_WIDTH - 2) ||
                 !InRange(nry, 1, RADIANCE_HEIGHT - 2)) { continue; }
-
-            if (m_Position.x == 1 && m_Position.y == -19 && rx == 0 && rz == 4 && ry == 54)
-                LOG_INFO("DEBUG nrx {}, dx {}", nrx, dx);
 
             if (!m_VoxelGrid[nrx - 1][nrz - 1][nry - 1].IsTransparent()) continue;
 

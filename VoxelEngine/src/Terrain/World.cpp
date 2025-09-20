@@ -23,7 +23,7 @@ void World::StartGeneration()
     m_GenerationThread = std::thread([this] { this->GenerateWorld(); });
 }
 
-void World::CheckChunkEdges(Chunk& chunk, const Chunk::Neighbours& neighbours)
+void World::SyncUpdatesWithNeighbours(Chunk& chunk, const Chunk::Neighbours& neighbours, const bool shouldSyncFaces)
 {
     auto& voxelGrid = chunk.GetVoxelGrid();
 
@@ -36,38 +36,69 @@ void World::CheckChunkEdges(Chunk& chunk, const Chunk::Neighbours& neighbours)
                 Voxel& v = voxelGrid[x][CHUNK_WIDTH - 1][y];
                 Voxel& n = neighbours.front->GetVoxelGrid()[x][0][y];
 
-                InterpolateNeighbourRadiance(v, n, chunk, *neighbours.front, FRONT);
-                CheckVoxelEdge(v, n, FRONT);
+                SyncRadianceWithNeighbour(v, n, chunk, *neighbours.front, FRONT);
+                if (shouldSyncFaces)
+                    SyncVisibleFacesWithNeighbour(v, n, FRONT);
             }
             if (neighbours.back != nullptr)
             {
                 Voxel& v = voxelGrid[x][0][y];
                 Voxel& n = neighbours.back->GetVoxelGrid()[x][CHUNK_WIDTH - 1][y];
 
-                InterpolateNeighbourRadiance(v, n, chunk, *neighbours.back, BACK);
-                CheckVoxelEdge(v, neighbours.back->GetVoxelGrid()[x][CHUNK_WIDTH - 1][y], BACK);
+                SyncRadianceWithNeighbour(v, n, chunk, *neighbours.back, BACK);
+                if (shouldSyncFaces)
+                    SyncVisibleFacesWithNeighbour(v, neighbours.back->GetVoxelGrid()[x][CHUNK_WIDTH - 1][y], BACK);
             }
             if (neighbours.right != nullptr)
             {
                 Voxel& v = voxelGrid[CHUNK_WIDTH - 1][x][y];
                 Voxel& n = neighbours.right->GetVoxelGrid()[0][x][y];
 
-                InterpolateNeighbourRadiance(v, n, chunk, *neighbours.right, RIGHT);
-                CheckVoxelEdge(v, n, RIGHT);
+                SyncRadianceWithNeighbour(v, n, chunk, *neighbours.right, RIGHT);
+                if (shouldSyncFaces)
+                    SyncVisibleFacesWithNeighbour(v, n, RIGHT);
             }
             if (neighbours.left != nullptr)
             {
                 Voxel& v = voxelGrid[0][x][y];
                 Voxel& n = neighbours.left->GetVoxelGrid()[CHUNK_WIDTH - 1][x][y];
 
-                InterpolateNeighbourRadiance(v, n, chunk, *neighbours.left, LEFT);
-                CheckVoxelEdge(v, neighbours.left->GetVoxelGrid()[CHUNK_WIDTH - 1][x][y], LEFT);
+                SyncRadianceWithNeighbour(v, n, chunk, *neighbours.left, LEFT);
+                if (shouldSyncFaces)
+                    SyncVisibleFacesWithNeighbour(v, neighbours.left->GetVoxelGrid()[CHUNK_WIDTH - 1][x][y], LEFT);
             }
         }
     }
+
+    chunk.CommitRadianceChanges();
+
+    if (neighbours.front != nullptr)
+    {
+        neighbours.front->CommitRadianceChanges();
+        if (shouldSyncFaces)
+            neighbours.front->GenerateEdgeMesh(BACK);
+    }
+    if (neighbours.back != nullptr)
+    {
+        neighbours.back->CommitRadianceChanges();
+        if (shouldSyncFaces)
+            neighbours.back->GenerateEdgeMesh(FRONT);
+    }
+    if (neighbours.right != nullptr)
+    {
+        neighbours.right->CommitRadianceChanges();
+        if (shouldSyncFaces)
+            neighbours.right->GenerateEdgeMesh(LEFT);
+    }
+    if (neighbours.left != nullptr)
+    {
+        neighbours.left->CommitRadianceChanges();
+        if (shouldSyncFaces)
+            neighbours.left->GenerateEdgeMesh(RIGHT);
+    }
 }
 
-void World::CheckVoxelEdge(Voxel& v1, Voxel& v2, const VoxelFace face)
+void World::SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, const VoxelFace face)
 {
     if (!v1.IsTransparent() && v2.IsTransparent())
         v1.SetFaceVisible(face, true);
@@ -104,7 +135,7 @@ Chunk::Neighbours World::GetNeighbours(const Chunk& chunk)
     return neighbours;
 }
 
-void World::InterpolateNeighbourRadiance(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face)
+void World::SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face)
 {
     const glm::ivec3 p = static_cast<glm::ivec3>(v1.GetPosition()) + glm::ivec3(1);
     const glm::ivec3 np = static_cast<glm::ivec3>(v2.GetPosition()) + glm::ivec3(1);
@@ -194,29 +225,11 @@ void World::GenerateChunk(Position2D position)
     if (neighbours.left != nullptr)
         neighbours.left->GetLock().lock();
 
-    CheckChunkEdges(*chunk, neighbours);
+    SyncUpdatesWithNeighbours(*chunk, neighbours);
+
     chunk->GenerateMesh();
-    chunk->CommitRadianceChanges();
-    if (neighbours.front != nullptr)
-    {
-        neighbours.front->GenerateEdgeMesh(BACK);
-        neighbours.front->CommitRadianceChanges();
-    }
-    if (neighbours.back != nullptr)
-    {
-        neighbours.back->GenerateEdgeMesh(FRONT);
-        neighbours.back->CommitRadianceChanges();
-    }
-    if (neighbours.right != nullptr)
-    {
-        neighbours.right->GenerateEdgeMesh(LEFT);
-        neighbours.right->CommitRadianceChanges();
-    }
-    if (neighbours.left != nullptr)
-    {
-        neighbours.left->GenerateEdgeMesh(RIGHT);
-        neighbours.left->CommitRadianceChanges();
-    }
+
+    SyncUpdatesWithNeighbours(*chunk, neighbours, false);
 
     m_Mutex.lock();
     m_ChangedChunks.insert(chunk);

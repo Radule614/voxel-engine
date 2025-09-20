@@ -125,7 +125,7 @@ private:
 private:
     GLCore::Window& m_Window;
     Texture m_TextureAtlas;
-    DirectionalLight m_DirectionalLight;
+    DirectionalLight m_DirectionalLight{};
 
     GLCore::Utils::Shader* m_TerrainShader;
     GLCore::Utils::Shader* m_MeshShader;

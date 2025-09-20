@@ -32,7 +32,7 @@ Renderer::Renderer(Window& window) : m_Window(window)
         glm::vec3(0.1f)
     };
 
-    SetDirectionalLight(light);
+    m_DirectionalLight = light;
 }
 
 void Renderer::SetDirectionalLight(const DirectionalLight& light) { m_DirectionalLight = light; }
@@ -41,7 +41,13 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const { RenderPass(c
 
 void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShader, const Shader* meshShader) const
 {
-    glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
+    constexpr glm::vec3 nightColor(0.1f);
+    constexpr glm::vec3 dayColor(0.14f, 0.59f, 0.74f);
+
+    const float ratio = (TerrainConfig::SunRadiance - 1.0f) / TerrainConfig::MaxRadiance;
+    const auto skyColor = glm::mix(nightColor, dayColor, ratio);
+
+    glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();

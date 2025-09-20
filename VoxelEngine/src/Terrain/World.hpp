@@ -33,9 +33,11 @@ public:
     std::map<Position2D, std::queue<Voxel> >& GetDeferredChunkQueue();
 
 private:
-    static void CheckVoxelEdge(Voxel& v1, Voxel& v2, VoxelFace face);
-    static void InterpolateNeighbourRadiance(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face);
-    static void CheckChunkEdges(Chunk& chunk, const Chunk::Neighbours& neighbours);
+    static void SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, VoxelFace face);
+    static void SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face);
+    static void SyncUpdatesWithNeighbours(Chunk& chunk,
+                                          const Chunk::Neighbours& neighbours,
+                                          bool shouldSyncFaces = true);
     static bool IsPositionValid(const std::unordered_set<Position2D>& existing, Position2D p);
 
     Chunk::Neighbours GetNeighbours(const Chunk& chunk);

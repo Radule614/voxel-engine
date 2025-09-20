@@ -11,12 +11,12 @@ layout (std430, binding = 0) buffer RadianceData {
 
 out o_Vertex {
     flat int Radiance;
+    flat int FragmentHeight;
     vec2 FragTexCoords;
 } o_VertexOut;
 
 uniform mat4 u_ViewProjection;
 uniform mat4 u_Model;
-
 uniform int u_RadianceGridWidth;
 uniform int u_RadianceGridHeight;
 
@@ -56,7 +56,7 @@ void main() {
     vec4 modelPos = u_Model * vec4(i_Position, 1.0);
 
     o_VertexOut.FragTexCoords = i_TexCoords;
-
+    o_VertexOut.FragmentHeight = int(i_RadianceBaseIndex % u_RadianceGridHeight);
     o_VertexOut.Radiance = i_Radiance[CalculateNeighbourRadianceIndex()];
 
     gl_Position = u_ViewProjection * modelPos;
