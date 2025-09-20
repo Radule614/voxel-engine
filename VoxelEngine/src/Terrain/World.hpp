@@ -21,6 +21,9 @@ public:
     World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController);
     ~World();
 
+    static Position2D WorldToChunkSpace(const glm::vec3& pos);
+    static std::pair<Position2D, Position3D> ConvertToWorldSpace(glm::i32vec3 pos);
+
     void StartGeneration();
     void StopGeneration();
 
@@ -28,18 +31,18 @@ public:
     std::unordered_set<std::shared_ptr<Chunk> >& GetChangedChunks();
     std::mutex& GetLock();
     std::map<Position2D, std::queue<Voxel> >& GetDeferredChunkQueue();
-    std::pair<Position2D, Position3D> GetPositionInWorld(glm::i32vec3 pos) const;
-    Position2D WorldToChunkSpace(const glm::vec3& pos);
 
 private:
-    void CheckChunkEdges(Chunk& chunk, const Chunk::Neighbours& neighbours);
-    void CheckVoxelEdge(Voxel& v1, Voxel& v2, VoxelFace face);
+    static void CheckVoxelEdge(Voxel& v1, Voxel& v2, VoxelFace face);
+    static void InterpolateNeighbourRadiance(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face);
+    static void CheckChunkEdges(Chunk& chunk, const Chunk::Neighbours& neighbours);
+    static bool IsPositionValid(const std::unordered_set<Position2D>& existing, Position2D p);
+
     Chunk::Neighbours GetNeighbours(const Chunk& chunk);
 
     void GenerateWorld();
     void GenerateChunk(Position2D position);
     std::queue<Position2D> FindNextChunkLocations(Position2D center, size_t count);
-    bool IsPositionValid(const std::unordered_set<Position2D>& existing, Position2D p);
 
 private:
     std::map<Position2D, std::shared_ptr<Chunk> > m_ChunkMap;

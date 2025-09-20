@@ -53,7 +53,7 @@ GLuint Shader::CompileShader(GLenum type, const std::string& source)
 
 Shader* Shader::FromGLSLTextFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
-	Shader* shader = new Shader();
+	auto shader = new Shader();
 	shader->LoadFromGLSLTextFiles(vertexShaderPath, fragmentShaderPath);
 	return shader;
 }
@@ -63,28 +63,28 @@ void Shader::SetVec3(const std::string& uniform, const glm::vec3& v) const
 	glUniform3fv(glGetUniformLocation(m_RendererID, uniform.c_str()), 1, &v[0]);
 }
 
-void Shader::SetVec3(const std::string& uniform, float x, float y, float z) const
+void Shader::SetVec3(const std::string& uniform, float_t x, float_t y, float_t z) const
 {
 	SetVec3(uniform, glm::vec3(x, y, z));
 }
 
-void Shader::SetFloat(const std::string& uniform, float x) const
+void Shader::SetFloat(const std::string& uniform, float_t x) const
 {
 	glUniform1f(glGetUniformLocation(m_RendererID, uniform.c_str()), x);
 }
 
-void Shader::SetInt(const std::string& uniform, int i) const
+void Shader::SetInt(const std::string& uniform, int32_t i) const
 {
 	glUniform1i(glGetUniformLocation(m_RendererID, uniform.c_str()), i);
 }
 
-void Shader::SetViewProjection(const glm::mat4 viewProjection) const
+void Shader::SetViewProjection(const glm::mat4& viewProjection) const
 {
 	int32_t location = glGetUniformLocation(m_RendererID, "u_ViewProjection");
 	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(viewProjection));
 }
 
-void Shader::SetModel(const glm::mat4 model) const
+void Shader::SetModel(const glm::mat4& model) const
 {
 	int32_t location = glGetUniformLocation(m_RendererID, "u_Model");
 	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
@@ -96,7 +96,6 @@ void Shader::LoadFromGLSLTextFiles(const std::string& vertexShaderPath, const st
 	std::string fragmentSource = ReadFileAsString(fragmentShaderPath);
 
 	GLuint program = glCreateProgram();
-	int glShaderIDIndex = 0;
 	GLuint vertexShader = CompileShader(GL_VERTEX_SHADER, vertexSource);
 	glAttachShader(program, vertexShader);
 	GLuint fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentSource);

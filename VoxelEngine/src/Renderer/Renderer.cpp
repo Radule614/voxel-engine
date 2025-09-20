@@ -9,10 +9,7 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-void Renderer::Init(Window& window)
-{
-    g_Renderer = new Renderer(window);
-}
+void Renderer::Init(Window& window) { g_Renderer = new Renderer(window); }
 
 void Renderer::Shutdown()
 {
@@ -20,29 +17,29 @@ void Renderer::Shutdown()
     g_Renderer = nullptr;
 }
 
-Renderer& Renderer::Instance()
-{
-    return *g_Renderer;
-}
+Renderer& Renderer::Instance() { return *g_Renderer; }
 
 Renderer::Renderer(Window& window) : m_Window(window)
 {
     m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
     m_TerrainShader = Shader::FromGLSLTextFiles("assets/shaders/voxel.vert.glsl", "assets/shaders/voxel.frag.glsl");
     m_MeshShader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
+
+    const DirectionalLight light = {
+        glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)),
+        glm::vec3(0.25f),
+        glm::vec3(1.0f),
+        glm::vec3(0.1f)
+    };
+
+    SetDirectionalLight(light);
 }
 
-void Renderer::SetDirectionalLight(const DirectionalLight& light)
-{
-    m_DirectionalLight = light;
-}
+void Renderer::SetDirectionalLight(const DirectionalLight& light) { m_DirectionalLight = light; }
 
-void Renderer::RenderScene(const PerspectiveCamera& camera)
-{
-    RenderPass(camera);
-}
+void Renderer::RenderScene(const PerspectiveCamera& camera) const { RenderPass(camera); }
 
-void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShader, const Shader* meshShader)
+void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShader, const Shader* meshShader) const
 {
     glClearColor(0.14f, 0.59f, 0.74f, 0.7f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -52,7 +49,7 @@ void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShad
     for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
     {
         auto& renderDataMap = terrainView.get<TerrainComponent>(entity).RenderData;
-        RenderTerrain(renderDataMap, camera, terrainShader);
+        RenderTerrain(renderDataMap, terrainShader);
     }
 
     glCullFace(GL_BACK);
@@ -69,7 +66,7 @@ void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShad
     glCullFace(GL_FRONT);
 }
 
-void Renderer::RenderPass(const PerspectiveCamera& camera)
+void Renderer::RenderPass(const PerspectiveCamera& camera) const
 {
     glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -86,7 +83,7 @@ void Renderer::RenderPass(const PerspectiveCamera& camera)
 void Renderer::RenderMesh(const MeshComponent& meshComponent,
                           const PerspectiveCamera& camera,
                           const glm::mat4& model,
-                          const Shader* shader)
+                          const Shader* shader) const
 {
     glUseProgram(shader->GetRendererID());
     shader->SetVec3("u_CameraPos", camera.GetPosition());
@@ -122,20 +119,19 @@ void Renderer::RenderMesh(const MeshComponent& meshComponent,
 }
 
 void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap,
-                             const PerspectiveCamera& camera,
-                             const Shader* shader)
+                             const Shader* shader) const
 {
     glUseProgram(shader->GetRendererID());
-    shader->SetVec3("u_CameraPos", camera.GetPosition());
-    SetDirectionalLightUniform(*shader, "u_DirectionalLight", m_DirectionalLight);
-    for (const auto& it: renderDataMap)
+    for (const auto& [position, metadata]: renderDataMap)
     {
-        const ChunkRenderData& metadata = it.second;
         shader->SetModel(metadata.ModelMatrix);
 
+        shader->SetInt("u_MaxRadiance", TerrainConfig::MaxRadiance);
+        shader->SetInt("u_RadianceGridWidth", RADIANCE_WIDTH);
+        shader->SetInt("u_RadianceGridHeight", RADIANCE_HEIGHT);
+        shader->SetInt("u_Atlas", 0);
+
         glActiveTexture(GL_TEXTURE0);
-        const int32_t location = glGetUniformLocation(shader->GetRendererID(), "u_Atlas");
-        glUniform1i(location, 0);
         glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
 
         glBindVertexArray(metadata.VertexArray);

@@ -22,7 +22,7 @@ public:
         Setup();
     }
 
-    ~VoxelEngineApp() { Shutdown(); }
+    ~VoxelEngineApp() override { Shutdown(); }
 
 private:
     void Setup()
@@ -33,14 +33,6 @@ private:
         cameraController->SetFreeFly(true);
         cameraController->GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
         m_State.CameraController = std::move(cameraController);
-
-        const DirectionalLight light = {
-            glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)),
-            glm::vec3(0.25f),
-            glm::vec3(1.0f),
-            glm::vec3(0.1f)
-        };
-        Renderer::Instance().SetDirectionalLight(light);
 
         PushLayer(new VoxelLayer(m_State));
         PushLayer(new PhysicsLayer(m_State));

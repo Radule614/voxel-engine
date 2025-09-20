@@ -6,22 +6,22 @@ layout (location = 2) in uint i_Face;
 layout (location = 3) in vec2 i_TexCoords;
 
 layout (std430, binding = 0) buffer RadianceData {
-    float i_Radiance[];
+    int i_Radiance[];
 };
 
 out o_Vertex {
-    flat float Radiance;
+    flat int Radiance;
     vec2 FragTexCoords;
 } o_VertexOut;
 
 uniform mat4 u_ViewProjection;
 uniform mat4 u_Model;
 
-const int RADIANCE_WIDTH = 18;
-const int RADIANCE_HEIGHT = 130;
+uniform int u_RadianceGridWidth;
+uniform int u_RadianceGridHeight;
 
 int GetRadianceArrayIndex(int x, int z, int y) {
-    return x * RADIANCE_WIDTH * RADIANCE_HEIGHT + z * RADIANCE_HEIGHT + y;
+    return x * u_RadianceGridWidth * u_RadianceGridHeight + z * u_RadianceGridHeight + y;
 }
 
 // TODO: Clean this method

@@ -3,6 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include <mutex>
+#include <queue>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerlinNoise.hpp"
@@ -20,7 +21,7 @@ namespace VoxelEngine
 
 class World;
 using VoxelGrid = Voxel[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
-using RadianceArray = float_t[RADIANCE_WIDTH * RADIANCE_WIDTH * RADIANCE_HEIGHT];
+using RadianceArray = int32_t[RADIANCE_WIDTH * RADIANCE_WIDTH * RADIANCE_HEIGHT];
 
 class Chunk
 {
@@ -50,16 +51,19 @@ public:
     std::mutex& GetLock();
     glm::mat4 GetModelMatrix() const;
 
-    float_t GetRadiance(size_t x, size_t z, size_t y) const;
-    void SetRadiance(size_t x, size_t z, size_t y, float_t radiance);
+    int32_t GetRadiance(size_t x, size_t z, size_t y) const;
+    void UpdateRadiance(size_t x, size_t z, size_t y, int32_t radiance);
+    void CommitRadianceChanges();
 
 private:
     void DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& v, size_t x, size_t z);
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f);
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2);
-    void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h);
+    void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h) const;
     void AddStructures(std::vector<Structure> structures);
-    void CalculateRadianceGrid();
+
+    void InitRadiance();
+    void SetRadiance(size_t x, size_t z, size_t y, int32_t radiance);
 
 private:
     World& m_World;
@@ -71,6 +75,7 @@ private:
     std::mutex m_Mutex;
 
     RadianceArray m_RadianceGrid;
+    std::queue<glm::ivec3> m_RadianceUpdateQueue;
 };
 
 };

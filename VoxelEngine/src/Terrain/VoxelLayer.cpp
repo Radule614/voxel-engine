@@ -99,11 +99,11 @@ void VoxelLayer::OnImGuiRender()
 
     ImGui::Begin("DEBUG", nullptr, windowFlags);
 
-    auto worldPosition = m_World.GetPositionInWorld(m_EngineState.CameraController->GetCamera().GetPosition());
+    auto worldPosition = World::ConvertToWorldSpace(m_EngineState.CameraController->GetCamera().GetPosition());
 
     ImGui::Text("Generated Chunk Count: %zu", m_World.GetChunkMap().size());
-    ImGui::Text("Current Chunk: %s", VecToString(worldPosition.first).c_str());
-    ImGui::Text("Current Voxel: %s", VecToString(worldPosition.second).c_str());
+    ImGui::Text("Current Chunk: %s", VecToString(glm::vec2(worldPosition.first)).c_str());
+    ImGui::Text("Current Voxel: %s", VecToString(glm::vec3(worldPosition.second)).c_str());
 
     ImGui::End();
 
@@ -171,7 +171,7 @@ void VoxelLayer::CreateTerrainCollider() const
 void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
 {
     auto& chunkMap = m_World.GetChunkMap();
-    if (!chunkMap.contains(m_World.WorldToChunkSpace(pos)))
+    if (!chunkMap.contains(World::WorldToChunkSpace(pos)))
         return;
 
     constexpr int32_t r = 2;
@@ -182,7 +182,7 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
             for (int32_t y = -r; y <= r; ++y)
             {
                 auto p = glm::i32vec3(glm::round(pos)) + glm::i32vec3(x, y, z);
-                auto [chunkPosition, voxelPosition] = m_World.GetPositionInWorld(p);
+                auto [chunkPosition, voxelPosition] = World::ConvertToWorldSpace(p);
                 auto it = chunkMap.find(chunkPosition);
                 if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
                     continue;
