@@ -8,9 +8,9 @@ namespace VoxelEngine
 class Tree : public Structure
 {
 public:
-    Tree(Position3D p) : Structure(LOG)
+    explicit Tree(const Position3D position) : Structure(LOG)
     {
-        m_Root.SetPosition(p);
+        m_Root.SetPosition(position);
         m_Radius = 4;
         for (size_t y = 1; y <= 7; ++y)
             m_VoxelData.emplace_back(glm::i32vec3(0, y, 0), LOG);
@@ -34,9 +34,9 @@ public:
 class LargeTree : public Structure
 {
 public:
-    LargeTree(Position3D p) : Structure(LOG)
+    explicit LargeTree(const Position3D position) : Structure(LOG)
     {
-        m_Root.SetPosition(p);
+        m_Root.SetPosition(position);
         m_Radius = 5;
         for (size_t y = 1; y <= 10; ++y)
             m_VoxelData.emplace_back(glm::i32vec3(0, y, 0), LOG);

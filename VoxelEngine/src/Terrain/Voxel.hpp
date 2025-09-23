@@ -30,7 +30,6 @@ private:
     Position3D m_Position;
     uint8_t m_VoxelType;
     uint8_t m_VisibleFaces;
-    uint8_t m_Light;
 };
 
 };

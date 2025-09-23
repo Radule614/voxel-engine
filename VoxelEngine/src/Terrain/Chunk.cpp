@@ -4,24 +4,32 @@
 #include "Position2D.hpp"
 #include "../Utils/Utils.hpp"
 #include "World.hpp"
-#include "Tree.hpp"
+#include "Structures/Tree.hpp"
 
 #include <execution>
 
 namespace VoxelEngine
 {
 
-Chunk::Chunk(World& world, const siv::PerlinNoise& perlin) : Chunk(world, Position2D(), perlin)
+Chunk::Chunk(World& world,
+             const siv::PerlinNoise& perlin,
+             const std::vector<std::unique_ptr<StructureGenerator> >& generators)
+    : Chunk(world, Position2D(), perlin, generators)
 {
 }
 
-Chunk::Chunk(World& world, Position2D position, const siv::PerlinNoise& perlin)
+Chunk::Chunk(World& world,
+             const Position2D position,
+             const siv::PerlinNoise& perlin,
+             const std::vector<std::unique_ptr<StructureGenerator> >& generators)
     : m_World(world),
       m_Position(position),
       m_VoxelGrid(),
       m_Mesh({}),
       m_Perlin(perlin),
-      m_Mutex(std::mutex())
+      m_Mutex(std::mutex()),
+      m_Generators(generators),
+      m_RadianceGrid{}
 {
     m_BorderMeshes.insert({FRONT, {}});
     m_BorderMeshes.insert({RIGHT, {}});
@@ -51,45 +59,20 @@ void Chunk::Generate()
         }
     }
 
-    int32_t i = 0;
-    std::vector<Structure> structures{};
-    double_t treeChance = m_Perlin.octave2D_01(static_cast<double_t>(m_Position.x) + i,
-                                               static_cast<double_t>(m_Position.y) + i,
-                                               2);
-    while (treeChance > 0.55 && structures.size() < 2)
+    const StructureGenerator::GenerationContext generationContext(m_Position, m_Perlin, heightMap);
+    for (const auto& generator: m_Generators)
     {
-        const int32_t random = m_Perlin.octave2D_01(static_cast<double_t>(m_Position.x) + i,
-                                                    static_cast<double_t>(m_Position.y) + i,
-                                                    2) * CHUNK_WIDTH * CHUNK_WIDTH;
-        size_t x = random / CHUNK_WIDTH;
-        size_t z = random % CHUNK_WIDTH;
-        ++i;
-        if (!InRange(x, 0, CHUNK_WIDTH - 1) || !InRange(z, 0, CHUNK_WIDTH - 1))
-            continue;
-        bool isValid = true;
-        for (auto& s: structures)
-        {
-            Position2D p(s.GetRoot().GetPosition().GetX() - x, s.GetRoot().GetPosition().GetZ() - z);
-            if (p.GetLength() < s.GetRadius())
-            {
-                isValid = false;
-                break;
-            }
-        }
-        if (isValid)
-        {
-            if (treeChance > 0.7)
-                structures.push_back(LargeTree(Position3D(x, heightMap[x][z], z)));
-            else
-                structures.push_back(Tree(Position3D(x, heightMap[x][z], z)));
-        }
+        std::vector<Structure> output{};
+
+        generator->Generate(generationContext, output);
+
+        AddStructures(output);
     }
-    AddStructures(structures);
 
     InitRadiance();
 }
 
-void Chunk::AddStructures(std::vector<Structure> structures)
+void Chunk::AddStructures(const std::vector<Structure>& structures)
 {
     std::unordered_set<std::shared_ptr<Chunk> > changedChunks{};
     auto& deferredQueueMap = m_World.GetDeferredChunkQueue();

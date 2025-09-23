@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Voxel.hpp"
+#include "../Voxel.hpp"
 #include <vector>
 
 namespace VoxelEngine
@@ -9,13 +9,13 @@ namespace VoxelEngine
 class Structure
 {
 public:
-    Voxel& GetRoot();
+    const Voxel& GetRoot() const;
     int32_t GetRadius() const;
-    const std::vector<std::pair<glm::i32vec3, VoxelType> >& GetVoxelData();
-    void SetRootPosition(Position3D p);
+    const std::vector<std::pair<glm::i32vec3, VoxelType> >& GetVoxelData() const;
+    void SetRootPosition(Position3D position);
 
 protected:
-    Structure(VoxelType rootType);
+    explicit Structure(VoxelType rootType);
 
 protected:
     Voxel m_Root;

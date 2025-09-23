@@ -1,17 +1,20 @@
 #include "World.hpp"
 
 #include <GLCore.hpp>
+#include <utility>
 #include <vector>
 
 namespace VoxelEngine
 {
 
-World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController)
+World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController,
+             Settings&& settings)
     : m_ChunkMap({}),
       m_CameraController(cameraController),
       m_Perlin(6512u),
       m_ShouldGenerationRun(std::make_shared<bool>(false)),
-      m_Mutex(std::mutex())
+      m_Mutex(std::mutex()),
+      m_Settings(std::move(settings))
 {
 }
 
@@ -193,7 +196,7 @@ void World::GenerateWorld()
 
 void World::GenerateChunk(Position2D position)
 {
-    auto chunk = std::make_shared<Chunk>(*this, position, m_Perlin);
+    auto chunk = std::make_shared<Chunk>(*this, position, m_Perlin, m_Settings.StructureGenerators);
     chunk->GetLock().lock();
     m_ChunkMap.insert({position, chunk});
     chunk->Generate();

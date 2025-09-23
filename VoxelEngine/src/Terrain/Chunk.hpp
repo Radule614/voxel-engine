@@ -12,9 +12,10 @@
 #include "VoxelMeshBuilder.hpp"
 #include "Position2D.hpp"
 #include "Position3D.hpp"
-#include "Structure.hpp"
+#include "Structures/Structure.hpp"
 #include "TerrainConfig.hpp"
 #include "VoxelVertex.hpp"
+#include "Generators/StructureGenerator.hpp"
 
 namespace VoxelEngine
 {
@@ -26,8 +27,13 @@ using RadianceArray = int32_t[RADIANCE_WIDTH * RADIANCE_WIDTH * RADIANCE_HEIGHT]
 class Chunk
 {
 public:
-    Chunk(World& world, const siv::PerlinNoise& perlin);
-    Chunk(World& world, Position2D position, const siv::PerlinNoise& perlin);
+    Chunk(World& world,
+          const siv::PerlinNoise& perlin,
+          const std::vector<std::unique_ptr<StructureGenerator> >& generators);
+    Chunk(World& world,
+          Position2D position,
+          const siv::PerlinNoise& perlin,
+          const std::vector<std::unique_ptr<StructureGenerator> >& generators);
     ~Chunk();
 
     struct Neighbours
@@ -60,7 +66,7 @@ private:
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f);
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2);
     void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h) const;
-    void AddStructures(std::vector<Structure> structures);
+    void AddStructures(const std::vector<Structure>& structures);
 
     void InitRadiance();
     void SetRadiance(size_t x, size_t z, size_t y, int32_t radiance);
@@ -73,6 +79,8 @@ private:
     std::unordered_map<VoxelFace, std::vector<VoxelVertex> > m_BorderMeshes;
     const siv::PerlinNoise& m_Perlin;
     std::mutex m_Mutex;
+
+    const std::vector<std::unique_ptr<StructureGenerator> >& m_Generators;
 
     RadianceArray m_RadianceGrid;
     std::queue<glm::ivec3> m_RadianceUpdateQueue;

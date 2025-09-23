@@ -7,6 +7,7 @@
 #include "Ecs/Ecs.hpp"
 #include "Ecs/EcsLayer.hpp"
 #include "Sandbox/SandboxLayer.hpp"
+#include "Terrain/Generators/TreeGenerator.hpp"
 
 using namespace GLCore;
 
@@ -34,7 +35,13 @@ private:
         cameraController->GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
         m_State.CameraController = std::move(cameraController);
 
-        PushLayer(new VoxelLayer(m_State));
+        World::Settings settings{};
+        settings.StructureGenerators.emplace_back(std::make_unique<TreeGenerator>());
+
+        auto* voxelLayer = new VoxelLayer(m_State);
+        voxelLayer->Init(std::move(settings));
+
+        PushLayer(voxelLayer);
         PushLayer(new PhysicsLayer(m_State));
         PushLayer(new EcsLayer(m_State));
         PushOverlay(new UserInterface(m_State));

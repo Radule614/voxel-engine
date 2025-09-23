@@ -16,14 +16,17 @@ namespace VoxelEngine
 class VoxelLayer : public GLCore::Layer
 {
 public:
-    VoxelLayer(EngineState& state);
-    ~VoxelLayer();
+    explicit VoxelLayer(EngineState& state);
+    ~VoxelLayer() override;
 
     virtual void OnAttach() override;
     virtual void OnDetach() override;
     virtual void OnEvent(GLCore::Event& event) override;
     virtual void OnUpdate(GLCore::Timestep ts) override;
     virtual void OnImGuiRender() override;
+
+    // Must be called before attaching
+    void Init(World::Settings&& settings);
 
 private:
     struct UIState
@@ -32,7 +35,7 @@ private:
         int32_t PolygonMode = TerrainConfig::PolygonMode == GL_FILL ? 0 : 1;
     };
 
-    void CheckChunkRenderQueue();
+    void CheckChunkRenderQueue() const;
     void SetupRenderData(const std::shared_ptr<Chunk>& chunk) const;
     void ApplyState() const;
 
@@ -43,7 +46,7 @@ private:
 private:
     EngineState& m_EngineState;
     UIState m_UIState;
-    World m_World;
+    std::unique_ptr<World> m_World;
     std::unordered_map<Position2D, ChunkRenderData>* m_RenderData;
     std::unordered_set<glm::i32vec3> m_ColliderPositions;
     float_t timeSinceLastColliderOptimization = 0.0f;

@@ -10,7 +10,7 @@
 
 #include "Chunk.hpp"
 #include "Position2D.hpp"
-
+#include "Generators/StructureGenerator.hpp"
 
 namespace VoxelEngine
 {
@@ -18,7 +18,12 @@ namespace VoxelEngine
 class World
 {
 public:
-    World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController);
+    struct Settings
+    {
+        std::vector<std::unique_ptr<StructureGenerator> > StructureGenerators{};
+    };
+
+    World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController, Settings&& settings);
     ~World();
 
     static Position2D WorldToChunkSpace(const glm::vec3& pos);
@@ -57,6 +62,8 @@ private:
     std::thread m_GenerationThread;
     std::shared_ptr<bool> m_ShouldGenerationRun;
     std::mutex m_Mutex;
+
+    Settings m_Settings;
 };
 
 };

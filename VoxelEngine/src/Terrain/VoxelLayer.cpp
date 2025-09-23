@@ -18,7 +18,7 @@ namespace VoxelEngine
 VoxelLayer::VoxelLayer(EngineState& state)
     : Layer("VoxelLayer"),
       m_EngineState(state),
-      m_World(World(state.CameraController)),
+      m_World(nullptr),
       m_ColliderPositions({})
 {
     m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
@@ -31,11 +31,15 @@ VoxelLayer::VoxelLayer(EngineState& state)
 
 VoxelLayer::~VoxelLayer() = default;
 
-void VoxelLayer::OnAttach() { m_World.StartGeneration(); }
+void VoxelLayer::OnAttach()
+{
+    GLCORE_ASSERT(m_World != nullptr, "World has not been initialized.");
+    m_World->StartGeneration();
+}
 
 void VoxelLayer::OnDetach()
 {
-    m_World.StopGeneration();
+    m_World->StopGeneration();
     auto& renderDataMap = *m_RenderData;
     for (auto& [_, chunkRenderData]: renderDataMap)
     {
@@ -54,19 +58,19 @@ void VoxelLayer::OnEvent(Event& event)
     EventDispatcher dispatcher(event);
     dispatcher.Dispatch<WindowCloseEvent>(
         [&](WindowCloseEvent& e) {
-            m_World.StopGeneration();
+            m_World->StopGeneration();
             return false;
         });
     dispatcher.Dispatch<StatePauseEvent>(
         [&](StatePauseEvent& e) {
-            m_World.StopGeneration();
+            m_World->StopGeneration();
             const UIState state;
             m_UIState = state;
             return false;
         });
     dispatcher.Dispatch<StateUnpauseEvent>(
         [&](StateUnpauseEvent& e) {
-            m_World.StartGeneration();
+            m_World->StartGeneration();
             return false;
         });
     dispatcher.Dispatch<ColliderLocationChangedEvent>(
@@ -101,7 +105,7 @@ void VoxelLayer::OnImGuiRender()
 
     auto worldPosition = World::ConvertToWorldSpace(m_EngineState.CameraController->GetCamera().GetPosition());
 
-    ImGui::Text("Generated Chunk Count: %zu", m_World.GetChunkMap().size());
+    ImGui::Text("Generated Chunk Count: %zu", m_World->GetChunkMap().size());
     ImGui::Text("Current Chunk: %s", VecToString(glm::vec2(worldPosition.first)).c_str());
     ImGui::Text("Current Voxel: %s", VecToString(glm::vec3(worldPosition.second)).c_str());
 
@@ -125,6 +129,11 @@ void VoxelLayer::OnImGuiRender()
         ApplyState();
 
     ImGui::End();
+}
+
+void VoxelLayer::Init(World::Settings&& settings)
+{
+    m_World = std::make_unique<World>(m_EngineState.CameraController, std::move(settings));
 }
 
 void VoxelLayer::ApplyState() const
@@ -170,7 +179,7 @@ void VoxelLayer::CreateTerrainCollider() const
 
 void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
 {
-    auto& chunkMap = m_World.GetChunkMap();
+    auto& chunkMap = m_World->GetChunkMap();
     if (!chunkMap.contains(World::WorldToChunkSpace(pos)))
         return;
 
@@ -239,10 +248,10 @@ void VoxelLayer::OptimizeColliders()
     LOG_INFO("Terrain voxel collider count after optimization: {0}", m_ColliderPositions.size());
 }
 
-void VoxelLayer::CheckChunkRenderQueue()
+void VoxelLayer::CheckChunkRenderQueue() const
 {
-    auto& worldLock = m_World.GetLock();
-    auto& chunks = m_World.GetChangedChunks();
+    auto& worldLock = m_World->GetLock();
+    auto& chunks = m_World->GetChangedChunks();
     if (chunks.empty() || !worldLock.try_lock())
         return;
     auto it = chunks.begin();
@@ -305,16 +314,16 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
     glEnableVertexAttribArray(1);
     glVertexAttribIPointer(1,
-                          1,
-                          GL_UNSIGNED_INT,
-                          sizeof(VoxelVertex),
-                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::RadianceBaseIndex)));
+                           1,
+                           GL_UNSIGNED_INT,
+                           sizeof(VoxelVertex),
+                           reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::RadianceBaseIndex)));
     glEnableVertexAttribArray(2);
     glVertexAttribIPointer(2,
-                          1,
-                          GL_UNSIGNED_BYTE,
-                          sizeof(VoxelVertex),
-                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Face)));
+                           1,
+                           GL_UNSIGNED_BYTE,
+                           sizeof(VoxelVertex),
+                           reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Face)));
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(3,
                           2,

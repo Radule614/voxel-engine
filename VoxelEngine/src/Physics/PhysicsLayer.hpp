@@ -12,7 +12,7 @@ class PhysicsLayer : public GLCore::Layer
 public:
     PhysicsLayer(EngineState& state);
 
-    virtual virtual void OnAttach() override;
+    virtual void OnAttach() override;
     virtual void OnUpdate(GLCore::Timestep ts) override;
 
 private:
