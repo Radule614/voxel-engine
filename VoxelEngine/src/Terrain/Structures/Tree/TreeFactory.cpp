@@ -1,19 +1,20 @@
-#pragma once
+//
+// Created by RadU on 9/27/2025.
+//
 
-#include "Structure.hpp"
+#include "TreeFactory.hpp"
 
 namespace VoxelEngine
 {
 
-class Tree : public Structure
+Structure TreeFactory::CreateTree(const Position3D position)
 {
-public:
-    explicit Tree(const Position3D position) : Structure(LOG)
+    static std::vector<std::pair<glm::i32vec3, VoxelType> > data{};
+
+    if (data.empty())
     {
-        m_Root.SetPosition(position);
-        m_Radius = 4;
         for (size_t y = 1; y <= 7; ++y)
-            m_VoxelData.emplace_back(glm::i32vec3(0, y, 0), LOG);
+            data.emplace_back(glm::i32vec3(0, y, 0), LOG);
         for (int32_t x = -3; x <= 3; ++x)
         {
             for (int32_t z = -3; z <= 3; ++z)
@@ -24,22 +25,27 @@ public:
                         continue;
                     if ((x == -3 || x == 3 || z == -3 || z == 3) && (y == 5 || y == 9))
                         continue;
-                    m_VoxelData.emplace_back(glm::i32vec3(x, y, z), LEAVES);
+                    data.emplace_back(glm::i32vec3(x, y, z), LEAVES);
                 }
             }
         }
     }
-};
 
-class LargeTree : public Structure
+    Structure structure(LOG, data);
+    structure.SetRootPosition(position);
+    structure.SetRadius(4);
+
+    return structure;
+}
+
+Structure TreeFactory::CreateLargeTree(const Position3D position)
 {
-public:
-    explicit LargeTree(const Position3D position) : Structure(LOG)
+    static std::vector<std::pair<glm::i32vec3, VoxelType> > data{};
+
+    if (data.empty())
     {
-        m_Root.SetPosition(position);
-        m_Radius = 5;
         for (size_t y = 1; y <= 10; ++y)
-            m_VoxelData.emplace_back(glm::i32vec3(0, y, 0), LOG);
+            data.emplace_back(glm::i32vec3(0, y, 0), LOG);
         for (int32_t x = -3; x <= 3; ++x)
         {
             for (int32_t z = -3; z <= 3; ++z)
@@ -50,11 +56,17 @@ public:
                         continue;
                     if ((x == -3 || x == 3 || z == -3 || z == 3) && (y == 8 || y == 13))
                         continue;
-                    m_VoxelData.emplace_back(glm::i32vec3(x, y, z), LEAVES);
+                    data.emplace_back(glm::i32vec3(x, y, z), LEAVES);
                 }
             }
         }
     }
-};
+
+    Structure structure(LOG, data);
+    structure.SetRootPosition(position);
+    structure.SetRadius(5);
+
+    return structure;
+}
 
 }

@@ -3,7 +3,7 @@
 //
 
 #include "TreeGenerator.hpp"
-#include "../Structures/Tree.hpp"
+#include "../Structures/Tree/TreeFactory.hpp"
 
 namespace VoxelEngine
 {
@@ -39,9 +39,9 @@ void TreeGenerator::Generate(const GenerationContext& context, std::vector<Struc
         if (isValid)
         {
             if (treeChance > 0.7)
-                output.push_back(LargeTree(Position3D(x, context.HeightMap[x][z], z)));
+                output.emplace_back(TreeFactory::CreateLargeTree(Position3D(x, context.HeightMap[x][z], z)));
             else
-                output.push_back(Tree(Position3D(x, context.HeightMap[x][z], z)));
+                output.emplace_back(TreeFactory::CreateTree(Position3D(x, context.HeightMap[x][z], z)));
         }
     }
 }

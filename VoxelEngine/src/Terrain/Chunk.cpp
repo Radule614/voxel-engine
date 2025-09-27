@@ -4,7 +4,6 @@
 #include "Position2D.hpp"
 #include "../Utils/Utils.hpp"
 #include "World.hpp"
-#include "Structures/Tree.hpp"
 
 #include <execution>
 

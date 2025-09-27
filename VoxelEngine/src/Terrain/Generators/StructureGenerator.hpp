@@ -8,7 +8,7 @@
 
 #include "../Position2D.hpp"
 #include "../TerrainConfig.hpp"
-#include "../Structures/Tree.hpp"
+#include "../Structures/Structure.hpp"
 
 namespace VoxelEngine
 {
