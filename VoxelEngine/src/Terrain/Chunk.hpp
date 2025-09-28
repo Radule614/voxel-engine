@@ -15,6 +15,7 @@
 #include "Structures/Structure.hpp"
 #include "TerrainConfig.hpp"
 #include "VoxelVertex.hpp"
+#include "Biome/Biome.hpp"
 #include "Generators/StructureGenerator.hpp"
 
 namespace VoxelEngine
@@ -28,11 +29,11 @@ class Chunk
 {
 public:
     Chunk(World& world,
-          const siv::PerlinNoise& perlin,
+          const Biome& biome,
           const std::vector<std::unique_ptr<StructureGenerator> >& generators);
     Chunk(World& world,
           Position2D position,
-          const siv::PerlinNoise& perlin,
+          const Biome& biome,
           const std::vector<std::unique_ptr<StructureGenerator> >& generators);
     ~Chunk();
 
@@ -77,9 +78,9 @@ private:
     VoxelGrid m_VoxelGrid;
     std::vector<VoxelVertex> m_Mesh;
     std::unordered_map<VoxelFace, std::vector<VoxelVertex> > m_BorderMeshes;
-    const siv::PerlinNoise& m_Perlin;
     std::mutex m_Mutex;
 
+    const Biome& m_Biome;
     const std::vector<std::unique_ptr<StructureGenerator> >& m_Generators;
 
     RadianceArray m_RadianceGrid;

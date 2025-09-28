@@ -11,22 +11,22 @@ namespace VoxelEngine
 {
 
 Chunk::Chunk(World& world,
-             const siv::PerlinNoise& perlin,
+             const Biome& biome,
              const std::vector<std::unique_ptr<StructureGenerator> >& generators)
-    : Chunk(world, Position2D(), perlin, generators)
+    : Chunk(world, Position2D(), biome, generators)
 {
 }
 
 Chunk::Chunk(World& world,
              const Position2D position,
-             const siv::PerlinNoise& perlin,
+             const Biome& biome,
              const std::vector<std::unique_ptr<StructureGenerator> >& generators)
     : m_World(world),
       m_Position(position),
       m_VoxelGrid(),
       m_Mesh({}),
-      m_Perlin(perlin),
       m_Mutex(std::mutex()),
+      m_Biome(biome),
       m_Generators(generators),
       m_RadianceGrid{}
 {
@@ -45,11 +45,9 @@ void Chunk::Generate()
     {
         for (size_t z = 0; z < CHUNK_WIDTH; ++z)
         {
-            const double_t height_bias = m_Perlin.octave2D_01(
-                (x + static_cast<double_t>(m_Position.x) * CHUNK_WIDTH) * 0.01,
-                (z + static_cast<double_t>(m_Position.y) * CHUNK_WIDTH) * 0.01,
-                8);
-            size_t h = CHUNK_HEIGHT / 5 + glm::floor(height_bias * 3 * CHUNK_HEIGHT / 5);
+            const glm::ivec3 globalPosition = World::WorldToGlobalSpace(m_Position, Position3D(x, 0, z));
+            size_t h = m_Biome.GetHeight(globalPosition.x, globalPosition.z);
+
             heightMap[x][z] = h;
             std::for_each(std::execution::par,
                           std::begin(m_VoxelGrid[x][z]),
@@ -58,7 +56,10 @@ void Chunk::Generate()
         }
     }
 
-    const StructureGenerator::GenerationContext generationContext(m_Position, m_Perlin, heightMap);
+    // TODO: Remove this
+    const siv::PerlinNoise tempPerlin(6512u);
+
+    const StructureGenerator::GenerationContext generationContext(m_Position, tempPerlin, heightMap);
     for (const auto& generator: m_Generators)
     {
         std::vector<Structure> output{};
@@ -242,6 +243,7 @@ void Chunk::GenerateEdgeMesh(const VoxelFace face)
     }
 }
 
+// TODO: Refactor this method
 std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(glm::i32vec3 pos) const
 {
     if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
@@ -325,36 +327,14 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h) const
 {
     const int32_t y = &v - &m_VoxelGrid[x][z][0];
     v.SetPosition(Position3D(x, y, z));
+
     if (y >= h)
         return;
 
-    constexpr int32_t snowThreshold = 3 * CHUNK_HEIGHT / 5;
-    double_t density = m_Perlin.octave3D((static_cast<double_t>(m_Position.x) * CHUNK_WIDTH + x) * 0.02,
-                                         (static_cast<double_t>(m_Position.y) * CHUNK_WIDTH + z) * 0.02,
-                                         y * 0.02,
-                                         4);
-    VoxelType type = AIR;
-    density += 1 - static_cast<double_t>(y + h / 4) / CHUNK_HEIGHT;
-    if (density >= 0)
-    {
-        type = STONE;
-        if (y > snowThreshold)
-        {
-            if (y == snowThreshold + 1)
-                type = DIRT_SNOW;
-            else
-                type = SNOW;
-        }
-        else
-        {
-            if (y > h - 5)
-                type = DIRT;
-            if (y == h - 1)
-                type = GRASS;
-        }
-    }
-    if (y == 0)
-        type = STONE;
+    const auto globalPosition = World::WorldToGlobalSpace(m_Position, v.GetPosition());
+
+    const VoxelType type = m_Biome.ResolveVoxelType(globalPosition, h);
+
     v.SetVoxelType(type);
 }
 

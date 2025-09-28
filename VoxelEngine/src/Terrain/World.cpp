@@ -11,8 +11,8 @@ World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& 
              Settings&& settings)
     : m_ChunkMap({}),
       m_CameraController(cameraController),
-      m_Perlin(6512u),
-      m_ShouldGenerationRun(std::make_shared<bool>(false)),
+      m_Biome(std::make_unique<Biome>(6512u, 6512u)),
+      m_ShouldGenerationRun(false),
       m_Mutex(std::mutex()),
       m_Settings(std::move(settings))
 {
@@ -22,7 +22,7 @@ World::~World() { StopGeneration(); }
 
 void World::StartGeneration()
 {
-    *m_ShouldGenerationRun = true;
+    m_ShouldGenerationRun = true;
     m_GenerationThread = std::thread([this] { this->GenerateWorld(); });
 }
 
@@ -111,7 +111,7 @@ void World::SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, const VoxelFace 
 
 void World::StopGeneration()
 {
-    *m_ShouldGenerationRun = false;
+    m_ShouldGenerationRun = false;
     if (m_GenerationThread.joinable())
         m_GenerationThread.join();
 }
@@ -173,9 +173,9 @@ void World::SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2
 
 void World::GenerateWorld()
 {
-    while (*m_ShouldGenerationRun)
+    while (m_ShouldGenerationRun)
     {
-        Position2D center = WorldToChunkSpace(m_CameraController->GetCamera().GetPosition());
+        Position2D center = GlobalToChunkSpace(m_CameraController->GetCamera().GetPosition());
         std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, TerrainConfig::ThreadCount);
         std::vector<std::thread> threads = {};
 
@@ -196,7 +196,7 @@ void World::GenerateWorld()
 
 void World::GenerateChunk(Position2D position)
 {
-    auto chunk = std::make_shared<Chunk>(*this, position, m_Perlin, m_Settings.StructureGenerators);
+    auto chunk = std::make_shared<Chunk>(*this, position, *m_Biome, m_Settings.StructureGenerators);
     chunk->GetLock().lock();
     m_ChunkMap.insert({position, chunk});
     chunk->Generate();
@@ -265,6 +265,8 @@ std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, co
     const int32_t maxDistance = 10;
     std::queue<Position2D> positions = {};
     std::unordered_set<Position2D> existing = {};
+
+    // TODO: refactor this
     for (int32_t r = 0; r < maxDistance; ++r)
     {
         for (int32_t x = 0; x <= r; ++x)
@@ -302,6 +304,7 @@ std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, co
 
 bool World::IsPositionValid(const std::unordered_set<Position2D>& existing, const Position2D p)
 {
+    // TODO: refactor this
     Position2D locations[12] = {
         Position2D(p.x, p.y + 2),
         Position2D(p.x, p.y + 1),
@@ -322,14 +325,6 @@ bool World::IsPositionValid(const std::unordered_set<Position2D>& existing, cons
     return true;
 }
 
-Position2D World::WorldToChunkSpace(const glm::vec3& pos)
-{
-    return {
-        static_cast<int16_t>(glm::floor(pos.x / CHUNK_WIDTH)),
-        static_cast<int16_t>(glm::floor(pos.z / CHUNK_WIDTH))
-    };
-}
-
 const std::map<Position2D, std::shared_ptr<Chunk> >& World::GetChunkMap() const { return m_ChunkMap; }
 
 std::unordered_set<std::shared_ptr<Chunk> >& World::GetChangedChunks() { return m_ChangedChunks; }
@@ -338,32 +333,29 @@ std::mutex& World::GetLock() { return m_Mutex; }
 
 std::map<Position2D, std::queue<Voxel> >& World::GetDeferredChunkQueue() { return m_DeferredChunkQueueMap; }
 
-std::pair<Position2D, Position3D> World::ConvertToWorldSpace(glm::i32vec3 pos)
+Position2D World::GlobalToChunkSpace(const glm::i32vec3& pos)
 {
-    if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
-        return {Position2D(0, 0), Position3D(pos.x, pos.y, pos.z)};
-    Position2D chunkPos(0, 0);
-    while (pos.x < 0)
-    {
-        pos.x += CHUNK_WIDTH;
-        --chunkPos.x;
-    }
-    while (pos.x > CHUNK_WIDTH - 1)
-    {
-        pos.x -= CHUNK_WIDTH;
-        ++chunkPos.x;
-    }
-    while (pos.z < 0)
-    {
-        pos.z += CHUNK_WIDTH;
-        --chunkPos.y;
-    }
-    while (pos.z > CHUNK_WIDTH - 1)
-    {
-        pos.z -= CHUNK_WIDTH;
-        ++chunkPos.y;
-    }
-    return {chunkPos, Position3D(pos.x, pos.y, pos.z)};
+    return {
+        static_cast<int16_t>(glm::floor((float_t) pos.x / CHUNK_WIDTH)),
+        static_cast<int16_t>(glm::floor((float_t) pos.z / CHUNK_WIDTH))
+    };
 }
 
-};
+std::pair<Position2D, Position3D> World::GlobalToWorldSpace(const glm::i32vec3 pos)
+{
+    Position3D positionInChunk(pos.x % CHUNK_WIDTH, pos.y % CHUNK_HEIGHT, pos.z % CHUNK_WIDTH);
+    Position2D chunkPosition = GlobalToChunkSpace(pos);
+
+    return {chunkPosition, positionInChunk};
+}
+
+glm::i32vec3 World::WorldToGlobalSpace(const Position2D chunkPosition, const Position3D positionInChunk)
+{
+    const int32_t x = chunkPosition.x * CHUNK_WIDTH + positionInChunk.GetX();
+    const int32_t y = positionInChunk.y;
+    const int32_t z = chunkPosition.y * CHUNK_WIDTH + positionInChunk.GetZ();
+
+    return {x, y, z};
+}
+
+}

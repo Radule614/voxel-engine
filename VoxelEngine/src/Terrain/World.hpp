@@ -9,8 +9,6 @@
 #include <GLCoreUtils.hpp>
 
 #include "Chunk.hpp"
-#include "Position2D.hpp"
-#include "Generators/StructureGenerator.hpp"
 
 namespace VoxelEngine
 {
@@ -26,8 +24,9 @@ public:
     World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController, Settings&& settings);
     ~World();
 
-    static Position2D WorldToChunkSpace(const glm::vec3& pos);
-    static std::pair<Position2D, Position3D> ConvertToWorldSpace(glm::i32vec3 pos);
+    static Position2D GlobalToChunkSpace(const glm::i32vec3& pos);
+    static std::pair<Position2D, Position3D> GlobalToWorldSpace(glm::i32vec3 pos);
+    static glm::i32vec3 WorldToGlobalSpace(Position2D chunkPosition, Position3D positionInChunk);
 
     void StartGeneration();
     void StopGeneration();
@@ -57,10 +56,10 @@ private:
     std::map<Position2D, std::queue<Voxel> > m_DeferredChunkQueueMap;
     std::shared_ptr<GLCore::Utils::PerspectiveCameraController> m_CameraController;
 
-    siv::PerlinNoise m_Perlin;
+    std::unique_ptr<Biome> m_Biome;
 
     std::thread m_GenerationThread;
-    std::shared_ptr<bool> m_ShouldGenerationRun;
+    bool m_ShouldGenerationRun;
     std::mutex m_Mutex;
 
     Settings m_Settings;
