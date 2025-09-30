@@ -45,10 +45,15 @@ double_t Biome::GetDensity(const glm::i32vec3 globalPosition, const int32_t heig
 
 int32_t Biome::GetHeight(const int32_t x, const int32_t z) const
 {
-    const double_t height_bias = m_HeightPerlin.octave2D_01(x * 0.01f, z * 0.01f, 8);
-    const int32_t h = CHUNK_HEIGHT / 5 + glm::floor(height_bias * 3 * CHUNK_HEIGHT / 5);
+    const double_t heightMask = m_HeightPerlin.octave2D_01(x * 0.005f, z * 0.005f, 8);
+    const double_t baseHeight = CHUNK_HEIGHT / 5 + heightMask * 3 * CHUNK_HEIGHT / 10;
 
-    return h;
+    const double_t mountainMask = m_HeightPerlin.octave2D_01((x + 1000.0) * 0.007f, (z + 1000.0) * 0.007f, 8);
+    const double_t mountainHeight = glm::max(0.0, mountainMask - 0.5f) * (7 * CHUNK_HEIGHT / 10);
+
+    const double_t finalHeight = glm::floor(baseHeight + mountainHeight);
+
+    return (int32_t) finalHeight;
 }
 
 }

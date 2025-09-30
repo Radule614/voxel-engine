@@ -2,9 +2,9 @@
 #include <cstdint>
 
 #define CHUNK_WIDTH 16
-#define CHUNK_HEIGHT 128
-#define RADIANCE_WIDTH 18
-#define RADIANCE_HEIGHT 130
+#define CHUNK_HEIGHT 144
+#define RADIANCE_WIDTH (CHUNK_WIDTH + 2)
+#define RADIANCE_HEIGHT (CHUNK_HEIGHT + 2)
 
 namespace VoxelEngine
 {

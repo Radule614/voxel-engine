@@ -4,7 +4,7 @@
 namespace VoxelEngine
 {
 
-int32_t TerrainConfig::ThreadCount = 1;
+int32_t TerrainConfig::ThreadCount = 3;
 int32_t TerrainConfig::PolygonMode = GL_FILL;
 int32_t TerrainConfig::MaxRadiance = 10;
 int32_t TerrainConfig::SunRadiance = 10;
