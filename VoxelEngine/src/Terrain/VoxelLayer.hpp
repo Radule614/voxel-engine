@@ -38,6 +38,9 @@ private:
     void CheckChunkRenderQueue() const;
     void SetupRenderData(const std::shared_ptr<Chunk>& chunk) const;
     void ApplyState() const;
+    void ResetWorld() const;
+
+    void ResetChunkRenderData(const Chunk& chunk) const;
 
     void CreateTerrainCollider() const;
     void OnColliderLocationChanged(glm::vec3 pos);

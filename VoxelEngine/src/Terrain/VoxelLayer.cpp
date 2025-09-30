@@ -109,6 +109,9 @@ void VoxelLayer::OnImGuiRender()
     ImGui::Text("Current Chunk: %s", VecToString(glm::vec2(worldPosition.first)).c_str());
     ImGui::Text("Current Voxel: %s", VecToString(glm::vec3(worldPosition.second)).c_str());
 
+    if (ImGui::Button("Reset"))
+        ResetWorld();
+
     ImGui::End();
 
     if (!m_EngineState.MenuActive)
@@ -141,6 +144,35 @@ void VoxelLayer::ApplyState() const
     TerrainConfig::PolygonMode = m_UIState.PolygonMode == 0 ? GL_FILL : GL_LINE;
     TerrainConfig::ThreadCount = m_UIState.ThreadCount + 1;
     glPolygonMode(GL_FRONT_AND_BACK, TerrainConfig::PolygonMode);
+}
+
+void VoxelLayer::ResetWorld() const
+{
+    m_World->GetLock().lock();
+    m_World->StopGeneration();
+
+    for (auto [_, chunk]: m_World->GetChunkMap())
+        ResetChunkRenderData(*chunk);
+
+    m_RenderData->clear();
+
+    m_World->Reset();
+    m_World->GetLock().unlock();
+}
+
+void VoxelLayer::ResetChunkRenderData(const Chunk& chunk) const
+{
+    auto& renderDataMap = *m_RenderData;
+    if (const auto renderData = renderDataMap.find(chunk.GetPosition()); renderData != renderDataMap.end())
+    {
+        ChunkRenderData& m = renderData->second;
+        glDeleteVertexArrays(1, &m.VertexArray);
+        glDeleteBuffers(1, &m.VertexBuffer);
+        glDeleteBuffers(1, &m.IndexBuffer);
+        glDeleteBuffers(1, &m.RadianceStorageBuffer);
+        m.Indices.clear();
+        renderDataMap.erase(chunk.GetPosition());
+    }
 }
 
 void VoxelLayer::CreateTerrainCollider() const
@@ -273,18 +305,9 @@ void VoxelLayer::CheckChunkRenderQueue() const
 
 void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
 {
+    ResetChunkRenderData(*chunk);
+
     ChunkRenderData data = {};
-    auto& renderDataMap = *m_RenderData;
-    if (const auto renderData = renderDataMap.find(chunk->GetPosition()); renderData != renderDataMap.end())
-    {
-        ChunkRenderData& m = renderData->second;
-        glDeleteVertexArrays(1, &m.VertexArray);
-        glDeleteBuffers(1, &m.VertexBuffer);
-        glDeleteBuffers(1, &m.IndexBuffer);
-        glDeleteBuffers(1, &m.RadianceStorageBuffer);
-        m.Indices.clear();
-        renderDataMap.erase(chunk->GetPosition());
-    }
 
     std::vector<VoxelVertex> vertices = {};
     vertices.insert(vertices.end(), chunk->GetMesh().begin(), chunk->GetMesh().end());
@@ -358,7 +381,7 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
     data.Indices = indices;
     data.ModelMatrix = chunk->GetModelMatrix();
 
-    renderDataMap.insert({chunk->GetPosition(), data});
+    m_RenderData->insert({chunk->GetPosition(), data});
 }
 
 };

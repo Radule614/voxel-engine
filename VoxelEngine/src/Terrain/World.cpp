@@ -302,6 +302,13 @@ std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, co
     return positions;
 }
 
+void World::Reset()
+{
+    m_ChunkMap.clear();
+    m_ChangedChunks.clear();
+    m_DeferredChunkQueueMap.clear();
+}
+
 bool World::IsPositionValid(const std::unordered_set<Position2D>& existing, const Position2D p)
 {
     // TODO: refactor this

@@ -30,6 +30,7 @@ public:
 
     void StartGeneration();
     void StopGeneration();
+    void Reset();
 
     const std::map<Position2D, std::shared_ptr<Chunk> >& GetChunkMap() const;
     std::unordered_set<std::shared_ptr<Chunk> >& GetChangedChunks();
@@ -54,6 +55,7 @@ private:
     std::map<Position2D, std::shared_ptr<Chunk> > m_ChunkMap;
     std::unordered_set<std::shared_ptr<Chunk> > m_ChangedChunks;
     std::map<Position2D, std::queue<Voxel> > m_DeferredChunkQueueMap;
+
     std::shared_ptr<GLCore::Utils::PerspectiveCameraController> m_CameraController;
 
     std::unique_ptr<Biome> m_Biome;
