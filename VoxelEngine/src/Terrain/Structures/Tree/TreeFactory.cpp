@@ -33,7 +33,6 @@ Structure TreeFactory::CreateTree(const Position3D position)
 
     Structure structure(LOG, data);
     structure.SetRootPosition(position);
-    structure.SetRadius(4);
 
     return structure;
 }
@@ -64,7 +63,6 @@ Structure TreeFactory::CreateLargeTree(const Position3D position)
 
     Structure structure(LOG, data);
     structure.SetRootPosition(position);
-    structure.SetRadius(5);
 
     return structure;
 }

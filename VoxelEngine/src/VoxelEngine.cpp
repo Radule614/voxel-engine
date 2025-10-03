@@ -7,7 +7,7 @@
 #include "Ecs/Ecs.hpp"
 #include "Ecs/EcsLayer.hpp"
 #include "Sandbox/SandboxLayer.hpp"
-#include "Terrain/Generators/TreeGenerator.hpp"
+#include "Terrain/Structures/Tree/TreeGenerator.hpp"
 
 using namespace GLCore;
 

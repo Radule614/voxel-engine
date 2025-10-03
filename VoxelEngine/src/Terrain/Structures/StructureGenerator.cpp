@@ -10,12 +10,10 @@ namespace VoxelEngine
 StructureGenerator::StructureGenerator() = default;
 
 StructureGenerator::GenerationContext::GenerationContext(
-    const Position2D chunkPosition,
     const siv::PerlinNoise& perlin,
-    const size_t (&heightMap)[CHUNK_WIDTH][CHUNK_WIDTH]
-) : ChunkPosition(chunkPosition),
-    PerlinEngine(perlin),
-    HeightMap(heightMap)
+    const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
+    const Position2D chunkPosition
+) : Perlin(perlin), SurfaceLayer(surfaceLayer), ChunkPosition(chunkPosition)
 {
 }
 

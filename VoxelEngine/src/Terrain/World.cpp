@@ -11,7 +11,7 @@ World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& 
              Settings&& settings)
     : m_ChunkMap({}),
       m_CameraController(cameraController),
-      m_Biome(std::make_unique<Biome>(6512u, 6512u)),
+      m_Biome(std::make_unique<Biome>(6512u)),
       m_ShouldGenerationRun(false),
       m_Mutex(std::mutex()),
       m_Settings(std::move(settings))

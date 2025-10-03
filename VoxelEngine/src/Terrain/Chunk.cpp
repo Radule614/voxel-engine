@@ -40,13 +40,13 @@ Chunk::~Chunk() = default;
 
 void Chunk::Generate()
 {
-    size_t heightMap[CHUNK_WIDTH][CHUNK_WIDTH]{};
+    int32_t heightMap[CHUNK_WIDTH][CHUNK_WIDTH]{};
     for (size_t x = 0; x < CHUNK_WIDTH; ++x)
     {
         for (size_t z = 0; z < CHUNK_WIDTH; ++z)
         {
             const glm::ivec3 globalPosition = World::WorldToGlobalSpace(m_Position, Position3D(x, 0, z));
-            size_t h = m_Biome.GetHeight(globalPosition.x, globalPosition.z);
+            int32_t h = m_Biome.GetHeight(globalPosition.x, globalPosition.z);
 
             heightMap[x][z] = h;
             std::for_each(std::execution::par,
@@ -56,18 +56,22 @@ void Chunk::Generate()
         }
     }
 
-    // TODO: Remove this
-    const siv::PerlinNoise tempPerlin(6512u);
-
-    const StructureGenerator::GenerationContext generationContext(m_Position, tempPerlin, heightMap);
-    for (const auto& generator: m_Generators)
+    Voxel surfaceLayer[CHUNK_WIDTH][CHUNK_WIDTH] = {};
+    for (size_t x = 0; x < CHUNK_WIDTH; ++x)
     {
-        std::vector<Structure> output{};
+        for (size_t z = 0; z < CHUNK_WIDTH; ++z)
+        {
+            const auto surfaceY = heightMap[x][z] - 1;
+            if (surfaceY < 0)
+                continue;
 
-        generator->Generate(generationContext, output);
-
-        AddStructures(output);
+            surfaceLayer[x][z] = m_VoxelGrid[x][z][surfaceY];
+        }
     }
+
+    std::vector<Structure> output{};
+    m_Biome.GenerateStructures(surfaceLayer, m_Position, output);
+    AddStructures(output);
 
     InitRadiance();
 }
@@ -323,7 +327,7 @@ void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, V
     m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
 }
 
-void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, size_t h) const
+void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h) const
 {
     const int32_t y = &v - &m_VoxelGrid[x][z][0];
     v.SetPosition(Position3D(x, y, z));

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "StructureGenerator.hpp"
+#include "../StructureGenerator.hpp"
 
 namespace VoxelEngine
 {
