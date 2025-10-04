@@ -18,10 +18,9 @@ class World
 public:
     struct Settings
     {
-        std::vector<std::unique_ptr<StructureGenerator> > StructureGenerators{};
     };
 
-    World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController, Settings&& settings);
+    World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController, Settings settings);
     ~World();
 
     static Position2D GlobalToChunkSpace(const glm::i32vec3& pos);

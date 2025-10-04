@@ -134,9 +134,9 @@ void VoxelLayer::OnImGuiRender()
     ImGui::End();
 }
 
-void VoxelLayer::Init(World::Settings&& settings)
+void VoxelLayer::Init(World::Settings settings)
 {
-    m_World = std::make_unique<World>(m_EngineState.CameraController, std::move(settings));
+    m_World = std::make_unique<World>(m_EngineState.CameraController, settings);
 }
 
 void VoxelLayer::ApplyState() const

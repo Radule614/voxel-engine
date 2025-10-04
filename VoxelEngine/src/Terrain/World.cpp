@@ -7,14 +7,13 @@
 namespace VoxelEngine
 {
 
-World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController,
-             Settings&& settings)
+World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController, Settings settings)
     : m_ChunkMap({}),
       m_CameraController(cameraController),
       m_Biome(std::make_unique<Biome>(6512u)),
       m_ShouldGenerationRun(false),
       m_Mutex(std::mutex()),
-      m_Settings(std::move(settings))
+      m_Settings(settings)
 {
 }
 
@@ -196,7 +195,7 @@ void World::GenerateWorld()
 
 void World::GenerateChunk(Position2D position)
 {
-    auto chunk = std::make_shared<Chunk>(*this, position, *m_Biome, m_Settings.StructureGenerators);
+    auto chunk = std::make_shared<Chunk>(*this, position, *m_Biome);
     chunk->GetLock().lock();
     m_ChunkMap.insert({position, chunk});
     chunk->Generate();
@@ -218,6 +217,8 @@ void World::GenerateChunk(Position2D position)
         m_Mutex.unlock();
     }
 
+    chunk->InitRadiance();
+
     const Chunk::Neighbours neighbours = GetNeighbours(*chunk);
     if (neighbours.front != nullptr)
         neighbours.front->GetLock().lock();
@@ -235,7 +236,6 @@ void World::GenerateChunk(Position2D position)
     SyncUpdatesWithNeighbours(*chunk, neighbours, false);
 
     m_Mutex.lock();
-    m_ChangedChunks.insert(chunk);
     if (neighbours.front != nullptr)
     {
         m_ChangedChunks.insert(neighbours.front);

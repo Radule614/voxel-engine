@@ -10,24 +10,17 @@
 namespace VoxelEngine
 {
 
-Chunk::Chunk(World& world,
-             const Biome& biome,
-             const std::vector<std::unique_ptr<StructureGenerator> >& generators)
-    : Chunk(world, Position2D(), biome, generators)
+Chunk::Chunk(World& world, const Biome& biome): Chunk(world, Position2D(), biome)
 {
 }
 
-Chunk::Chunk(World& world,
-             const Position2D position,
-             const Biome& biome,
-             const std::vector<std::unique_ptr<StructureGenerator> >& generators)
+Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     : m_World(world),
       m_Position(position),
       m_VoxelGrid(),
       m_Mesh({}),
       m_Mutex(std::mutex()),
       m_Biome(biome),
-      m_Generators(generators),
       m_RadianceGrid{}
 {
     m_BorderMeshes.insert({FRONT, {}});
@@ -72,48 +65,58 @@ void Chunk::Generate()
     std::vector<Structure> output{};
     m_Biome.GenerateStructures(surfaceLayer, m_Position, output);
     AddStructures(output);
-
-    InitRadiance();
 }
 
 void Chunk::AddStructures(const std::vector<Structure>& structures)
 {
     std::unordered_set<std::shared_ptr<Chunk> > changedChunks{};
     auto& deferredQueueMap = m_World.GetDeferredChunkQueue();
+
     for (auto& s: structures)
     {
         Position3D p = s.GetRoot().GetPosition();
         VoxelType soilType = m_VoxelGrid[p.GetX()][p.GetZ()][p.y - 1].GetVoxelType();
+
         if (soilType == AIR || soilType == SNOW)
             continue;
+
         m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
         m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
+
         for (auto& [positionInStructure, voxelType]: s.GetVoxelData())
         {
             glm::i32vec3 position = static_cast<glm::i32vec3>(p) + positionInStructure;
             auto [chunkPosition, voxelPosition] = GetPositionRelativeToWorld(position);
+
             if (chunkPosition == m_Position)
             {
                 Voxel& voxel = m_VoxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
+
                 voxel.SetVoxelType(voxelType);
                 voxel.SetPosition(voxelPosition);
+
                 continue;
             }
             if (m_World.GetChunkMap().contains(chunkPosition))
             {
                 auto& chunk = m_World.GetChunkMap().at(chunkPosition);
+
                 chunk->GetLock().lock();
+
                 auto& voxelGrid = chunk->GetVoxelGrid();
                 Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
                 voxel.SetVoxelType(voxelType);
                 voxel.SetPosition(voxelPosition);
                 changedChunks.insert(chunk);
+
                 chunk->GetLock().unlock();
+
                 continue;
             }
             deferredQueueMap[chunkPosition].emplace(voxelType, voxelPosition);
         }
     }
+
     m_World.GetLock().lock();
     for (auto& c: changedChunks)
     {

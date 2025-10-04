@@ -4,12 +4,12 @@
 
 #include "Biome.hpp"
 #include "../TerrainConfig.hpp"
-#include "../Structures/Tree/TreeGenerator.hpp"
+#include "Structures/Tree/TreeGenerator.hpp"
 
 namespace VoxelEngine
 {
 
-Biome::Biome(const uint32_t seed) : m_Perlin(seed), m_Generator(std::make_unique<TreeGenerator>())
+Biome::Biome(const uint32_t seed) : m_Perlin(seed), m_PerlinSeed(seed), m_Generator(std::make_unique<TreeGenerator>())
 {
 }
 
@@ -60,7 +60,7 @@ void Biome::GenerateStructures(const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WI
                                const Position2D chunkPosition,
                                std::vector<Structure>& output) const
 {
-    const StructureGenerator::GenerationContext context(m_Perlin, surfaceLayer, chunkPosition);
+    const StructureGenerator::GenerationContext context(m_Perlin, m_PerlinSeed, surfaceLayer, chunkPosition);
 
     m_Generator->Generate(context, output);
 }

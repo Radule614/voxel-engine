@@ -26,7 +26,7 @@ public:
     virtual void OnImGuiRender() override;
 
     // Must be called before attaching
-    void Init(World::Settings&& settings);
+    void Init(World::Settings settings);
 
 private:
     struct UIState

@@ -6,7 +6,7 @@
 
 #include "PerlinNoise.hpp"
 #include "../Voxel.hpp"
-#include "../Structures/StructureGenerator.hpp"
+#include "Structures/StructureGenerator.hpp"
 
 namespace VoxelEngine
 {
@@ -28,7 +28,8 @@ private:
     double_t GetDensity(glm::i32vec3 globalPosition, int32_t height) const;
 
 private:
-    siv::PerlinNoise m_Perlin;
+    const siv::PerlinNoise m_Perlin;
+    const int32_t m_PerlinSeed;
     std::unique_ptr<StructureGenerator> m_Generator;
 };
 

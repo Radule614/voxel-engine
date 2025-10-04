@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Voxel.hpp"
+#include "../../Voxel.hpp"
 #include <vector>
 
 namespace VoxelEngine
