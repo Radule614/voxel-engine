@@ -70,7 +70,7 @@ void Chunk::Generate()
 void Chunk::AddStructures(const std::vector<Structure>& structures)
 {
     std::unordered_set<std::shared_ptr<Chunk> > changedChunks{};
-    auto& deferredQueueMap = m_World.GetDeferredChunkQueue();
+    auto& deferredQueueMap = m_World.GetDeferredUpdateQueues();
 
     for (auto& s: structures)
     {
@@ -122,7 +122,7 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
     {
         c->GetLock().lock();
         c->GenerateMesh();
-        m_World.GetChangedChunks().insert(c);
+        m_World.GetRenderQueue().insert(c);
         c->GetLock().unlock();
     }
     m_World.GetLock().unlock();

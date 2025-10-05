@@ -200,8 +200,8 @@ void World::GenerateChunk(Position2D position)
     m_ChunkMap.insert({position, chunk});
     chunk->Generate();
 
-    auto deferredQueueMap = m_DeferredChunkQueueMap.find(position);
-    if (deferredQueueMap != m_DeferredChunkQueueMap.end())
+    auto deferredQueueMap = m_DeferredUpdateQueues.find(position);
+    if (deferredQueueMap != m_DeferredUpdateQueues.end())
     {
         m_Mutex.lock();
         auto& deferredQueue = deferredQueueMap->second;
@@ -236,24 +236,25 @@ void World::GenerateChunk(Position2D position)
     SyncUpdatesWithNeighbours(*chunk, neighbours, false);
 
     m_Mutex.lock();
+    m_RenderQueue.insert(chunk);
     if (neighbours.front != nullptr)
     {
-        m_ChangedChunks.insert(neighbours.front);
+        m_RenderQueue.insert(neighbours.front);
         neighbours.front->GetLock().unlock();
     }
     if (neighbours.back != nullptr)
     {
-        m_ChangedChunks.insert(neighbours.back);
+        m_RenderQueue.insert(neighbours.back);
         neighbours.back->GetLock().unlock();
     }
     if (neighbours.right != nullptr)
     {
-        m_ChangedChunks.insert(neighbours.right);
+        m_RenderQueue.insert(neighbours.right);
         neighbours.right->GetLock().unlock();
     }
     if (neighbours.left != nullptr)
     {
-        m_ChangedChunks.insert(neighbours.left);
+        m_RenderQueue.insert(neighbours.left);
         neighbours.left->GetLock().unlock();
     }
     m_Mutex.unlock();
@@ -305,8 +306,8 @@ std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, co
 void World::Reset()
 {
     m_ChunkMap.clear();
-    m_ChangedChunks.clear();
-    m_DeferredChunkQueueMap.clear();
+    m_RenderQueue.clear();
+    m_DeferredUpdateQueues.clear();
 }
 
 bool World::IsPositionValid(const std::unordered_set<Position2D>& existing, const Position2D p)
@@ -334,11 +335,11 @@ bool World::IsPositionValid(const std::unordered_set<Position2D>& existing, cons
 
 const std::map<Position2D, std::shared_ptr<Chunk> >& World::GetChunkMap() const { return m_ChunkMap; }
 
-std::unordered_set<std::shared_ptr<Chunk> >& World::GetChangedChunks() { return m_ChangedChunks; }
+std::unordered_set<std::shared_ptr<Chunk> >& World::GetRenderQueue() { return m_RenderQueue; }
 
 std::mutex& World::GetLock() { return m_Mutex; }
 
-std::map<Position2D, std::queue<Voxel> >& World::GetDeferredChunkQueue() { return m_DeferredChunkQueueMap; }
+std::map<Position2D, std::queue<Voxel> >& World::GetDeferredUpdateQueues() { return m_DeferredUpdateQueues; }
 
 Position2D World::GlobalToChunkSpace(const glm::i32vec3& pos)
 {

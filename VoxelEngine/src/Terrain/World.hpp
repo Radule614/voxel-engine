@@ -32,9 +32,9 @@ public:
     void Reset();
 
     const std::map<Position2D, std::shared_ptr<Chunk> >& GetChunkMap() const;
-    std::unordered_set<std::shared_ptr<Chunk> >& GetChangedChunks();
+    std::unordered_set<std::shared_ptr<Chunk> >& GetRenderQueue();
     std::mutex& GetLock();
-    std::map<Position2D, std::queue<Voxel> >& GetDeferredChunkQueue();
+    std::map<Position2D, std::queue<Voxel> >& GetDeferredUpdateQueues();
 
 private:
     static void SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, VoxelFace face);
@@ -52,8 +52,8 @@ private:
 
 private:
     std::map<Position2D, std::shared_ptr<Chunk> > m_ChunkMap;
-    std::unordered_set<std::shared_ptr<Chunk> > m_ChangedChunks;
-    std::map<Position2D, std::queue<Voxel> > m_DeferredChunkQueueMap;
+    std::unordered_set<std::shared_ptr<Chunk> > m_RenderQueue;
+    std::map<Position2D, std::queue<Voxel> > m_DeferredUpdateQueues;
 
     std::shared_ptr<GLCore::Utils::PerspectiveCameraController> m_CameraController;
 

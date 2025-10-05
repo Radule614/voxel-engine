@@ -42,7 +42,7 @@ void TreeGenerator::Generate(const GenerationContext& context, std::vector<Struc
     std::mt19937 rng(context.PerlinSeed);
     std::ranges::shuffle(possibleLocations, rng);
 
-    for (auto [voxel, locationBias]: possibleLocations)
+    for (const auto& [voxel, locationBias]: possibleLocations)
     {
         const float_t chance = locationBias - output.size() * 0.12f;
 

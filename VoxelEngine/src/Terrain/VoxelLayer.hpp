@@ -35,7 +35,7 @@ private:
         int32_t PolygonMode = TerrainConfig::PolygonMode == GL_FILL ? 0 : 1;
     };
 
-    void CheckChunkRenderQueue() const;
+    void PollChunkRenderQueue() const;
     void SetupRenderData(const std::shared_ptr<Chunk>& chunk) const;
     void ApplyState() const;
     void ResetWorld() const;

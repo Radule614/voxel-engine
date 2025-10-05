@@ -82,7 +82,7 @@ void VoxelLayer::OnEvent(Event& event)
 
 void VoxelLayer::OnUpdate(const Timestep ts)
 {
-    CheckChunkRenderQueue();
+    PollChunkRenderQueue();
     timeSinceLastColliderOptimization += ts;
     if (timeSinceLastColliderOptimization >= 3.0f)
     {
@@ -280,10 +280,10 @@ void VoxelLayer::OptimizeColliders()
     LOG_INFO("Terrain voxel collider count after optimization: {0}", m_ColliderPositions.size());
 }
 
-void VoxelLayer::CheckChunkRenderQueue() const
+void VoxelLayer::PollChunkRenderQueue() const
 {
     auto& worldLock = m_World->GetLock();
-    auto& chunks = m_World->GetChangedChunks();
+    auto& chunks = m_World->GetRenderQueue();
     if (chunks.empty() || !worldLock.try_lock())
         return;
     auto it = chunks.begin();
