@@ -31,14 +31,6 @@ public:
     Chunk(World& world, Position2D position, const Biome& biome);
     ~Chunk();
 
-    struct Neighbours
-    {
-        std::shared_ptr<Chunk> front = nullptr;
-        std::shared_ptr<Chunk> back = nullptr;
-        std::shared_ptr<Chunk> right = nullptr;
-        std::shared_ptr<Chunk> left = nullptr;
-    };
-
     void Generate();
     void GenerateMesh();
     void GenerateEdgeMesh(VoxelFace face);
@@ -80,4 +72,4 @@ private:
     std::queue<glm::ivec3> m_RadianceUpdateQueue;
 };
 
-};
+}

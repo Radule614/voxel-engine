@@ -34,17 +34,19 @@ public:
     const std::map<Position2D, std::shared_ptr<Chunk> >& GetChunkMap() const;
     std::unordered_set<std::shared_ptr<Chunk> >& GetRenderQueue();
     std::mutex& GetLock();
-    std::map<Position2D, std::queue<Voxel> >& GetDeferredUpdateQueues();
+    std::map<Position2D, std::queue<Voxel> >& GetDeferredUpdateQueueMap();
 
 private:
     static void SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, VoxelFace face);
     static void SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face);
     static void SyncUpdatesWithNeighbours(Chunk& chunk,
-                                          const Chunk::Neighbours& neighbours,
+                                          std::map<Position2D, std::shared_ptr<Chunk> >& neighbours,
                                           bool shouldSyncFaces = true);
     static bool IsPositionValid(const std::unordered_set<Position2D>& existing, Position2D p);
 
-    Chunk::Neighbours GetNeighbours(const Chunk& chunk);
+    void GetNeighbours(const Chunk& chunk,
+                       std::map<Position2D, std::shared_ptr<Chunk> >& neighbours,
+                       bool includeCorners = false);
 
     void GenerateWorld();
     void GenerateChunk(Position2D position);
@@ -53,7 +55,7 @@ private:
 private:
     std::map<Position2D, std::shared_ptr<Chunk> > m_ChunkMap;
     std::unordered_set<std::shared_ptr<Chunk> > m_RenderQueue;
-    std::map<Position2D, std::queue<Voxel> > m_DeferredUpdateQueues;
+    std::map<Position2D, std::queue<Voxel> > m_DeferredUpdateQueueMap;
 
     std::shared_ptr<GLCore::Utils::PerspectiveCameraController> m_CameraController;
 

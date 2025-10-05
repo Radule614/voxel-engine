@@ -70,18 +70,15 @@ void Chunk::Generate()
 void Chunk::AddStructures(const std::vector<Structure>& structures)
 {
     std::unordered_set<std::shared_ptr<Chunk> > changedChunks{};
-    auto& deferredQueueMap = m_World.GetDeferredUpdateQueues();
+    auto& deferredQueueMap = m_World.GetDeferredUpdateQueueMap();
 
     for (auto& s: structures)
     {
         Position3D p = s.GetRoot().GetPosition();
-        VoxelType soilType = m_VoxelGrid[p.GetX()][p.GetZ()][p.y - 1].GetVoxelType();
+        Voxel& rootVoxel = m_VoxelGrid[p.GetX()][p.GetZ()][p.y];
 
-        if (soilType == AIR || soilType == SNOW)
-            continue;
-
-        m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetVoxelType(s.GetRoot().GetVoxelType());
-        m_VoxelGrid[p.GetX()][p.GetZ()][p.y].SetPosition(p);
+        rootVoxel.SetVoxelType(s.GetRoot().GetVoxelType());
+        rootVoxel.SetPosition(p);
 
         for (auto& [positionInStructure, voxelType]: s.GetVoxelData())
         {
@@ -97,6 +94,7 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
 
                 continue;
             }
+
             if (m_World.GetChunkMap().contains(chunkPosition))
             {
                 auto& chunk = m_World.GetChunkMap().at(chunkPosition);
@@ -382,4 +380,4 @@ void Chunk::SetRadiance(const size_t x, const size_t z, const size_t y, const in
     m_RadianceGrid[x * RADIANCE_WIDTH * RADIANCE_HEIGHT + z * RADIANCE_HEIGHT + y] = radiance;
 }
 
-};
+}
