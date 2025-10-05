@@ -25,16 +25,75 @@ void World::StartGeneration()
     m_GenerationThread = std::thread([this] { this->GenerateWorld(); });
 }
 
-void World::SyncUpdatesWithNeighbours(Chunk& chunk,
-                                      std::map<Position2D, std::shared_ptr<Chunk> >& neighbours,
-                                      const bool shouldSyncFaces)
+void World::SyncMeshWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours)
 {
     auto& voxelGrid = chunk.GetVoxelGrid();
 
-    auto front = neighbours.find(Position2D(0, 1));
-    auto back = neighbours.find(Position2D(0, -1));
-    auto right = neighbours.find(Position2D(1, 0));
-    auto left = neighbours.find(Position2D(-1, 0));
+    const auto front = neighbours.find(Position2D(0, 1));
+    const auto back = neighbours.find(Position2D(0, -1));
+    const auto right = neighbours.find(Position2D(1, 0));
+    const auto left = neighbours.find(Position2D(-1, 0));
+
+    for (size_t x = 0; x < CHUNK_WIDTH; x++)
+    {
+        for (size_t y = 0; y < CHUNK_HEIGHT; y++)
+        {
+            if (front != neighbours.end())
+            {
+                Chunk& neighbour = *front->second;
+                Voxel& v = voxelGrid[x][CHUNK_WIDTH - 1][y];
+                Voxel& n = neighbour.GetVoxelGrid()[x][0][y];
+
+                SyncVisibleFacesWithNeighbour(v, n, FRONT);
+            }
+
+            if (back != neighbours.end())
+            {
+                Chunk& neighbour = *back->second;
+                Voxel& v = voxelGrid[x][0][y];
+                Voxel& n = neighbour.GetVoxelGrid()[x][CHUNK_WIDTH - 1][y];
+
+                SyncVisibleFacesWithNeighbour(v, n, BACK);
+            }
+
+            if (right != neighbours.end())
+            {
+                Chunk& neighbour = *right->second;
+                Voxel& v = voxelGrid[CHUNK_WIDTH - 1][x][y];
+                Voxel& n = neighbour.GetVoxelGrid()[0][x][y];
+
+                SyncVisibleFacesWithNeighbour(v, n, RIGHT);
+            }
+
+            if (left != neighbours.end())
+            {
+                Chunk& neighbour = *left->second;
+                Voxel& v = voxelGrid[0][x][y];
+                Voxel& n = neighbour.GetVoxelGrid()[CHUNK_WIDTH - 1][x][y];
+
+                SyncVisibleFacesWithNeighbour(v, n, LEFT);
+            }
+        }
+    }
+
+    if (front != neighbours.end())
+        front->second->GenerateEdgeMesh(BACK);
+    if (back != neighbours.end())
+        back->second->GenerateEdgeMesh(FRONT);
+    if (right != neighbours.end())
+        right->second->GenerateEdgeMesh(LEFT);
+    if (left != neighbours.end())
+        left->second->GenerateEdgeMesh(RIGHT);
+}
+
+void World::SyncRadianceWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours)
+{
+    auto& voxelGrid = chunk.GetVoxelGrid();
+
+    const auto front = neighbours.find(Position2D(0, 1));
+    const auto back = neighbours.find(Position2D(0, -1));
+    const auto right = neighbours.find(Position2D(1, 0));
+    const auto left = neighbours.find(Position2D(-1, 0));
 
     for (size_t x = 0; x < CHUNK_WIDTH; x++)
     {
@@ -47,8 +106,6 @@ void World::SyncUpdatesWithNeighbours(Chunk& chunk,
                 Voxel& n = neighbour.GetVoxelGrid()[x][0][y];
 
                 SyncRadianceWithNeighbour(v, n, chunk, neighbour, FRONT);
-                if (shouldSyncFaces)
-                    SyncVisibleFacesWithNeighbour(v, n, FRONT);
             }
 
             if (back != neighbours.end())
@@ -58,8 +115,6 @@ void World::SyncUpdatesWithNeighbours(Chunk& chunk,
                 Voxel& n = neighbour.GetVoxelGrid()[x][CHUNK_WIDTH - 1][y];
 
                 SyncRadianceWithNeighbour(v, n, chunk, neighbour, BACK);
-                if (shouldSyncFaces)
-                    SyncVisibleFacesWithNeighbour(v, n, BACK);
             }
 
             if (right != neighbours.end())
@@ -69,8 +124,6 @@ void World::SyncUpdatesWithNeighbours(Chunk& chunk,
                 Voxel& n = neighbour.GetVoxelGrid()[0][x][y];
 
                 SyncRadianceWithNeighbour(v, n, chunk, neighbour, RIGHT);
-                if (shouldSyncFaces)
-                    SyncVisibleFacesWithNeighbour(v, n, RIGHT);
             }
 
             if (left != neighbours.end())
@@ -80,50 +133,14 @@ void World::SyncUpdatesWithNeighbours(Chunk& chunk,
                 Voxel& n = neighbour.GetVoxelGrid()[CHUNK_WIDTH - 1][x][y];
 
                 SyncRadianceWithNeighbour(v, n, chunk, neighbour, LEFT);
-                if (shouldSyncFaces)
-                    SyncVisibleFacesWithNeighbour(v, n, LEFT);
             }
         }
     }
 
     chunk.CommitRadianceChanges();
 
-    if (front != neighbours.end())
-    {
-        Chunk& neighbour = *front->second;
-
-        neighbour.CommitRadianceChanges();
-
-        if (shouldSyncFaces)
-            neighbour.GenerateEdgeMesh(BACK);
-    }
-    if (back != neighbours.end())
-    {
-        Chunk& neighbour = *back->second;
-
-        neighbour.CommitRadianceChanges();
-
-        if (shouldSyncFaces)
-            neighbour.GenerateEdgeMesh(FRONT);
-    }
-    if (right != neighbours.end())
-    {
-        Chunk& neighbour = *right->second;
-
-        neighbour.CommitRadianceChanges();
-
-        if (shouldSyncFaces)
-            neighbour.GenerateEdgeMesh(LEFT);
-    }
-    if (left != neighbours.end())
-    {
-        Chunk& neighbour = *left->second;
-
-        neighbour.CommitRadianceChanges();
-
-        if (shouldSyncFaces)
-            neighbour.GenerateEdgeMesh(RIGHT);
-    }
+    for (const auto& [_, neighbour]: neighbours)
+        neighbour->CommitRadianceChanges();
 }
 
 void World::SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, const VoxelFace face)
@@ -141,18 +158,13 @@ void World::StopGeneration()
         m_GenerationThread.join();
 }
 
-void World::GetNeighbours(const Chunk& chunk,
-                          std::map<Position2D, std::shared_ptr<Chunk> >& neighbours,
-                          const bool includeCorners)
+void World::GetNeighbours(const Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours)
 {
     const Position2D position = chunk.GetPosition();
     const int dirs[8][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
     for (const auto& [dx, dy]: dirs)
     {
-        if (!includeCorners && dx == 1 && dy == 1)
-            return;
-
         const auto neighbour = m_ChunkMap.find(Position2D(position.x + dx, position.y + dy));
 
         if (neighbour != m_ChunkMap.end())
@@ -233,11 +245,11 @@ void World::GenerateChunk(Position2D position)
         {
             Voxel& structureVoxel = deferredQueue.front();
             auto& voxelGrid = chunk->GetVoxelGrid();
-            const Position3D& position = structureVoxel.GetPosition();
+            const Position3D& voxelPosition = structureVoxel.GetPosition();
 
-            Voxel& voxel = voxelGrid[position.GetX()][position.GetZ()][position.y];
+            Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
 
-            voxel.SetPosition(position);
+            voxel.SetPosition(voxelPosition);
             voxel.SetVoxelType(structureVoxel.GetVoxelType());
 
             deferredQueue.pop();
@@ -245,27 +257,49 @@ void World::GenerateChunk(Position2D position)
         m_Mutex.unlock();
     }
 
-    chunk->InitRadiance();
+    std::map<Position2D, std::shared_ptr<Chunk> > neighboursLevel1{};
+    GetNeighbours(*chunk, neighboursLevel1);
 
-    std::map<Position2D, std::shared_ptr<Chunk> > neighbours{};
-    GetNeighbours(*chunk, neighbours);
-
-    for (const auto& [_, neighbour]: neighbours)
+    for (const auto& [_, neighbour]: neighboursLevel1)
         neighbour->GetLock().lock();
 
-    SyncUpdatesWithNeighbours(*chunk, neighbours);
+    SyncMeshWithNeighbours(*chunk, neighboursLevel1);
 
     chunk->GenerateMesh();
 
-    SyncUpdatesWithNeighbours(*chunk, neighbours, false);
-
     m_Mutex.lock();
 
-    m_RenderQueue.insert(chunk);
-    for (const auto& [_, neighbour]: neighbours)
+    if (neighboursLevel1.size() == 8)
     {
-        m_RenderQueue.insert(neighbour);
-        neighbour->GetLock().unlock();
+        chunk->InitRadiance();
+        SyncRadianceWithNeighbours(*chunk, neighboursLevel1);
+        m_RenderQueue.insert(chunk);
+    }
+
+    for (const auto& [_, level1]: neighboursLevel1)
+    {
+        std::map<Position2D, std::shared_ptr<Chunk> > neighboursLevel2{};
+        GetNeighbours(*level1, neighboursLevel2);
+
+        if (neighboursLevel2.size() == 8)
+        {
+            level1->InitRadiance();
+
+            SyncRadianceWithNeighbours(*level1, neighboursLevel2);
+
+            for (const auto& [_, level2] : neighboursLevel2)
+            {
+                std::map<Position2D, std::shared_ptr<Chunk> > neighboursLayer3{};
+                GetNeighbours(*level2, neighboursLayer3);
+
+                if (neighboursLayer3.size() == 8)
+                    m_RenderQueue.insert(level2);
+            }
+
+            m_RenderQueue.insert(level1);
+        }
+
+        level1->GetLock().unlock();
     }
 
     m_Mutex.unlock();
@@ -274,7 +308,7 @@ void World::GenerateChunk(Position2D position)
 
 std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, const size_t count)
 {
-    const int32_t maxDistance = 10;
+    const int32_t maxDistance = 12;
     std::queue<Position2D> positions = {};
     std::unordered_set<Position2D> existing = {};
 

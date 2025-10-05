@@ -27,6 +27,15 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     m_BorderMeshes.insert({RIGHT, {}});
     m_BorderMeshes.insert({BACK, {}});
     m_BorderMeshes.insert({LEFT, {}});
+
+    for (size_t rx = 0; rx < RADIANCE_WIDTH; ++rx)
+    {
+        for (size_t rz = 0; rz < RADIANCE_WIDTH; ++rz)
+        {
+            for (size_t ry = 0; ry < RADIANCE_HEIGHT; ++ry)
+                SetRadiance(rx, rz, ry, 0);
+        }
+    }
 }
 
 Chunk::~Chunk() = default;
@@ -120,7 +129,6 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
     {
         c->GetLock().lock();
         c->GenerateMesh();
-        m_World.GetRenderQueue().insert(c);
         c->GetLock().unlock();
     }
     m_World.GetLock().unlock();
@@ -132,9 +140,6 @@ void Chunk::InitRadiance()
     {
         for (size_t rz = 0; rz < RADIANCE_WIDTH; ++rz)
         {
-            for (size_t ry = 0; ry < RADIANCE_HEIGHT; ++ry)
-                SetRadiance(rx, rz, ry, 0);
-
             if (!InRange(rx, 1, RADIANCE_WIDTH - 2) || !InRange(rz, 1, RADIANCE_WIDTH - 2))
                 continue;
 

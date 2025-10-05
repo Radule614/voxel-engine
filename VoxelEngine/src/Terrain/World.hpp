@@ -39,14 +39,11 @@ public:
 private:
     static void SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, VoxelFace face);
     static void SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face);
-    static void SyncUpdatesWithNeighbours(Chunk& chunk,
-                                          std::map<Position2D, std::shared_ptr<Chunk> >& neighbours,
-                                          bool shouldSyncFaces = true);
+    static void SyncMeshWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
+    static void SyncRadianceWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
     static bool IsPositionValid(const std::unordered_set<Position2D>& existing, Position2D p);
 
-    void GetNeighbours(const Chunk& chunk,
-                       std::map<Position2D, std::shared_ptr<Chunk> >& neighbours,
-                       bool includeCorners = false);
+    void GetNeighbours(const Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
 
     void GenerateWorld();
     void GenerateChunk(Position2D position);
