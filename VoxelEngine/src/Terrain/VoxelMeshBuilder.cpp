@@ -81,7 +81,7 @@ void VoxelMeshBuilder::Init()
     s_NormalMap.insert({BACK, glm::vec3(0.0f, 0.0f, -1.0f)});
     s_NormalMap.insert({LEFT, glm::vec3(-1.0f, 0.0f, 0.0f)});
 
-    //TOP BOTTOM LEFT
+    //TOP BOTTOM SIDES
     s_FaceTextureMap.insert({STONE, {0, 0, 0, 0, 0, 0}});
     s_FaceTextureMap.insert({DIRT, {1, 0, 1, 0, 1, 0}});
     s_FaceTextureMap.insert({GRASS, {3, 0, 1, 0, 2, 0}});
@@ -90,6 +90,8 @@ void VoxelMeshBuilder::Init()
     s_FaceTextureMap.insert({SNOW, {8, 0, 8, 0, 8, 0}});
     s_FaceTextureMap.insert({DIRT_SNOW, {8, 0, 1, 0, 7, 0}});
     s_FaceTextureMap.insert({LAMP, {9, 0, 9, 0, 9, 0}});
+    s_FaceTextureMap.insert({SAND, {0, 1, 0, 1, 0, 1}});
+    s_FaceTextureMap.insert({CACTUS, {5, 1, 5, 1, 4, 1}});
 }
 
 VoxelMeshBuilder::VoxelMeshBuilder()

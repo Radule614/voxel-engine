@@ -14,8 +14,8 @@ namespace Sandbox
 class SandboxLayer : public GLCore::Layer
 {
 public:
-    SandboxLayer(VoxelEngine::EngineState& state);
-    ~SandboxLayer();
+    explicit SandboxLayer(VoxelEngine::EngineState& state);
+    ~SandboxLayer() override;
 
     virtual void OnAttach() override;
     virtual void OnEvent(GLCore::Event& event) override;
@@ -23,8 +23,6 @@ public:
 
 private:
     VoxelEngine::EngineState& m_State;
-    std::shared_ptr<GLCore::Utils::Shader> m_Shader;
-    VoxelEngine::Texture m_TextureAtlas;
     VoxelEngine::Model* m_Model;
     std::vector<std::pair<entt::entity, float_t> > m_SphereEntities{};
     VoxelEngine::ShapeFactory m_PhysicsFactory;

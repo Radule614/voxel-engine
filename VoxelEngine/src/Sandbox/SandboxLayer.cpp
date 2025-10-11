@@ -16,9 +16,6 @@ namespace Sandbox
 
 SandboxLayer::SandboxLayer(EngineState& state) : m_State(state)
 {
-    m_Shader = std::make_shared<Shader>(
-        *Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl"));
-    m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
     m_Model = AssetManager::Instance().LoadModel("assets/models/sphere/sphere.obj");
 }
 
@@ -79,7 +76,7 @@ void SandboxLayer::OnEvent(Event& event)
 
                 auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
                 const auto entity = registry.create();
-                registry.emplace<MeshComponent>(entity, m_Shader, m_Model->Meshes);
+                registry.emplace<MeshComponent>(entity, m_Model->Meshes);
                 registry.emplace<TransformComponent>(entity, transform);
                 registry.emplace<ColliderComponent>(entity, ColliderComponent(bodyId));
                 m_SphereEntities.emplace_back(entity, 0);

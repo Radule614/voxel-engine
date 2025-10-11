@@ -17,7 +17,9 @@ enum VoxelType
     LEAVES,
     SNOW,
     DIRT_SNOW,
-    LAMP
+    LAMP,
+    SAND,
+    CACTUS
 };
 
 enum VoxelFace

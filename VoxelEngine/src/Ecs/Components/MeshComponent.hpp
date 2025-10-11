@@ -8,8 +8,8 @@ namespace VoxelEngine
 
 struct MeshComponent
 {
-    MeshComponent(const std::shared_ptr<GLCore::Utils::Shader>& shader, const std::vector<Mesh>& meshes)
-        : Shader(shader), Meshes(meshes)
+    explicit MeshComponent(const std::vector<Mesh>& meshes)
+        : Meshes(meshes)
     {
     }
 
