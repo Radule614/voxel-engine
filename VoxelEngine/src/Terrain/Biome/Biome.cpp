@@ -22,10 +22,18 @@ VoxelType Biome::ResolveVoxelType(const glm::i32vec3 globalPosition, const int32
     {
         type = STONE;
 
-        if (globalPosition.y > height - 5)
-            type = DIRT;
-        if (globalPosition.y == height - 1)
-            type = GRASS;
+        const double_t sandMask = m_Perlin.octave2D_01((globalPosition.x + 2000.0) * 0.001f,
+                                                       (globalPosition.z + 3000.0) * 0.001f,
+                                                       8);
+
+        if (globalPosition.y > height - 5 && sandMask >= 0.62) { type = SAND; }
+        else
+        {
+            if (globalPosition.y > height - 5)
+                type = DIRT;
+            if (globalPosition.y == height - 1)
+                type = GRASS;
+        }
     }
     if (globalPosition.y == 0)
         type = STONE;

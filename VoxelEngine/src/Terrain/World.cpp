@@ -308,7 +308,7 @@ void World::GenerateChunk(Position2D position)
 
 std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, const size_t count)
 {
-    const int32_t maxDistance = 12;
+    const int32_t maxDistance = 25;
     std::queue<Position2D> positions = {};
     std::unordered_set<Position2D> existing = {};
 
