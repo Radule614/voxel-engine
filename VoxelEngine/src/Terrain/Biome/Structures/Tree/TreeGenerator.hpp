@@ -13,7 +13,7 @@ class TreeGenerator final : public StructureGenerator
 {
 
 public:
-    void Generate(const GenerationContext& context, std::vector<Structure>& output) const override;
+    void Generate(const Context& context, std::vector<Structure>& output) const override;
 
 };
 

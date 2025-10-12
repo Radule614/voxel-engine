@@ -23,8 +23,10 @@ Structure TreeFactory::CreateTree(const Position3D position)
                 {
                     if (x == 0 && z == 0 && y <= 7)
                         continue;
+
                     if ((x == -3 || x == 3 || z == -3 || z == 3) && (y == 5 || y == 9))
                         continue;
+
                     data.emplace_back(glm::i32vec3(x, y, z), LEAVES);
                 }
             }
@@ -53,8 +55,10 @@ Structure TreeFactory::CreateLargeTree(const Position3D position)
                 {
                     if (x == 0 && z == 0 && y <= 10)
                         continue;
+
                     if ((x == -3 || x == 3 || z == -3 || z == 3) && (y == 8 || y == 13))
                         continue;
+
                     data.emplace_back(glm::i32vec3(x, y, z), LEAVES);
                 }
             }

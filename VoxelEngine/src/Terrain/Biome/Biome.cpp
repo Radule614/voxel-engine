@@ -4,51 +4,69 @@
 
 #include "Biome.hpp"
 #include "../TerrainConfig.hpp"
+#include "Structures/Cactus/CactusGenerator.hpp"
 #include "Structures/Tree/TreeGenerator.hpp"
 
 namespace VoxelEngine
 {
 
-Biome::Biome(const uint32_t seed) : m_Perlin(seed), m_PerlinSeed(seed), m_Generator(std::make_unique<TreeGenerator>())
+Biome::Biome(const uint32_t seed) : m_Perlin(seed),
+                                    m_PerlinSeed(seed)
+{
+    m_Generators[Plains] = std::make_unique<TreeGenerator>();
+    m_Generators[Desert] = std::make_unique<CactusGenerator>();
+}
+
+Biome::GeneratorContext::GeneratorContext(const Voxel (&surfaceLayer)[16][16],
+                                          const Position2D chunkPosition,
+                                          const std::set<BiomeType>& chunkBiomeTypes)
+    : SurfaceLayer(surfaceLayer),
+      ChunkPosition(chunkPosition),
+      ChunkBiomeTypes(chunkBiomeTypes)
 {
 }
 
-VoxelType Biome::ResolveVoxelType(const glm::i32vec3 globalPosition, const int32_t height) const
+std::tuple<BiomeType, VoxelType> Biome::ResolveBiomeFeatures(const glm::i32vec3 position, const int32_t height) const
 {
-    const double_t density = GetDensity(globalPosition, height);
+    BiomeType biomeType = ResolveBiomeType(position.x, position.z);
+    VoxelType voxelType = AIR;
 
-    VoxelType type = AIR;
+    const double_t density = GetDensity(position, height);
     if (density >= 0)
     {
-        type = STONE;
+        voxelType = STONE;
 
-        const double_t sandMask = m_Perlin.octave2D_01((globalPosition.x + 2000.0) * 0.001f,
-                                                       (globalPosition.z + 3000.0) * 0.001f,
-                                                       8);
-
-        if (globalPosition.y > height - 5 && sandMask >= 0.62) { type = SAND; }
+        if (position.y > height - 6 && biomeType == Desert) { voxelType = SAND; }
         else
         {
-            if (globalPosition.y > height - 5)
-                type = DIRT;
-            if (globalPosition.y == height - 1)
-                type = GRASS;
+            if (position.y > height - 5)
+                voxelType = DIRT;
+            if (position.y == height - 1)
+                voxelType = GRASS;
         }
     }
-    if (globalPosition.y == 0)
-        type = STONE;
+    if (position.y == 0)
+        voxelType = STONE;
 
-    return type;
+    return {biomeType, voxelType};
 }
 
-double_t Biome::GetDensity(const glm::i32vec3 globalPosition, const int32_t height) const
+double_t Biome::GetDensity(const glm::i32vec3 position, const int32_t height) const
 {
-    const glm::vec3 vec = glm::vec3(globalPosition) * 0.02f;
+    const glm::vec3 vec = glm::vec3(position) * 0.02f;
 
     double_t density = m_Perlin.octave3D(vec.x, vec.y, vec.z, 4);
-    density += 1 - static_cast<double_t>(globalPosition.y + height / 4) / CHUNK_HEIGHT;
+    density += 1 - static_cast<double_t>(position.y + height / 4) / CHUNK_HEIGHT;
 
     return density;
+}
+
+BiomeType Biome::ResolveBiomeType(const int32_t x, const int32_t z) const
+{
+    const double_t desertMask = m_Perlin.octave2D_01((x + 2000.0) * 0.001f, (z + 3000.0) * 0.001f, 8);
+    const BiomeType biomeType = desertMask >= 0.62 ? Desert : Plains;
+
+    return biomeType;
 }
 
 int32_t Biome::GetHeight(const int32_t x, const int32_t z) const
@@ -64,13 +82,15 @@ int32_t Biome::GetHeight(const int32_t x, const int32_t z) const
     return (int32_t) finalHeight;
 }
 
-void Biome::GenerateStructures(const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
-                               const Position2D chunkPosition,
-                               std::vector<Structure>& output) const
+void Biome::GenerateStructures(const GeneratorContext& ctx, std::vector<Structure>& output) const
 {
-    const StructureGenerator::GenerationContext context(m_Perlin, m_PerlinSeed, surfaceLayer, chunkPosition);
+    const StructureGenerator::Context generatorContext(m_Perlin, m_PerlinSeed, ctx.SurfaceLayer, ctx.ChunkPosition);
 
-    m_Generator->Generate(context, output);
+    for (auto type: ctx.ChunkBiomeTypes)
+    {
+        if (auto generator = m_Generators.find(type); generator != m_Generators.end())
+            generator->second->Generate(generatorContext, output);
+    }
 }
 
 }

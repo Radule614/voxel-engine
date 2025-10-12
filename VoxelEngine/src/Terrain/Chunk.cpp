@@ -71,8 +71,9 @@ void Chunk::Generate()
         }
     }
 
+    const Biome::GeneratorContext context(surfaceLayer, m_Position, m_BiomeTypes);
     std::vector<Structure> output{};
-    m_Biome.GenerateStructures(surfaceLayer, m_Position, output);
+    m_Biome.GenerateStructures(context, output);
     AddStructures(output);
 }
 
@@ -333,7 +334,7 @@ void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, V
     m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
 }
 
-void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h) const
+void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h)
 {
     const int32_t y = &v - &m_VoxelGrid[x][z][0];
     v.SetPosition(Position3D(x, y, z));
@@ -343,9 +344,10 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h) cons
 
     const auto globalPosition = World::WorldToGlobalSpace(m_Position, v.GetPosition());
 
-    const VoxelType type = m_Biome.ResolveVoxelType(globalPosition, h);
+    const auto [biomeType, voxelType] = m_Biome.ResolveBiomeFeatures(globalPosition, h);
 
-    v.SetVoxelType(type);
+    v.SetVoxelType(voxelType);
+    m_BiomeTypes.insert(biomeType);
 }
 
 VoxelGrid& Chunk::GetVoxelGrid() { return m_VoxelGrid; }

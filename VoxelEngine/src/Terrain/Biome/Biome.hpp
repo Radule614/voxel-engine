@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include <set>
+
 #include "PerlinNoise.hpp"
 #include "../Voxel.hpp"
 #include "Structures/StructureGenerator.hpp"
+#include "BiomeType.hpp"
 
 namespace VoxelEngine
 {
@@ -18,19 +21,30 @@ public:
     explicit Biome(uint32_t seed);
     ~Biome() = default;
 
-    VoxelType ResolveVoxelType(glm::i32vec3 globalPosition, int32_t height) const;
+    struct GeneratorContext
+    {
+        const Voxel (&SurfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH];
+        const Position2D ChunkPosition;
+        const std::set<BiomeType>& ChunkBiomeTypes;
+
+        GeneratorContext(const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
+                         Position2D chunkPosition,
+                         const std::set<BiomeType>& chunkBiomeTypes);
+    };
+
+    std::tuple<BiomeType, VoxelType> ResolveBiomeFeatures(glm::i32vec3 position, int32_t height) const;
     int32_t GetHeight(int32_t x, int32_t z) const;
-    void GenerateStructures(const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
-                            Position2D chunkPosition,
-                            std::vector<Structure>& output) const;
+    void GenerateStructures(const GeneratorContext& ctx, std::vector<Structure>& output) const;
 
 private:
-    double_t GetDensity(glm::i32vec3 globalPosition, int32_t height) const;
+    double_t GetDensity(glm::i32vec3 position, int32_t height) const;
+    BiomeType ResolveBiomeType(int32_t x, int32_t z) const;
 
 private:
     const siv::PerlinNoise m_Perlin;
     const int32_t m_PerlinSeed;
-    std::unique_ptr<StructureGenerator> m_Generator;
+
+    std::map<BiomeType, std::unique_ptr<StructureGenerator>> m_Generators;
 };
 
 }

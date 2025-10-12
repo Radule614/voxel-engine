@@ -11,7 +11,7 @@ namespace VoxelEngine
 
 class World;
 
-void TreeGenerator::Generate(const GenerationContext& context, std::vector<Structure>& output) const
+void TreeGenerator::Generate(const Context& context, std::vector<Structure>& output) const
 {
     constexpr size_t offset = 0;
     constexpr size_t regionSize = (CHUNK_WIDTH - 2 * offset) / 2;

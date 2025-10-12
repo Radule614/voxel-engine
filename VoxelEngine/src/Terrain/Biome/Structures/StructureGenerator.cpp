@@ -9,7 +9,7 @@ namespace VoxelEngine
 
 StructureGenerator::StructureGenerator() = default;
 
-StructureGenerator::GenerationContext::GenerationContext(
+StructureGenerator::Context::Context(
     const siv::PerlinNoise& perlin,
     const int32_t perlinSeed,
     const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],

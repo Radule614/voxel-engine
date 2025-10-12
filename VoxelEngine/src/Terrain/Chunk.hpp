@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <mutex>
 #include <queue>
+#include <set>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerlinNoise.hpp"
@@ -53,7 +54,7 @@ private:
     void DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& v, size_t x, size_t z);
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f);
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2);
-    void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h) const;
+    void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h);
     void AddStructures(const std::vector<Structure>& structures);
 
     void SetRadiance(size_t x, size_t z, size_t y, int32_t radiance);
@@ -70,6 +71,8 @@ private:
 
     RadianceArray m_RadianceGrid;
     std::queue<glm::ivec3> m_RadianceUpdateQueue;
+
+    std::set<BiomeType> m_BiomeTypes;
 };
 
 }

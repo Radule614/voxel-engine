@@ -7,7 +7,7 @@
 namespace VoxelEngine
 {
 
-Structure CactusFactory::CreateCactus(Position3D position)
+Structure CactusFactory::CreateCactus(const Position3D position)
 {
     static std::vector<std::pair<glm::i32vec3, VoxelType> > data{};
 

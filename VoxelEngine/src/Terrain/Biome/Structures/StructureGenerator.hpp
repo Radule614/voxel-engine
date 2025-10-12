@@ -19,20 +19,20 @@ public:
     StructureGenerator();
     virtual ~StructureGenerator() = default;
 
-    struct GenerationContext
+    struct Context
     {
         const siv::PerlinNoise& Perlin;
         const int32_t PerlinSeed;
         const Voxel (&SurfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH];
         const Position2D ChunkPosition;
 
-        GenerationContext(const siv::PerlinNoise& perlin,
+        Context(const siv::PerlinNoise& perlin,
                           int32_t perlinSeed,
                           const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
                           Position2D chunkPosition);
     };
 
-    virtual void Generate(const GenerationContext& context, std::vector<Structure>& output) const = 0;
+    virtual void Generate(const Context& context, std::vector<Structure>& output) const = 0;
 };
 
 }
