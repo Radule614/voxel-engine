@@ -26,7 +26,7 @@ Renderer::Renderer(Window& window) : m_Window(window)
     m_MeshShader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
 
     const DirectionalLight light = {
-        glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)),
+        glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f)),
         glm::vec3(0.25f),
         glm::vec3(1.0f),
         glm::vec3(0.1f)
