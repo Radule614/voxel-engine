@@ -44,7 +44,7 @@ private:
     const siv::PerlinNoise m_Perlin;
     const int32_t m_PerlinSeed;
 
-    std::map<BiomeType, std::unique_ptr<StructureGenerator>> m_Generators;
+    std::map<BiomeType, std::vector<std::unique_ptr<StructureGenerator>>> m_Generators;
 };
 
 }

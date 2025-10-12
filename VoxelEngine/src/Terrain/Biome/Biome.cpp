@@ -6,6 +6,7 @@
 #include "../TerrainConfig.hpp"
 #include "Structures/Cactus/CactusGenerator.hpp"
 #include "Structures/DarkTree/DarkTreeGenerator.hpp"
+#include "Structures/Shrine/ShrineGenerator.hpp"
 #include "Structures/Tree/TreeGenerator.hpp"
 
 namespace VoxelEngine
@@ -14,9 +15,17 @@ namespace VoxelEngine
 Biome::Biome(const uint32_t seed) : m_Perlin(seed),
                                     m_PerlinSeed(seed)
 {
-    m_Generators[PLAINS] = std::make_unique<TreeGenerator>();
-    m_Generators[DESERT] = std::make_unique<CactusGenerator>();
-    m_Generators[SNOWY_PLAINS] = std::make_unique<DarkTreeGenerator>();
+    m_Generators[PLAINS] = std::vector<std::unique_ptr<StructureGenerator> >{};
+    m_Generators[PLAINS].emplace_back(std::make_unique<TreeGenerator>());
+    m_Generators[PLAINS].emplace_back(std::make_unique<ShrineGenerator>());
+
+    m_Generators[DESERT] = std::vector<std::unique_ptr<StructureGenerator> >{};
+    m_Generators[DESERT].emplace_back(std::make_unique<CactusGenerator>());
+    m_Generators[DESERT].emplace_back(std::make_unique<ShrineGenerator>());
+
+    m_Generators[SNOWY_PLAINS] = std::vector<std::unique_ptr<StructureGenerator> >{};
+    m_Generators[SNOWY_PLAINS].emplace_back(std::make_unique<DarkTreeGenerator>());
+    m_Generators[SNOWY_PLAINS].emplace_back(std::make_unique<ShrineGenerator>());
 }
 
 Biome::GeneratorContext::GeneratorContext(const Voxel (&surfaceLayer)[16][16],
@@ -105,8 +114,11 @@ void Biome::GenerateStructures(const GeneratorContext& ctx, std::vector<Structur
 
     for (auto type: ctx.ChunkBiomeTypes)
     {
-        if (auto generator = m_Generators.find(type); generator != m_Generators.end())
-            generator->second->Generate(generatorContext, output);
+        if (auto generatorList = m_Generators.find(type); generatorList != m_Generators.end())
+        {
+            for (const auto& generator: generatorList->second)
+                generator->Generate(generatorContext, output);
+        }
     }
 }
 

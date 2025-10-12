@@ -22,7 +22,8 @@ enum VoxelType
     SAND,
     CACTUS,
     DARK_LOG,
-    DARK_LEAVES
+    DARK_LEAVES,
+    SOUL
 };
 
 enum VoxelFace

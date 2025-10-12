@@ -95,6 +95,7 @@ void VoxelMeshBuilder::Init()
     s_FaceTextureMap.insert({CACTUS, {3, 1, 3, 1, 2, 1}});
     s_FaceTextureMap.insert({DARK_LOG, {5, 1, 5, 1, 4, 1}});
     s_FaceTextureMap.insert({DARK_LEAVES, {6, 1, 6, 1, 6, 1}});
+    s_FaceTextureMap.insert({SOUL, {0, 4, 0, 4, 0, 4}});
 }
 
 VoxelMeshBuilder::VoxelMeshBuilder()
