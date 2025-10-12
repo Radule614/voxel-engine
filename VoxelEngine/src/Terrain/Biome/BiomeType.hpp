@@ -9,9 +9,10 @@ namespace VoxelEngine
 
 enum BiomeType
 {
-    Unknown,
-    Plains,
-    Desert
+    UNKNOWN,
+    PLAINS,
+    DESERT,
+    SNOWY_PLAINS
 };
 
 }

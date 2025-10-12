@@ -61,6 +61,11 @@ void Voxel::SetPosition(Position3D pos) { m_Position = pos; }
 
 Position3D Voxel::GetPosition() const { return m_Position; }
 
-bool Voxel::IsTransparent() const { return m_VoxelType == AIR || m_VoxelType == LEAVES; }
+bool Voxel::IsTransparent() const
+{
+    return m_VoxelType == AIR || m_VoxelType == LEAVES || m_VoxelType == DARK_LEAVES || m_VoxelType == ICE;
+}
+
+bool Voxel::IsAir() const { return m_VoxelType == AIR; }
 
 };

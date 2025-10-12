@@ -145,9 +145,9 @@ void World::SyncRadianceWithNeighbours(Chunk& chunk, std::map<Position2D, std::s
 
 void World::SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, const VoxelFace face)
 {
-    if (!v1.IsTransparent() && v2.IsTransparent())
+    if (!v1.IsAir() && v2.IsAir())
         v1.SetFaceVisible(face, true);
-    else if (v1.IsTransparent() && !v2.IsTransparent())
+    else if (v1.IsAir() && !v2.IsAir())
         v2.SetFaceVisible(Voxel::GetOppositeFace(face), true);
 }
 

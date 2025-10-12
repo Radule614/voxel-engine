@@ -25,6 +25,7 @@ public:
     void SetPosition(Position3D pos);
     Position3D GetPosition() const;
     bool IsTransparent() const;
+    bool IsAir() const;
 
 private:
     Position3D m_Position;

@@ -15,6 +15,7 @@ Structure TreeFactory::CreateTree(const Position3D position)
     {
         for (size_t y = 1; y <= 7; ++y)
             data.emplace_back(glm::i32vec3(0, y, 0), LOG);
+
         for (int32_t x = -3; x <= 3; ++x)
         {
             for (int32_t z = -3; z <= 3; ++z)
@@ -47,6 +48,7 @@ Structure TreeFactory::CreateLargeTree(const Position3D position)
     {
         for (size_t y = 1; y <= 10; ++y)
             data.emplace_back(glm::i32vec3(0, y, 0), LOG);
+
         for (int32_t x = -3; x <= 3; ++x)
         {
             for (int32_t z = -3; z <= 3; ++z)

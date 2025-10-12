@@ -5,6 +5,7 @@
 #include "Biome.hpp"
 #include "../TerrainConfig.hpp"
 #include "Structures/Cactus/CactusGenerator.hpp"
+#include "Structures/DarkTree/DarkTreeGenerator.hpp"
 #include "Structures/Tree/TreeGenerator.hpp"
 
 namespace VoxelEngine
@@ -13,8 +14,9 @@ namespace VoxelEngine
 Biome::Biome(const uint32_t seed) : m_Perlin(seed),
                                     m_PerlinSeed(seed)
 {
-    m_Generators[Plains] = std::make_unique<TreeGenerator>();
-    m_Generators[Desert] = std::make_unique<CactusGenerator>();
+    m_Generators[PLAINS] = std::make_unique<TreeGenerator>();
+    m_Generators[DESERT] = std::make_unique<CactusGenerator>();
+    m_Generators[SNOWY_PLAINS] = std::make_unique<DarkTreeGenerator>();
 }
 
 Biome::GeneratorContext::GeneratorContext(const Voxel (&surfaceLayer)[16][16],
@@ -36,15 +38,25 @@ std::tuple<BiomeType, VoxelType> Biome::ResolveBiomeFeatures(const glm::i32vec3 
     {
         voxelType = STONE;
 
-        if (position.y > height - 6 && biomeType == Desert) { voxelType = SAND; }
-        else
+        if (biomeType == DESERT && position.y > height - 6)
+            voxelType = SAND;
+
+        if (biomeType == PLAINS || biomeType == SNOWY_PLAINS)
         {
             if (position.y > height - 5)
                 voxelType = DIRT;
+
             if (position.y == height - 1)
-                voxelType = GRASS;
+            {
+                if (biomeType == PLAINS)
+                    voxelType = DIRT_GRASS;
+
+                if (biomeType == SNOWY_PLAINS)
+                    voxelType = DIRT_SNOW;
+            }
         }
     }
+
     if (position.y == 0)
         voxelType = STONE;
 
@@ -63,10 +75,15 @@ double_t Biome::GetDensity(const glm::i32vec3 position, const int32_t height) co
 
 BiomeType Biome::ResolveBiomeType(const int32_t x, const int32_t z) const
 {
-    const double_t desertMask = m_Perlin.octave2D_01((x + 2000.0) * 0.001f, (z + 3000.0) * 0.001f, 8);
-    const BiomeType biomeType = desertMask >= 0.62 ? Desert : Plains;
+    const double_t temperatureBias = m_Perlin.octave2D_01((x + 2000.0) * 0.001f, (z + 3000.0) * 0.001f, 8);
 
-    return biomeType;
+    if (temperatureBias < 0.3)
+        return SNOWY_PLAINS;
+
+    if (temperatureBias > 0.7)
+        return DESERT;
+
+    return PLAINS;
 }
 
 int32_t Biome::GetHeight(const int32_t x, const int32_t z) const

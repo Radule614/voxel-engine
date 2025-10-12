@@ -1,9 +1,9 @@
 //
-// Created by RadU on 9/21/2025.
+// Created by RadU on 10/12/2025.
 //
 
-#include "TreeGenerator.hpp"
-#include "TreeFactory.hpp"
+#include "DarkTreeGenerator.hpp"
+#include "DarkTreeFactory.hpp"
 #include "../../../World.hpp"
 
 namespace VoxelEngine
@@ -11,7 +11,7 @@ namespace VoxelEngine
 
 class World;
 
-void TreeGenerator::Generate(const Context& context, std::vector<Structure>& output) const
+void DarkTreeGenerator::Generate(const Context& context, std::vector<Structure>& output) const
 {
     constexpr size_t offset = 0;
     constexpr size_t regionSize = (CHUNK_WIDTH - 2 * offset) / 2;
@@ -32,7 +32,7 @@ void TreeGenerator::Generate(const Context& context, std::vector<Structure>& out
 
             const Voxel& surface = context.SurfaceLayer[rx][rz];
 
-            if (surface.GetVoxelType() != DIRT_GRASS)
+            if (surface.GetVoxelType() != DIRT_SNOW)
                 continue;
 
             possibleLocations.emplace_back(surface, locationBias);
@@ -46,10 +46,10 @@ void TreeGenerator::Generate(const Context& context, std::vector<Structure>& out
     {
         const float_t chance = locationBias - output.size() * 0.12f;
 
-        if (chance > 0.8f)
-            output.emplace_back(TreeFactory::CreateLargeTree(voxel.GetPosition()));
+        if (chance > 0.73f)
+            output.emplace_back(DarkTreeFactory::CreateLargeTree(voxel.GetPosition()));
         else if (chance > 0.6f)
-            output.emplace_back(TreeFactory::CreateTree(voxel.GetPosition()));
+            output.emplace_back(DarkTreeFactory::CreateTree(voxel.GetPosition()));
     }
 }
 

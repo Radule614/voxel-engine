@@ -84,14 +84,17 @@ void VoxelMeshBuilder::Init()
     //TOP BOTTOM SIDES
     s_FaceTextureMap.insert({STONE, {0, 0, 0, 0, 0, 0}});
     s_FaceTextureMap.insert({DIRT, {1, 0, 1, 0, 1, 0}});
-    s_FaceTextureMap.insert({GRASS, {3, 0, 1, 0, 2, 0}});
+    s_FaceTextureMap.insert({DIRT_GRASS, {3, 0, 1, 0, 2, 0}});
     s_FaceTextureMap.insert({LOG, {5, 0, 5, 0, 4, 0}});
     s_FaceTextureMap.insert({LEAVES, {6, 0, 6, 0, 6, 0}});
     s_FaceTextureMap.insert({SNOW, {8, 0, 8, 0, 8, 0}});
     s_FaceTextureMap.insert({DIRT_SNOW, {8, 0, 1, 0, 7, 0}});
-    s_FaceTextureMap.insert({LAMP, {9, 0, 9, 0, 9, 0}});
+    s_FaceTextureMap.insert({ICE, {9, 0, 9, 0, 9, 0}});
+    s_FaceTextureMap.insert({LAMP, {10, 0, 10, 0, 10, 0}});
     s_FaceTextureMap.insert({SAND, {0, 1, 0, 1, 0, 1}});
-    s_FaceTextureMap.insert({CACTUS, {5, 1, 5, 1, 4, 1}});
+    s_FaceTextureMap.insert({CACTUS, {3, 1, 3, 1, 2, 1}});
+    s_FaceTextureMap.insert({DARK_LOG, {5, 1, 5, 1, 4, 1}});
+    s_FaceTextureMap.insert({DARK_LEAVES, {6, 1, 6, 1, 6, 1}});
 }
 
 VoxelMeshBuilder::VoxelMeshBuilder()

@@ -13,13 +13,12 @@ class World;
 
 void CactusGenerator::Generate(const Context& context, std::vector<Structure>& output) const
 {
-    constexpr size_t offset = 0;
-    constexpr size_t regionSize = (CHUNK_WIDTH - 2 * offset) / 4;
+    constexpr size_t regionSize = CHUNK_WIDTH / 4;
 
     std::vector<std::pair<Voxel, double_t> > possibleLocations{};
-    for (size_t x = offset; x < CHUNK_WIDTH - offset; x += regionSize)
+    for (size_t x = 0; x < CHUNK_WIDTH; x += regionSize)
     {
-        for (size_t z = offset; z < CHUNK_WIDTH - offset; z += regionSize)
+        for (size_t z = 0; z < CHUNK_WIDTH; z += regionSize)
         {
             const auto globalPosition = World::WorldToGlobalSpace(context.ChunkPosition, Position3D(x, 0, z));
 
@@ -30,12 +29,12 @@ void CactusGenerator::Generate(const Context& context, std::vector<Structure>& o
             const int32_t rx = x + (int32_t) (locationBias * 7773) % regionSize;
             const int32_t rz = z + (int32_t) (locationBias * 4351) % regionSize;
 
-            const Voxel& voxel = context.SurfaceLayer[rx][rz];
+            const Voxel& surface = context.SurfaceLayer[rx][rz];
 
-            if (voxel.GetVoxelType() != SAND)
+            if (surface.GetVoxelType() != SAND)
                 continue;
 
-            possibleLocations.emplace_back(voxel, locationBias);
+            possibleLocations.emplace_back(surface, locationBias);
         }
     }
 

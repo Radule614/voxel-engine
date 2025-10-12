@@ -11,15 +11,18 @@ enum VoxelType
 {
     AIR = 0,
     DIRT,
-    GRASS,
+    DIRT_GRASS,
     STONE,
     LOG,
     LEAVES,
     SNOW,
     DIRT_SNOW,
+    ICE,
     LAMP,
     SAND,
-    CACTUS
+    CACTUS,
+    DARK_LOG,
+    DARK_LEAVES
 };
 
 enum VoxelFace
