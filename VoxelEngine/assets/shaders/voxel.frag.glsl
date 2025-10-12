@@ -27,6 +27,7 @@ float NormalizeRadiance(int radiance, float ambient, float maxRadiance) {
 float CalculateLighting() {
     float normalizedRadiance = NormalizeRadiance(max(0, i_Fragment.Radiance), 0, 0.8);
     float radianceFromHeight = float(i_Fragment.FragmentHeight - 48) / float(u_RadianceGridHeight);
+
     return clamp(normalizedRadiance + radianceFromHeight, 0.25, 1.0);
 }
 
