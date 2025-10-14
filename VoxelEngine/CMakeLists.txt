@@ -12,12 +12,11 @@ if(MSVC)
 endif()
 
 # Set output directories
-set(TARGET_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${OUTPUT_DIR}/${PROJECT_NAME}")
-set(OBJECT_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin-int/${OUTPUT_DIR}/${PROJECT_NAME}")
+set(TARGET_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${OUTPUT_DIR}/lib")
 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIR})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OBJECT_OUTPUT_DIR})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OBJECT_OUTPUT_DIR})
 
 # Collect source files
 file(GLOB_RECURSE VOXELENGINE_SOURCES
@@ -28,16 +27,16 @@ file(GLOB_RECURSE VOXELENGINE_SOURCES
 )
 
 # Define executable
-add_executable(VoxelEngine ${VOXELENGINE_SOURCES})
+add_library(VoxelEngine STATIC ${VOXELENGINE_SOURCES})
 
 add_custom_command(TARGET VoxelEngine POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:VoxelEngine>/assets
+        $<TARGET_FILE_DIR:VoxelEngine>/../assets
 )
 
 # Include directories
-target_include_directories(VoxelEngine PRIVATE
+target_include_directories(VoxelEngine PUBLIC
     ../OpenGLCore/vendor/spdlog/include
     ../OpenGLCore/src
     ../OpenGLCore/vendor
@@ -51,22 +50,8 @@ target_include_directories(VoxelEngine PRIVATE
 )
 
 # Link with other libraries
-target_link_libraries(VoxelEngine PRIVATE
+target_link_libraries(VoxelEngine PUBLIC
     OpenGLCore
     JoltPhysics
     Assimp
 )
-
-# Platform-specific definitions
-if(WIN32)
-    target_compile_definitions(VoxelEngine PRIVATE GLCORE_PLATFORM_WINDOWS)
-endif()
-
-# Configuration-specific settings
-target_compile_definitions(VoxelEngine PRIVATE
-    $<$<CONFIG:Debug>:GLCORE_DEBUG>
-    $<$<CONFIG:Release>:GLCORE_RELEASE>
-)
-
-# Optional: set debug symbols and optimization manually if needed
-# These are usually set by default by CMake presets

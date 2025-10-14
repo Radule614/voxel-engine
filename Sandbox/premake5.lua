@@ -1,16 +1,11 @@
-project "VoxelEngine"
-	kind "StaticLib"
+project "Sandbox"
+	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++20"
 	staticruntime "on"
 
-	targetdir ("../bin/" .. outputdir .. "/lib")
+	targetdir ("../bin/" .. outputdir)
 	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
-
-	postbuildcommands {
-            -- Windows:
-            '{COPY} "%{prj.location}/assets" "%{cfg.targetdir}/../assets"'
-        }
 
 	files
 	{
@@ -31,30 +26,17 @@ project "VoxelEngine"
 		"%{IncludeDir.JoltPhysics}",
 		"%{IncludeDir.Assimp}",
 		"%{IncludeDir.PerlinNoise}",
-		"%{IncludeDir.Entt}"
+		"%{IncludeDir.Entt}",
+        "../VoxelEngine/src"
 	}
 
 	links
 	{
 		"OpenGLCore",
 		"JoltPhysics",
-		"Assimp"
+		"Assimp",
+		"VoxelEngine"
 	}
 
 	filter "system:windows"
 		systemversion "latest"
-
-		defines
-		{
-			"GLCORE_PLATFORM_WINDOWS"
-		}
-
-	filter "configurations:Debug"
-		defines "GLCORE_DEBUG"
-		runtime "Debug"
-		symbols "on"
-
-	filter "configurations:Release"
-		defines "GLCORE_RELEASE"
-		runtime "Release"
-        optimize "on"

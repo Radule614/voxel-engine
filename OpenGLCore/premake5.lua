@@ -4,7 +4,7 @@ project "OpenGLCore"
 	cppdialect "C++20"
 	staticruntime "on"
 
-	targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
+	targetdir ("../bin/" .. outputdir .. "/lib")
 	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
 
 	pchheader "glpch.hpp"

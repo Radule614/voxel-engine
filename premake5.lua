@@ -1,6 +1,6 @@
 workspace "VoxelEngine"
     architecture "x64"
-    startproject "VoxelEngine"
+    startproject "Sandbox"
 
     configurations
     {
@@ -39,3 +39,4 @@ group ""
 
 include "OpenGLCore"
 include "VoxelEngine"
+include "Sandbox"

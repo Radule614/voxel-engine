@@ -3,7 +3,6 @@ project(Glad C)
 
 # Output directories for binary and intermediate files
 set(OUTPUT_DIR ${CMAKE_BINARY_DIR}/bin)
-set(OUTPUT_DIR_INT ${CMAKE_BINARY_DIR}/bin-int)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${OUTPUT_DIR}/$<CONFIG>/Glad)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${OUTPUT_DIR}/$<CONFIG>/Glad)

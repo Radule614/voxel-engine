@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GLCore/Core/Application.hpp"
+#include "GLCoreUtils.hpp"
 
 namespace VoxelEngine
 {

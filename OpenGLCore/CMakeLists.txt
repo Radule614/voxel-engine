@@ -1,3 +1,4 @@
+# Define the project
 project(OpenGLCore)
 
 # C++ settings
@@ -5,14 +6,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Static runtime (MSVC only)
-if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
-
 # Output directories
-set(TARGET_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${OUTPUT_DIR}/${PROJECT_NAME}")
-set(OBJECT_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin-int/${OUTPUT_DIR}/${PROJECT_NAME}")
+set(TARGET_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${OUTPUT_DIR}/lib")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIR})
