@@ -7,6 +7,8 @@ project "VoxelEngine"
 	targetdir ("../bin/" .. outputdir .. "/lib")
 	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
 
+	debugdir "%{cfg.targetdir}"
+
 	postbuildcommands {
             -- Windows:
             '{COPY} "%{prj.location}/assets" "%{cfg.targetdir}/../assets"'

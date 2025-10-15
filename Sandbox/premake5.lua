@@ -7,6 +7,8 @@ project "Sandbox"
 	targetdir ("../bin/" .. outputdir)
 	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
 
+	debugdir "%{cfg.targetdir}"
+
 	files
 	{
 		"src/**.hpp",
@@ -38,5 +40,10 @@ project "Sandbox"
 		"VoxelEngine"
 	}
 
-	filter "system:windows"
-		systemversion "latest"
+    filter "system:windows"
+        systemversion "latest"
+
+        filter "configurations:Debug"
+            runtime "Debug"    -- -> /MTd (static debug)
+        filter "configurations:Release"
+            runtime "Release"  -- -> /MT  (static release)
