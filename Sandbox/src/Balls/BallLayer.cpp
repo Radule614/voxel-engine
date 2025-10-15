@@ -1,10 +1,10 @@
-#include "SandboxLayer.hpp"
-#include "../Physics/PhysicsEngine.hpp"
-#include "../Assets/AssetManager.hpp"
-#include "../Ecs/Components/CameraComponent.hpp"
-#include "../Ecs/Components/CharacterComponent.hpp"
-#include "../Physics/Utils/BodyBuilder.hpp"
-#include "../Physics/Character/CharacterBuilder.hpp"
+#include "BallLayer.hpp"
+#include "Physics/PhysicsEngine.hpp"
+#include "Assets/AssetManager.hpp"
+#include "Ecs/Components/CameraComponent.hpp"
+#include "Ecs/Components/CharacterComponent.hpp"
+#include "Physics/Utils/BodyBuilder.hpp"
+#include "Physics/Character/CharacterBuilder.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -14,14 +14,14 @@ using namespace VoxelEngine;
 namespace Sandbox
 {
 
-SandboxLayer::SandboxLayer(EngineState& state) : m_State(state)
+BallLayer::BallLayer(EngineState& state) : m_State(state)
 {
     m_Model = AssetManager::Instance().LoadModel("assets/models/sphere/sphere.obj");
 }
 
-SandboxLayer::~SandboxLayer() = default;
+BallLayer::~BallLayer() = default;
 
-void SandboxLayer::OnAttach()
+void BallLayer::OnAttach()
 {
     EnableGLDebugging();
     glEnable(GL_CULL_FACE);
@@ -50,7 +50,7 @@ void SandboxLayer::OnAttach()
     }
 }
 
-void SandboxLayer::OnEvent(Event& event)
+void BallLayer::OnEvent(Event& event)
 {
     EventDispatcher dispatcher(event);
     dispatcher.Dispatch<KeyPressedEvent>(
@@ -85,7 +85,7 @@ void SandboxLayer::OnEvent(Event& event)
         });
 }
 
-void SandboxLayer::OnUpdate(const Timestep ts)
+void BallLayer::OnUpdate(const Timestep ts)
 {
     for (auto it = m_SphereEntities.begin(); it != m_SphereEntities.end();)
     {

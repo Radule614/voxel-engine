@@ -16,15 +16,16 @@ class VoxelEngineApp : public Application
 {
 public:
     VoxelEngineApp();
-
     ~VoxelEngineApp() override;
 
-private:
-    void Setup();
+    void Run() override;
+
+protected:
+    virtual void Setup() = 0;
     void Init();
     static void Shutdown();
 
-private:
+protected:
     EngineState m_State;
 };
 

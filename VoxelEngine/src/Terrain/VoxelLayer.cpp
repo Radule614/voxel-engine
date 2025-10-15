@@ -1,5 +1,4 @@
 #include "VoxelLayer.hpp"
-#include "VoxelMeshBuilder.hpp"
 #include <vector>
 #include "VoxelVertex.hpp"
 #include "World.hpp"
@@ -7,6 +6,7 @@
 #include "../Physics/Utils/BodyBuilder.hpp"
 #include "../Physics/Utils/JoltUtils.hpp"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
+#include "../Physics/Utils/ShapeFactory.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -134,9 +134,9 @@ void VoxelLayer::OnImGuiRender()
     ImGui::End();
 }
 
-void VoxelLayer::Init(World::Settings settings)
+void VoxelLayer::Init(WorldSettings&& settings)
 {
-    m_World = std::make_unique<World>(m_EngineState.CameraController, settings);
+    m_World = std::make_unique<World>(m_EngineState.CameraController, std::move(settings));
 }
 
 void VoxelLayer::ApplyState() const

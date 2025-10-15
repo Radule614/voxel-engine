@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <GLCoreUtils.hpp>
 
+#include "../WorldSettings.hpp"
 #include "Chunk.hpp"
 
 namespace VoxelEngine
@@ -16,11 +17,8 @@ namespace VoxelEngine
 class World
 {
 public:
-    struct Settings
-    {
-    };
-
-    World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController, Settings settings);
+    World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController,
+          WorldSettings&& settings);
     ~World();
 
     static Position2D GlobalToChunkSpace(const glm::i32vec3& pos);
@@ -56,13 +54,11 @@ private:
 
     std::shared_ptr<GLCore::Utils::PerspectiveCameraController> m_CameraController;
 
-    std::unique_ptr<Biome> m_Biome;
-
     std::thread m_GenerationThread;
     bool m_ShouldGenerationRun;
     std::mutex m_Mutex;
 
-    Settings m_Settings;
+    WorldSettings m_Settings;
 };
 
 };

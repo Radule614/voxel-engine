@@ -1,21 +1,19 @@
 #pragma once
 
-#include "GLCore.hpp"
 #include "GLCoreUtils.hpp"
-#include "../EngineState.hpp"
-#include "../Assets/Model.hpp"
-#include "../Ecs/Ecs.hpp"
-#include "../Physics/Utils/ShapeFactory.hpp"
+#include "EngineState.hpp"
+#include "Assets/Model.hpp"
+#include "Ecs/Ecs.hpp"
+#include "Physics/Utils/ShapeFactory.hpp"
 
-//TODO: This should be a different project, and it should be using Voxel Engine as the dependency
 namespace Sandbox
 {
 
-class SandboxLayer : public GLCore::Layer
+class BallLayer : public GLCore::Layer
 {
 public:
-    explicit SandboxLayer(VoxelEngine::EngineState& state);
-    ~SandboxLayer() override;
+    explicit BallLayer(VoxelEngine::EngineState& state);
+    ~BallLayer() override;
 
     virtual void OnAttach() override;
     virtual void OnEvent(GLCore::Event& event) override;

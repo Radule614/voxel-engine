@@ -19,7 +19,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIR})
 
 # Collect source files
-file(GLOB_RECURSE VOXELENGINE_SOURCES
+file(GLOB_RECURSE VOXEL_ENGINE_SOURCES
     "src/*.cpp"
     "src/*.hpp"
     "vendor/PerlinNoise/*.hpp"
@@ -27,7 +27,7 @@ file(GLOB_RECURSE VOXELENGINE_SOURCES
 )
 
 # Define executable
-add_library(VoxelEngine STATIC ${VOXELENGINE_SOURCES})
+add_library(VoxelEngine STATIC ${VOXEL_ENGINE_SOURCES})
 
 add_custom_command(TARGET VoxelEngine POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory

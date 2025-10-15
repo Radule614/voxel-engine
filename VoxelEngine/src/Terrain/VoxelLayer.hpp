@@ -7,7 +7,6 @@
 #include "World.hpp"
 #include "../EngineState.hpp"
 #include "../Physics/PhysicsEngine.hpp"
-#include "../Physics/Utils/ShapeFactory.hpp"
 #include "../Renderer/Renderer.hpp"
 
 namespace VoxelEngine
@@ -26,7 +25,7 @@ public:
     virtual void OnImGuiRender() override;
 
     // Must be called before attaching
-    void Init(World::Settings settings);
+    void Init(WorldSettings&& settings);
 
 private:
     struct UIState

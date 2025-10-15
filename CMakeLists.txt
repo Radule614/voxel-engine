@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(VoxelEngineRoot)
+project(VoxelEngine)
 
 # Set the architecture
 set(CMAKE_SYSTEM_PROCESSOR x86_64)

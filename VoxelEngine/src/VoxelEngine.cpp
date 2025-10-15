@@ -8,7 +8,6 @@
 #include "Physics/PhysicsEngine.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/EcsLayer.hpp"
-#include "Sandbox/SandboxLayer.hpp"
 
 using namespace GLCore;
 
@@ -16,32 +15,17 @@ namespace VoxelEngine
 {
 VoxelEngineApp::VoxelEngineApp() : Application("Voxel Engine")
 {
+    m_State.Application = this;
+
     Init();
-    Setup();
 }
 
 VoxelEngineApp::~VoxelEngineApp() { Shutdown(); }
 
-void VoxelEngineApp::Setup()
+void VoxelEngineApp::Run()
 {
-    m_State.Application = this;
-
-    auto cameraController = std::make_shared<Utils::PerspectiveCameraController>(45.0f, 16.0f / 9.0f, 100.0f);
-    cameraController->SetFreeFly(true);
-    cameraController->GetCamera().SetPosition(glm::vec3(0.0f, CHUNK_HEIGHT, 0.0f));
-    m_State.CameraController = std::move(cameraController);
-
-    const World::Settings settings{};
-
-    auto* voxelLayer = new VoxelLayer(m_State);
-    voxelLayer->Init(settings);
-
-    PushLayer(voxelLayer);
-    PushLayer(new PhysicsLayer(m_State));
-    PushLayer(new EcsLayer(m_State));
-    PushOverlay(new UserInterface(m_State));
-
-    PushLayer(new Sandbox::SandboxLayer(m_State));
+    Setup();
+    Application::Run();
 }
 
 void VoxelEngineApp::Init()
@@ -50,6 +34,10 @@ void VoxelEngineApp::Init()
     PhysicsEngine::Init();
     EntityComponentSystem::Init();
     Renderer::Init(GetWindow());
+
+    PushLayer(new PhysicsLayer(m_State));
+    PushLayer(new EcsLayer(m_State));
+    PushOverlay(new UserInterface(m_State));
 }
 
 void VoxelEngineApp::Shutdown()

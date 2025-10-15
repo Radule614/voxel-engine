@@ -42,7 +42,7 @@ void ShrineGenerator::Generate(const Context& context, std::vector<Structure>& o
     {
         auto& [voxel, bias] = possibleLocations[0];
 
-        if (bias > 0.9)
+        if (bias > 0.75)
             output.emplace_back(ShrineFactory::CreateShrine(voxel.GetPosition()));
     }
 }

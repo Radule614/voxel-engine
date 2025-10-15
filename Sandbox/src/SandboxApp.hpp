@@ -12,6 +12,8 @@ namespace Sandbox
 class SandboxApp final : public VoxelEngine::VoxelEngineApp
 {
 
+protected:
+    void Setup() override;
 };
 
 }
