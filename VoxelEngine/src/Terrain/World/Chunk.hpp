@@ -12,10 +12,8 @@
 #include "../Voxel/Voxel.hpp"
 #include "../Voxel/VoxelMeshBuilder.hpp"
 #include "../Utils/Position2D.hpp"
-#include "../Utils/Position3D.hpp"
 #include "../Biome/Structures/Structure.hpp"
 #include "../TerrainConfig.hpp"
-#include "../Voxel/VoxelVertex.hpp"
 #include "../Biome/Biome.hpp"
 
 namespace VoxelEngine

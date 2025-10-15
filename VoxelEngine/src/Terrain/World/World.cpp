@@ -308,12 +308,11 @@ void World::GenerateChunk(Position2D position)
 
 std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, const size_t count)
 {
-    const int32_t maxDistance = 25;
     std::queue<Position2D> positions = {};
     std::unordered_set<Position2D> existing = {};
 
     // TODO: refactor this
-    for (int32_t r = 0; r < maxDistance; ++r)
+    for (int32_t r = 0; r < TerrainConfig::MaxChunkDistance; ++r)
     {
         for (int32_t x = 0; x <= r; ++x)
         {
@@ -329,7 +328,7 @@ std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, co
             };
             for (auto& location: locations)
             {
-                if (location.GetLength() > maxDistance)
+                if (location.GetLength() > TerrainConfig::MaxChunkDistance)
                     continue;
                 Position2D p = location + center;
                 if (!IsPositionValid(existing, p))
