@@ -1,7 +1,9 @@
 #include "Renderer.hpp"
-#include "../Utils/Utils.hpp"
+
 #include "../Assets/AssetManager.hpp"
 #include "../Terrain/TerrainConfig.hpp"
+#include "../Ecs/Ecs.hpp"
+#include "../Ecs/Components/TransformComponent.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;

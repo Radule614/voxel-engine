@@ -4,7 +4,7 @@
 
 #include "TreeGenerator.hpp"
 #include "TreeFactory.hpp"
-#include "../../../World.hpp"
+#include "../../../World/World.hpp"
 
 namespace VoxelEngine
 {

@@ -4,7 +4,7 @@
 
 #include "ShrineGenerator.hpp"
 #include "ShrineFactory.hpp"
-#include "../../../World.hpp"
+#include "../../../World/World.hpp"
 
 namespace VoxelEngine
 {

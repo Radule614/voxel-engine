@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "../PhysicsEngineLayers.hpp"
+#include "Jolt/Jolt.h"
 #include "Jolt/Physics/PhysicsSystem.h"
 #include "Jolt/Physics/Character/CharacterVirtual.h"
 
@@ -16,7 +16,7 @@ class PhysicsEngine;
 class PhysicsCharacterManager
 {
 public:
-    PhysicsCharacterManager(const PhysicsEngine& physicsEngine);
+    explicit PhysicsCharacterManager(const PhysicsEngine& physicsEngine);
     ~PhysicsCharacterManager();
 
     void UpdateCharacterVirtual(JPH::CharacterVirtual& character, float_t deltaTime, float_t gravityStrength = 1.0f) const;

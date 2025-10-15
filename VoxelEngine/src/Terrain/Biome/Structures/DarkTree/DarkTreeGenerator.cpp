@@ -4,7 +4,7 @@
 
 #include "DarkTreeGenerator.hpp"
 #include "DarkTreeFactory.hpp"
-#include "../../../World.hpp"
+#include "../../../World/World.hpp"
 
 namespace VoxelEngine
 {

@@ -4,6 +4,7 @@
 
 #include "PhysicsCharacterManager.hpp"
 
+#include "../PhysicsEngineLayers.hpp"
 #include "../PhysicsEngine.hpp"
 
 using namespace JPH;
@@ -60,7 +61,9 @@ PhysicsCharacterManager::PhysicsCharacterManager(const PhysicsEngine& physicsEng
 
 PhysicsCharacterManager::~PhysicsCharacterManager() = default;
 
-void PhysicsCharacterManager::UpdateCharacterVirtual(CharacterVirtual& character, const float_t deltaTime, const float_t gravityStrength) const
+void PhysicsCharacterManager::UpdateCharacterVirtual(CharacterVirtual& character,
+                                                     const float_t deltaTime,
+                                                     const float_t gravityStrength) const
 {
     character.Update(deltaTime,
                      m_PhysicsEngine.GetSystem().GetGravity() * gravityStrength,

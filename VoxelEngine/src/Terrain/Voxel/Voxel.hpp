@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 #include "VoxelConstants.hpp"
-#include "Position3D.hpp"
+#include "../Utils/Position3D.hpp"
 
 namespace VoxelEngine
 {

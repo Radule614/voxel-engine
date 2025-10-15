@@ -5,6 +5,7 @@
 #include "CharacterBuilder.hpp"
 
 #include "Jolt/Physics/Character/CharacterVirtual.h"
+#include "../PhysicsEngineLayers.hpp"
 #include "../Utils/JoltUtils.hpp"
 #include "../Utils/ShapeFactory.hpp"
 

@@ -2,9 +2,10 @@
 
 #include <unordered_map>
 
+#include "entt.hpp"
 #include "GLCore.hpp"
 #include "GLCoreUtils.hpp"
-#include "World.hpp"
+#include "World/World.hpp"
 #include "../EngineState.hpp"
 #include "../Physics/PhysicsEngine.hpp"
 #include "../Renderer/Renderer.hpp"
@@ -18,11 +19,11 @@ public:
     explicit VoxelLayer(EngineState& state);
     ~VoxelLayer() override;
 
-    virtual void OnAttach() override;
-    virtual void OnDetach() override;
-    virtual void OnEvent(GLCore::Event& event) override;
-    virtual void OnUpdate(GLCore::Timestep ts) override;
-    virtual void OnImGuiRender() override;
+    void OnAttach() override;
+    void OnDetach() override;
+    void OnEvent(GLCore::Event& event) override;
+    void OnUpdate(GLCore::Timestep ts) override;
+    void OnImGuiRender() override;
 
     // Must be called before attaching
     void Init(WorldSettings&& settings);

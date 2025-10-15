@@ -8,7 +8,7 @@
 #include <glm/glm.hpp>
 #include <GLCoreUtils.hpp>
 
-#include "../WorldSettings.hpp"
+#include "../../WorldSettings.hpp"
 #include "Chunk.hpp"
 
 namespace VoxelEngine

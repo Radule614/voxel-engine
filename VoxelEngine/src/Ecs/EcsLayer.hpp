@@ -1,9 +1,9 @@
 #pragma once
-#include "GLCore.hpp"
+
 #include <GLCoreUtils.hpp>
 #include "../EngineState.hpp"
-#include "../Ecs/Ecs.hpp"
 #include "Components/CharacterComponent.hpp"
+#include "Components/TransformComponent.hpp"
 
 namespace VoxelEngine
 {
@@ -11,12 +11,12 @@ namespace VoxelEngine
 class EcsLayer : public GLCore::Layer
 {
 public:
-    EcsLayer(EngineState& state);
-    ~EcsLayer();
+    explicit EcsLayer(EngineState& state);
+    ~EcsLayer() override;
 
-    virtual void OnAttach() override;
-    virtual void OnDetach() override;
-    virtual void OnUpdate(GLCore::Timestep ts) override;
+    void OnAttach() override;
+    void OnDetach() override;
+    void OnUpdate(GLCore::Timestep ts) override;
 
 private:
     void UpdateTransformComponent(TransformComponent& transform, const JPH::BodyID& bodyId);

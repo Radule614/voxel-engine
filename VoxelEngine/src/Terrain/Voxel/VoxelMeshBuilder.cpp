@@ -1,7 +1,7 @@
 #include "VoxelMeshBuilder.hpp"
 #include <GLCoreUtils.hpp>
 
-#include "TerrainConfig.hpp"
+#include "../TerrainConfig.hpp"
 
 namespace VoxelEngine
 {

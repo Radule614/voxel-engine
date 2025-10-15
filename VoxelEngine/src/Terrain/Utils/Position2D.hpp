@@ -1,7 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "../Utils/Utils.hpp"
+#include "../../Utils/Utils.hpp"
 
 namespace VoxelEngine
 {

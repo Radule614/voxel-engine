@@ -6,6 +6,9 @@
 #include "Components/CameraComponent.hpp"
 #include "GLCore/Core/Input.hpp"
 
+#include "Components/TransformComponent.hpp"
+#include "Components/ColliderComponent.hpp"
+
 using namespace GLCore;
 using namespace GLCore::Utils;
 using namespace JPH;

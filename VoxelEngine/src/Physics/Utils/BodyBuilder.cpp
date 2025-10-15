@@ -4,14 +4,14 @@
 
 #include "BodyBuilder.hpp"
 
+#include "../PhysicsEngineLayers.hpp"
+
 using namespace JPH;
 
 namespace VoxelEngine
 {
 
-BodyBuilder::BodyBuilder()
-{
-}
+BodyBuilder::BodyBuilder() = default;
 
 BodyBuilder::~BodyBuilder() = default;
 

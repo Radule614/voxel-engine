@@ -62,6 +62,7 @@ void PerspectiveCameraController::OnEvent(Event& e)
     dispatcher.Dispatch<StateUnpauseEvent>(
         [&](const StateUnpauseEvent&) {
             m_First = true;
+
             return false;
         });
     dispatcher.Dispatch<MouseScrolledEvent>(GLCORE_BIND_EVENT_FN(PerspectiveCameraController::OnMouseScrolled));

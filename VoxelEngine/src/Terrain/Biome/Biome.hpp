@@ -7,7 +7,7 @@
 #include <set>
 
 #include "PerlinNoise.hpp"
-#include "../Voxel.hpp"
+#include "../Voxel/Voxel.hpp"
 #include "Structures/StructureGenerator.hpp"
 #include "BiomeType.hpp"
 

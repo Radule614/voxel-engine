@@ -1,8 +1,8 @@
 #include "Chunk.hpp"
 #include "GLCoreUtils.hpp"
-#include "VoxelMeshBuilder.hpp"
-#include "Position2D.hpp"
-#include "../Utils/Utils.hpp"
+#include "../Voxel/VoxelMeshBuilder.hpp"
+#include "../Utils/Position2D.hpp"
+#include "../../Utils/Utils.hpp"
 #include "World.hpp"
 
 #include <execution>

@@ -6,7 +6,6 @@
 #include "Balls/BallLayer.hpp"
 #include "Terrain/VoxelLayer.hpp"
 
-
 namespace Sandbox
 {
 using namespace VoxelEngine;

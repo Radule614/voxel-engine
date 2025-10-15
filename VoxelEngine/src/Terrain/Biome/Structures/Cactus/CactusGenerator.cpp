@@ -4,7 +4,7 @@
 
 #include "CactusGenerator.hpp"
 #include "CactusFactory.hpp"
-#include "../../../World.hpp"
+#include "../../../World/World.hpp"
 
 namespace VoxelEngine
 {

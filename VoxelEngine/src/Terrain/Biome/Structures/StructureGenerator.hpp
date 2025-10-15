@@ -7,7 +7,7 @@
 #include "PerlinNoise.hpp"
 
 #include "../../TerrainConfig.hpp"
-#include "../../Position2D.hpp"
+#include "../../Utils/Position2D.hpp"
 #include "Structure.hpp"
 
 namespace VoxelEngine

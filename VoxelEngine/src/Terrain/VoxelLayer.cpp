@@ -1,12 +1,13 @@
 #include "VoxelLayer.hpp"
 #include <vector>
-#include "VoxelVertex.hpp"
-#include "World.hpp"
+#include "World/World.hpp"
 #include "../Ecs/Components/CharacterComponent.hpp"
-#include "../Physics/Utils/BodyBuilder.hpp"
+#include "../Ecs/Components/ColliderComponent.hpp"
 #include "../Physics/Utils/JoltUtils.hpp"
 #include "Jolt/Physics/Collision/Shape/StaticCompoundShape.h"
 #include "../Physics/Utils/ShapeFactory.hpp"
+#include "../Physics/PhysicsEngineLayers.hpp"
+#include "../Ecs/Ecs.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;

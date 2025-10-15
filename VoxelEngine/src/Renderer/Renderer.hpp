@@ -2,8 +2,10 @@
 
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
-#include "../Ecs/Ecs.hpp"
-#include "../Terrain/Position2D.hpp"
+
+#include "../Terrain/Utils/Position2D.hpp"
+#include "../Ecs/Components/TerrainComponent.hpp"
+#include "../Ecs/Components/MeshComponent.hpp"
 
 #define SHADOW_WIDTH 4096
 #define SHADOW_HEIGHT 4096

@@ -3,6 +3,9 @@
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Components/CameraComponent.hpp"
 #include "Ecs/Components/CharacterComponent.hpp"
+#include "Ecs/Components/ColliderComponent.hpp"
+#include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/TransformComponent.hpp"
 #include "Physics/Utils/BodyBuilder.hpp"
 #include "Physics/Character/CharacterBuilder.hpp"
 

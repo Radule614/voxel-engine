@@ -1,7 +1,5 @@
 #include "UserInterface.hpp"
 
-#include "GLCore/Core/Input.hpp"
-
 using namespace GLCore;
 using namespace GLCore::Utils;
 
@@ -16,29 +14,33 @@ UserInterface::~UserInterface() = default;
 
 void UserInterface::OnAttach() { m_State.Application->GetWindow().CaptureMouse(true); }
 
-void UserInterface::OnEvent(GLCore::Event& event)
+void UserInterface::OnEvent(Event& event)
 {
     if (!m_State.MenuActive)
         m_State.CameraController->OnEvent(event);
+
     EventDispatcher dispatcher(event);
+
     dispatcher.Dispatch<KeyPressedEvent>(
-        [&](KeyPressedEvent& e) {
+        [&](const KeyPressedEvent& e) {
             if (e.GetKeyCode() == VE_KEY_ESCAPE)
             {
                 m_State.MenuActive = !m_State.MenuActive;
+
                 if (!m_State.MenuActive)
                 {
                     m_State.Application->GetWindow().CaptureMouse(true);
-                    StateUnpauseEvent event;
-                    m_State.Application->RaiseEvent(event);
+                    StateUnpauseEvent newEvent;
+                    m_State.Application->RaiseEvent(newEvent);
                 }
                 else
                 {
                     m_State.Application->GetWindow().CaptureMouse(false);
-                    StatePauseEvent event;
-                    m_State.Application->RaiseEvent(event);
+                    StatePauseEvent newEvent;
+                    m_State.Application->RaiseEvent(newEvent);
                 }
             }
+
             return false;
         });
 }
