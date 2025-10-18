@@ -39,13 +39,14 @@ private:
     static void SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face);
     static void SyncMeshWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
     static void SyncRadianceWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
-    static bool IsPositionValid(const std::unordered_set<Position2D>& existing, Position2D p);
+
+    std::vector<Position2D> GetChunkPositionFromCenter(Position2D center, int32_t batchSize) const;
+    bool IsChunkPositionValidInBatch(const std::vector<Position2D>& batchPositions, Position2D newPosition) const;
 
     void GetNeighbours(const Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
 
     void GenerateWorld();
     void GenerateChunk(Position2D position);
-    std::queue<Position2D> FindNextChunkLocations(Position2D center, size_t count);
 
 private:
     std::map<Position2D, std::shared_ptr<Chunk> > m_ChunkMap;

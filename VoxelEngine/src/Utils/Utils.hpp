@@ -3,6 +3,7 @@
 #include <GLCoreUtils.hpp>
 #include <glm/glm.hpp>
 #include <format>
+#include "../Terrain/Utils/Position2D.hpp"
 
 namespace VoxelEngine
 {
@@ -18,5 +19,10 @@ inline std::string VecToString(const glm::vec3& vec) { return std::format("Vec3(
 inline void PrintVec2(const glm::vec2& vec) { LOG_INFO(VecToString(vec)); }
 
 inline void PrintVec3(const glm::vec3& vec) { LOG_INFO(VecToString(vec)); }
+
+inline float_t GetDistance(const Position2D a, const Position2D b)
+{
+    return glm::distance((glm::vec2) a, (glm::vec2) b);
+}
 
 }

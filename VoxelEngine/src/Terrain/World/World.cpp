@@ -209,16 +209,12 @@ void World::GenerateWorld()
 {
     while (m_ShouldGenerationRun)
     {
-        Position2D center = GlobalToChunkSpace(m_CameraController->GetCamera().GetPosition());
-        std::queue<Position2D> chunkLocations = FindNextChunkLocations(center, TerrainConfig::ThreadCount);
+        const Position2D center = GlobalToChunkSpace(m_CameraController->GetCamera().GetPosition());
+        std::vector<Position2D> batch = GetChunkPositionFromCenter(center, TerrainConfig::ThreadCount);
         std::vector<std::thread> threads = {};
 
-        while (!chunkLocations.empty())
-        {
-            Position2D pos = chunkLocations.front();
-            threads.emplace_back([this, pos] { this->GenerateChunk(pos); });
-            chunkLocations.pop();
-        }
+        for (auto position: batch)
+            threads.emplace_back([this, position] { this->GenerateChunk(position); });
 
         for (auto& thread: threads)
         {
@@ -306,40 +302,28 @@ void World::GenerateChunk(Position2D position)
     chunk->GetLock().unlock();
 }
 
-std::queue<Position2D> World::FindNextChunkLocations(const Position2D center, const size_t count)
+std::vector<Position2D> World::GetChunkPositionFromCenter(const Position2D center, const int32_t batchSize) const
 {
-    std::queue<Position2D> positions = {};
-    std::unordered_set<Position2D> existing = {};
+    int32_t maxDistance = TerrainConfig::MaxChunkDistance;
 
-    // TODO: refactor this
-    for (int32_t r = 0; r < TerrainConfig::MaxChunkDistance; ++r)
+    std::vector<Position2D> positions = {};
+    positions.reserve(batchSize);
+
+    for (int32_t r = 0; r < maxDistance; ++r)
     {
         for (int32_t x = 0; x <= r; ++x)
         {
-            Position2D locations[8] = {
-                Position2D(x, -r),
-                Position2D(x, r),
-                Position2D(-r, x),
-                Position2D(r, x),
-                Position2D(-x, -r),
-                Position2D(-x, r),
-                Position2D(-r, -x),
-                Position2D(r, -x)
-            };
-            for (auto& location: locations)
+            const int offsets[8][2] = {{x, -r}, {x, r}, {-r, x}, {r, x}, {-x, -r}, {-x, r}, {-r, -x}, {r, -x}};
+
+            for (auto& [dx, dy]: offsets)
             {
-                if (location.GetLength() > TerrainConfig::MaxChunkDistance)
+                Position2D position = center + Position2D(dx, dy);
+                if (GetDistance(position, center) > maxDistance || !IsChunkPositionValidInBatch(positions, position))
                     continue;
-                Position2D p = location + center;
-                if (!IsPositionValid(existing, p))
-                    continue;
-                auto pos = Position2D(p.x, p.y);
-                if (auto chunk = m_ChunkMap.find(pos); chunk == m_ChunkMap.end() && !existing.contains(pos))
-                {
-                    existing.insert(p);
-                    positions.push(pos);
-                }
-                if (existing.size() == count)
+
+                positions.emplace_back(position);
+
+                if (positions.size() == batchSize)
                     return positions;
             }
         }
@@ -354,27 +338,16 @@ void World::Reset()
     m_DeferredUpdateQueueMap.clear();
 }
 
-bool World::IsPositionValid(const std::unordered_set<Position2D>& existing, const Position2D p)
+bool World::IsChunkPositionValidInBatch(const std::vector<Position2D>& batchPositions,
+                                        const Position2D newPosition) const
 {
-    // TODO: refactor this
-    Position2D locations[12] = {
-        Position2D(p.x, p.y + 2),
-        Position2D(p.x, p.y + 1),
-        Position2D(p.x, p.y - 1),
-        Position2D(p.x, p.y - 2),
-        Position2D(p.x + 2, p.y),
-        Position2D(p.x + 1, p.y),
-        Position2D(p.x - 1, p.y),
-        Position2D(p.x - 2, p.y),
-        Position2D(p.x + 1, p.y + 1),
-        Position2D(p.x + 1, p.y - 1),
-        Position2D(p.x - 1, p.y + 1),
-        Position2D(p.x - 1, p.y - 1)
-    };
-    for (auto location: locations)
-        if (existing.contains(location))
+    for (const auto existingPosition: batchPositions)
+    {
+        if (GetDistance(existingPosition, newPosition) < 4.0f)
             return false;
-    return true;
+    }
+
+    return !m_ChunkMap.contains(newPosition);
 }
 
 const std::map<Position2D, std::shared_ptr<Chunk> >& World::GetChunkMap() const { return m_ChunkMap; }
