@@ -71,16 +71,14 @@ void World::GenerateChunk(Position2D position)
     {
         m_Mutex.lock();
         auto& deferredQueue = deferredQueueMap->second;
+
         while (!deferredQueue.empty())
         {
-            Voxel& structureVoxel = deferredQueue.front();
-            auto& voxelGrid = chunk->GetVoxelGrid();
-            const Position3D& voxelPosition = structureVoxel.GetPosition();
+            Voxel& voxelFromQueue = deferredQueue.front();
+            Voxel& voxel = chunk->GetVoxelFromGrid(voxelFromQueue.GetPosition());
 
-            Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
-
-            voxel.SetPosition(voxelPosition);
-            voxel.SetVoxelType(structureVoxel.GetVoxelType());
+            voxel.SetPosition(voxelFromQueue.GetPosition());
+            voxel.SetVoxelType(voxelFromQueue.GetVoxelType());
 
             deferredQueue.pop();
         }
@@ -377,7 +375,7 @@ std::pair<Position2D, Position3D> World::GlobalToWorldSpace(const glm::i32vec3 p
 glm::i32vec3 World::WorldToGlobalSpace(const Position2D chunkPosition, const Position3D positionInChunk)
 {
     const int32_t x = chunkPosition.x * CHUNK_WIDTH + positionInChunk.GetX();
-    const int32_t y = positionInChunk.y;
+    const int32_t y = positionInChunk.GetY();
     const int32_t z = chunkPosition.y * CHUNK_WIDTH + positionInChunk.GetZ();
 
     return {x, y, z};

@@ -174,7 +174,7 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             v.RadianceBaseIndex =
                     (voxelPosition.GetX() + 1) * RADIANCE_WIDTH * RADIANCE_HEIGHT +
                     (voxelPosition.GetZ() + 1) * RADIANCE_HEIGHT +
-                    (voxelPosition.y + 1);
+                    (voxelPosition.GetY() + 1);
 
             data.push_back(v);
         }

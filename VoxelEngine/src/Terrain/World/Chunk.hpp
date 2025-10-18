@@ -37,6 +37,8 @@ public:
 
     VoxelGrid& GetVoxelGrid();
     RadianceArray& GetRadianceGrid();
+    Voxel& GetVoxelFromGrid(Position3D positionInGrid);
+
     const std::vector<VoxelVertex>& GetMesh() const;
     const std::vector<VoxelVertex>& GetBorderMesh(VoxelFace face) const;
     Position2D GetPosition() const;

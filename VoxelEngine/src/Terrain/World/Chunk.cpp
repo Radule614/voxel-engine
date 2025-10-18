@@ -82,22 +82,22 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
     std::unordered_set<std::shared_ptr<Chunk> > changedChunks{};
     auto& deferredQueueMap = m_World.GetDeferredUpdateQueueMap();
 
-    for (auto& s: structures)
+    for (auto& structure: structures)
     {
-        Position3D p = s.GetRoot().GetPosition();
-        Voxel& rootVoxel = m_VoxelGrid[p.GetX()][p.GetZ()][p.y];
+        Position3D rootPosition = structure.GetRoot().GetPosition();
+        Voxel& rootVoxel = GetVoxelFromGrid(rootPosition);
 
-        rootVoxel.SetVoxelType(s.GetRoot().GetVoxelType());
-        rootVoxel.SetPosition(p);
+        rootVoxel.SetVoxelType(structure.GetRoot().GetVoxelType());
+        rootVoxel.SetPosition(rootPosition);
 
-        for (auto& [positionInStructure, voxelType]: s.GetVoxelData())
+        for (auto& [positionInStructure, voxelType]: structure.GetVoxelData())
         {
-            glm::i32vec3 position = static_cast<glm::i32vec3>(p) + positionInStructure;
+            glm::i32vec3 position = static_cast<glm::i32vec3>(rootPosition) + positionInStructure;
             auto [chunkPosition, voxelPosition] = GetPositionRelativeToWorld(position);
 
             if (chunkPosition == m_Position)
             {
-                Voxel& voxel = m_VoxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
+                Voxel& voxel = GetVoxelFromGrid(voxelPosition);
 
                 voxel.SetVoxelType(voxelType);
                 voxel.SetPosition(voxelPosition);
@@ -112,7 +112,7 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
                 chunk->GetLock().lock();
 
                 auto& voxelGrid = chunk->GetVoxelGrid();
-                Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
+                Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.GetY()];
                 voxel.SetVoxelType(voxelType);
                 voxel.SetPosition(voxelPosition);
                 changedChunks.insert(chunk);
@@ -353,6 +353,11 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h)
 VoxelGrid& Chunk::GetVoxelGrid() { return m_VoxelGrid; }
 
 RadianceArray& Chunk::GetRadianceGrid() { return m_RadianceGrid; }
+
+Voxel& Chunk::GetVoxelFromGrid(const Position3D positionInGrid)
+{
+    return m_VoxelGrid[positionInGrid.GetX()][positionInGrid.GetZ()][positionInGrid.GetY()];
+}
 
 const std::vector<VoxelVertex>& Chunk::GetMesh() const { return m_Mesh; }
 

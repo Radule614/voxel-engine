@@ -225,10 +225,12 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
             {
                 auto p = glm::i32vec3(glm::round(pos)) + glm::i32vec3(x, y, z);
                 auto [chunkPosition, voxelPosition] = World::GlobalToWorldSpace(p);
+
                 auto it = chunkMap.find(chunkPosition);
                 if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
                     continue;
-                Voxel& v = it->second->GetVoxelGrid()[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
+
+                Voxel& v = it->second->GetVoxelFromGrid(voxelPosition);
                 if (v.GetVoxelType() == AIR || m_ColliderPositions.contains(p))
                     continue;
 
