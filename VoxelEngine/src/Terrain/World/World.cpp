@@ -25,6 +25,117 @@ void World::StartGeneration()
     m_GenerationThread = std::thread([this] { this->GenerateWorld(); });
 }
 
+void World::StopGeneration()
+{
+    m_ShouldGenerationRun = false;
+    if (m_GenerationThread.joinable())
+        m_GenerationThread.join();
+}
+
+void World::Reset()
+{
+    m_ChunkMap.clear();
+    m_RenderQueue.clear();
+    m_DeferredUpdateQueueMap.clear();
+}
+
+void World::GenerateWorld()
+{
+    while (m_ShouldGenerationRun)
+    {
+        const Position2D center = GlobalToChunkSpace(m_CameraController->GetCamera().GetPosition());
+        std::vector<Position2D> batch = GetNextChunkPositionBatch(center, TerrainConfig::ThreadCount);
+        std::vector<std::thread> threads = {};
+
+        for (auto position: batch)
+            threads.emplace_back([this, position] { this->GenerateChunk(position); });
+
+        for (auto& thread: threads)
+        {
+            if (thread.joinable())
+                thread.join();
+        }
+    }
+}
+
+void World::GenerateChunk(Position2D position)
+{
+    auto chunk = std::make_shared<Chunk>(*this, position, *m_Settings.m_Biome);
+    chunk->GetLock().lock();
+
+    m_ChunkMap.insert({position, chunk});
+    chunk->Generate();
+
+    auto deferredQueueMap = m_DeferredUpdateQueueMap.find(position);
+    if (deferredQueueMap != m_DeferredUpdateQueueMap.end())
+    {
+        m_Mutex.lock();
+        auto& deferredQueue = deferredQueueMap->second;
+        while (!deferredQueue.empty())
+        {
+            Voxel& structureVoxel = deferredQueue.front();
+            auto& voxelGrid = chunk->GetVoxelGrid();
+            const Position3D& voxelPosition = structureVoxel.GetPosition();
+
+            Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
+
+            voxel.SetPosition(voxelPosition);
+            voxel.SetVoxelType(structureVoxel.GetVoxelType());
+
+            deferredQueue.pop();
+        }
+        m_Mutex.unlock();
+    }
+
+    std::map<Position2D, std::shared_ptr<Chunk> > neighboursLevel1{};
+    GetNeighbours(*chunk, neighboursLevel1);
+
+    for (const auto& [_, neighbour]: neighboursLevel1)
+        neighbour->GetLock().lock();
+
+    SyncMeshWithNeighbours(*chunk, neighboursLevel1);
+
+    chunk->GenerateMesh();
+
+    m_Mutex.lock();
+
+    if (neighboursLevel1.size() == 8)
+    {
+        chunk->InitRadiance();
+        SyncRadianceWithNeighbours(*chunk, neighboursLevel1);
+        m_RenderQueue.insert(chunk);
+    }
+
+    for (const auto& [_, level1]: neighboursLevel1)
+    {
+        std::map<Position2D, std::shared_ptr<Chunk> > neighboursLevel2{};
+        GetNeighbours(*level1, neighboursLevel2);
+
+        if (neighboursLevel2.size() == 8)
+        {
+            level1->InitRadiance();
+
+            SyncRadianceWithNeighbours(*level1, neighboursLevel2);
+
+            for (const auto& [_, level2]: neighboursLevel2)
+            {
+                std::map<Position2D, std::shared_ptr<Chunk> > neighboursLayer3{};
+                GetNeighbours(*level2, neighboursLayer3);
+
+                if (neighboursLayer3.size() == 8)
+                    m_RenderQueue.insert(level2);
+            }
+
+            m_RenderQueue.insert(level1);
+        }
+
+        level1->GetLock().unlock();
+    }
+
+    m_Mutex.unlock();
+    chunk->GetLock().unlock();
+}
+
 void World::SyncMeshWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours)
 {
     auto& voxelGrid = chunk.GetVoxelGrid();
@@ -151,13 +262,6 @@ void World::SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, const VoxelFace 
         v2.SetFaceVisible(Voxel::GetOppositeFace(face), true);
 }
 
-void World::StopGeneration()
-{
-    m_ShouldGenerationRun = false;
-    if (m_GenerationThread.joinable())
-        m_GenerationThread.join();
-}
-
 void World::GetNeighbours(const Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours)
 {
     const Position2D position = chunk.GetPosition();
@@ -205,109 +309,12 @@ void World::SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2
     }
 }
 
-void World::GenerateWorld()
-{
-    while (m_ShouldGenerationRun)
-    {
-        const Position2D center = GlobalToChunkSpace(m_CameraController->GetCamera().GetPosition());
-        std::vector<Position2D> batch = GetChunkPositionFromCenter(center, TerrainConfig::ThreadCount);
-        std::vector<std::thread> threads = {};
-
-        for (auto position: batch)
-            threads.emplace_back([this, position] { this->GenerateChunk(position); });
-
-        for (auto& thread: threads)
-        {
-            if (thread.joinable())
-                thread.join();
-        }
-    }
-}
-
-void World::GenerateChunk(Position2D position)
-{
-    auto chunk = std::make_shared<Chunk>(*this, position, *m_Settings.m_Biome);
-    chunk->GetLock().lock();
-
-    m_ChunkMap.insert({position, chunk});
-    chunk->Generate();
-
-    auto deferredQueueMap = m_DeferredUpdateQueueMap.find(position);
-    if (deferredQueueMap != m_DeferredUpdateQueueMap.end())
-    {
-        m_Mutex.lock();
-        auto& deferredQueue = deferredQueueMap->second;
-        while (!deferredQueue.empty())
-        {
-            Voxel& structureVoxel = deferredQueue.front();
-            auto& voxelGrid = chunk->GetVoxelGrid();
-            const Position3D& voxelPosition = structureVoxel.GetPosition();
-
-            Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.y];
-
-            voxel.SetPosition(voxelPosition);
-            voxel.SetVoxelType(structureVoxel.GetVoxelType());
-
-            deferredQueue.pop();
-        }
-        m_Mutex.unlock();
-    }
-
-    std::map<Position2D, std::shared_ptr<Chunk> > neighboursLevel1{};
-    GetNeighbours(*chunk, neighboursLevel1);
-
-    for (const auto& [_, neighbour]: neighboursLevel1)
-        neighbour->GetLock().lock();
-
-    SyncMeshWithNeighbours(*chunk, neighboursLevel1);
-
-    chunk->GenerateMesh();
-
-    m_Mutex.lock();
-
-    if (neighboursLevel1.size() == 8)
-    {
-        chunk->InitRadiance();
-        SyncRadianceWithNeighbours(*chunk, neighboursLevel1);
-        m_RenderQueue.insert(chunk);
-    }
-
-    for (const auto& [_, level1]: neighboursLevel1)
-    {
-        std::map<Position2D, std::shared_ptr<Chunk> > neighboursLevel2{};
-        GetNeighbours(*level1, neighboursLevel2);
-
-        if (neighboursLevel2.size() == 8)
-        {
-            level1->InitRadiance();
-
-            SyncRadianceWithNeighbours(*level1, neighboursLevel2);
-
-            for (const auto& [_, level2]: neighboursLevel2)
-            {
-                std::map<Position2D, std::shared_ptr<Chunk> > neighboursLayer3{};
-                GetNeighbours(*level2, neighboursLayer3);
-
-                if (neighboursLayer3.size() == 8)
-                    m_RenderQueue.insert(level2);
-            }
-
-            m_RenderQueue.insert(level1);
-        }
-
-        level1->GetLock().unlock();
-    }
-
-    m_Mutex.unlock();
-    chunk->GetLock().unlock();
-}
-
-std::vector<Position2D> World::GetChunkPositionFromCenter(const Position2D center, const int32_t batchSize) const
+std::vector<Position2D> World::GetNextChunkPositionBatch(const Position2D center, const int32_t batchSize) const
 {
     int32_t maxDistance = TerrainConfig::MaxChunkDistance;
 
-    std::vector<Position2D> positions = {};
-    positions.reserve(batchSize);
+    std::vector<Position2D> batch = {};
+    batch.reserve(batchSize);
 
     for (int32_t r = 0; r < maxDistance; ++r)
     {
@@ -318,24 +325,17 @@ std::vector<Position2D> World::GetChunkPositionFromCenter(const Position2D cente
             for (auto& [dx, dy]: offsets)
             {
                 Position2D position = center + Position2D(dx, dy);
-                if (GetDistance(position, center) > maxDistance || !IsChunkPositionValidInBatch(positions, position))
+                if (GetDistance(position, center) > maxDistance || !IsChunkPositionValidInBatch(batch, position))
                     continue;
 
-                positions.emplace_back(position);
+                batch.emplace_back(position);
 
-                if (positions.size() == batchSize)
-                    return positions;
+                if (batch.size() == batchSize)
+                    return batch;
             }
         }
     }
-    return positions;
-}
-
-void World::Reset()
-{
-    m_ChunkMap.clear();
-    m_RenderQueue.clear();
-    m_DeferredUpdateQueueMap.clear();
+    return batch;
 }
 
 bool World::IsChunkPositionValidInBatch(const std::vector<Position2D>& batchPositions,

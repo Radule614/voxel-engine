@@ -40,7 +40,7 @@ private:
     static void SyncMeshWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
     static void SyncRadianceWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
 
-    std::vector<Position2D> GetChunkPositionFromCenter(Position2D center, int32_t batchSize) const;
+    std::vector<Position2D> GetNextChunkPositionBatch(Position2D center, int32_t batchSize) const;
     bool IsChunkPositionValidInBatch(const std::vector<Position2D>& batchPositions, Position2D newPosition) const;
 
     void GetNeighbours(const Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
