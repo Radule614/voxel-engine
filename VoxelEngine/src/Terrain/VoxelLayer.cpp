@@ -84,11 +84,13 @@ void VoxelLayer::OnEvent(Event& event)
 void VoxelLayer::OnUpdate(const Timestep ts)
 {
     PollChunkRenderQueue();
+
     timeSinceLastColliderOptimization += ts;
     if (timeSinceLastColliderOptimization >= 3.0f)
     {
-        timeSinceLastColliderOptimization = 0.0f;
         OptimizeColliders();
+
+        timeSinceLastColliderOptimization = 0.0f;
     }
 }
 

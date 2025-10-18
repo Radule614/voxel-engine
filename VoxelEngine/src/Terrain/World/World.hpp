@@ -35,10 +35,11 @@ public:
     std::map<Position2D, std::queue<Voxel> >& GetDeferredUpdateQueueMap();
 
 private:
-    static void SyncVisibleFacesWithNeighbour(Voxel& v1, Voxel& v2, VoxelFace face);
+    static void SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
+    static void SyncMeshWithNeighbour(Voxel& v1, Voxel& v2, VoxelFace face);
+
+    static void SyncRadianceWithNeighbour(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
     static void SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face);
-    static void SyncMeshWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
-    static void SyncRadianceWithNeighbours(Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours);
 
     std::vector<Position2D> GetNextChunkPositionBatch(Position2D center, int32_t batchSize) const;
     bool IsChunkPositionValidInBatch(const std::vector<Position2D>& batchPositions, Position2D newPosition) const;
