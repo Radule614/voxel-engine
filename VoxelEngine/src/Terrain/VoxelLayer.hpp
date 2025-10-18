@@ -39,6 +39,7 @@ private:
     void SetupRenderData(const std::shared_ptr<Chunk>& chunk) const;
     void ApplyState() const;
     void ResetWorld() const;
+    void RemoveDistantChunks() const;
 
     void ResetChunkRenderData(const Chunk& chunk) const;
 

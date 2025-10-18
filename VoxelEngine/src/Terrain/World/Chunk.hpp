@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <mutex>
 #include <queue>
-#include <set>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerlinNoise.hpp"
@@ -20,6 +19,7 @@ namespace VoxelEngine
 {
 
 class World;
+
 using VoxelGrid = Voxel[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
 using RadianceArray = int32_t[RADIANCE_WIDTH * RADIANCE_WIDTH * RADIANCE_HEIGHT];
 
@@ -72,7 +72,7 @@ private:
     RadianceArray m_RadianceGrid;
     std::queue<glm::ivec3> m_RadianceUpdateQueue;
 
-    std::set<BiomeType> m_BiomeTypes;
+    std::unordered_set<BiomeType> m_BiomeTypes;
 };
 
 }

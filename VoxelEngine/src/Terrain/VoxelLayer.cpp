@@ -85,6 +85,8 @@ void VoxelLayer::OnUpdate(const Timestep ts)
 {
     PollChunkRenderQueue();
 
+    RemoveDistantChunks();
+
     timeSinceLastColliderOptimization += ts;
     if (timeSinceLastColliderOptimization >= 3.0f)
     {
@@ -157,9 +159,34 @@ void VoxelLayer::ResetWorld() const
     for (auto [_, chunk]: m_World->GetChunkMap())
         ResetChunkRenderData(*chunk);
 
-    m_RenderData->clear();
-
     m_World->Reset();
+    m_World->GetLock().unlock();
+}
+
+void VoxelLayer::RemoveDistantChunks() const
+{
+    m_World->GetLock().lock();
+
+    std::vector<std::pair<Position2D, std::shared_ptr<Chunk> > > distantChunks = m_World->FindDistantChunks();
+    std::vector<std::thread> threads = {};
+
+    for (const auto& [position, chunk]: distantChunks)
+    {
+        if (threads.size() >= TerrainConfig::ThreadCount)
+            break;
+
+        threads.emplace_back([this, position, chunk] {
+            ResetChunkRenderData(*chunk);
+            m_World->RemoveChunk(position);
+        });
+    }
+
+    for (auto& thread: threads)
+    {
+        if (thread.joinable())
+            thread.join();
+    }
+
     m_World->GetLock().unlock();
 }
 

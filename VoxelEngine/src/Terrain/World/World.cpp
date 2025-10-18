@@ -39,6 +39,27 @@ void World::Reset()
     m_DeferredUpdateQueueMap.clear();
 }
 
+std::vector<std::pair<Position2D, std::shared_ptr<Chunk>>> World::FindDistantChunks()
+{
+    const Position2D center = GlobalToChunkSpace(m_CameraController->GetCamera().GetPosition());
+    std::vector<std::pair<Position2D, std::shared_ptr<Chunk>>> distantChunks{};
+
+    for (const auto& [position, chunk]: m_ChunkMap)
+    {
+        if (GetDistance(position, center) > TerrainConfig::MaxChunkDistance)
+            distantChunks.emplace_back(position, chunk);
+    }
+
+    return distantChunks;
+}
+
+void World::RemoveChunk(const Position2D position)
+{
+    m_RenderQueue.erase(m_ChunkMap[position]);
+    m_ChunkMap.erase(position);
+    m_DeferredUpdateQueueMap.erase(position);
+}
+
 void World::GenerateWorld()
 {
     while (m_ShouldGenerationRun)
@@ -62,6 +83,8 @@ void World::GenerateChunk(Position2D position)
 {
     auto chunk = std::make_shared<Chunk>(*this, position, *m_Settings.m_Biome);
     chunk->GetLock().lock();
+
+    GLCORE_ASSERT(m_ChunkMap.find(position) == m_ChunkMap.end(), "How?");
 
     m_ChunkMap.insert({position, chunk});
     chunk->Generate();

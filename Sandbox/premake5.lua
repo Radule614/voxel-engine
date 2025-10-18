@@ -25,10 +25,10 @@ project "Sandbox"
 		"../OpenGLCore/%{IncludeDir.glm}",
 		"../OpenGLCore/%{IncludeDir.Glad}",
 		"../OpenGLCore/%{IncludeDir.ImGui}",
-		"%{IncludeDir.JoltPhysics}",
-		"%{IncludeDir.Assimp}",
-		"%{IncludeDir.PerlinNoise}",
-		"%{IncludeDir.Entt}",
+		"../VoxelEngine/%{IncludeDir.JoltPhysics}",
+		"../VoxelEngine/%{IncludeDir.Assimp}",
+		"../VoxelEngine/%{IncludeDir.PerlinNoise}",
+		"../VoxelEngine/%{IncludeDir.Entt}",
         "../VoxelEngine/src"
 	}
 

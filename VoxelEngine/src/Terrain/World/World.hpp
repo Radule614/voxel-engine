@@ -29,6 +29,9 @@ public:
     void StopGeneration();
     void Reset();
 
+    std::vector<std::pair<Position2D, std::shared_ptr<Chunk>>> FindDistantChunks();
+    void RemoveChunk(Position2D position);
+
     const std::map<Position2D, std::shared_ptr<Chunk> >& GetChunkMap() const;
     std::unordered_set<std::shared_ptr<Chunk> >& GetRenderQueue();
     std::mutex& GetLock();

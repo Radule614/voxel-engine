@@ -30,7 +30,7 @@ Biome::Biome(const uint32_t seed) : m_Perlin(seed),
 
 Biome::GeneratorContext::GeneratorContext(const Voxel (&surfaceLayer)[16][16],
                                           const Position2D chunkPosition,
-                                          const std::set<BiomeType>& chunkBiomeTypes)
+                                          const std::unordered_set<BiomeType>& chunkBiomeTypes)
     : SurfaceLayer(surfaceLayer),
       ChunkPosition(chunkPosition),
       ChunkBiomeTypes(chunkBiomeTypes)

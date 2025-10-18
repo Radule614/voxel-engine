@@ -25,11 +25,11 @@ public:
     {
         const Voxel (&SurfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH];
         const Position2D ChunkPosition;
-        const std::set<BiomeType>& ChunkBiomeTypes;
+        const std::unordered_set<BiomeType>& ChunkBiomeTypes;
 
         GeneratorContext(const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
                          Position2D chunkPosition,
-                         const std::set<BiomeType>& chunkBiomeTypes);
+                         const std::unordered_set<BiomeType>& chunkBiomeTypes);
     };
 
     std::tuple<BiomeType, VoxelType> ResolveBiomeFeatures(glm::i32vec3 position, int32_t height) const;
