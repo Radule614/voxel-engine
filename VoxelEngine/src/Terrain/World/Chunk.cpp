@@ -21,7 +21,8 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
       m_Mesh({}),
       m_Mutex(std::mutex()),
       m_Biome(biome),
-      m_RadianceGrid{}
+      m_RadianceGrid{},
+      m_BiomeMutex(std::mutex())
 {
     m_BorderMeshes.insert({FRONT, {}});
     m_BorderMeshes.insert({RIGHT, {}});
@@ -347,7 +348,15 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h)
     const auto [biomeType, voxelType] = m_Biome.ResolveBiomeFeatures(globalPosition, h);
 
     v.SetVoxelType(voxelType);
-    m_BiomeTypes.insert(biomeType);
+
+    if (!m_BiomeTypes.contains(biomeType))
+    {
+        m_BiomeMutex.lock();
+
+        m_BiomeTypes.insert(biomeType);
+
+        m_BiomeMutex.unlock();
+    }
 }
 
 VoxelGrid& Chunk::GetVoxelGrid() { return m_VoxelGrid; }

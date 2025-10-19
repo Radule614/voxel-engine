@@ -1,7 +1,6 @@
 #pragma once
 
 #include <unordered_map>
-#include <GLCoreUtils.hpp>
 #include "../../Terrain/Utils/Position2D.hpp"
 
 namespace VoxelEngine

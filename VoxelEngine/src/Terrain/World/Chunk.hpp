@@ -73,6 +73,7 @@ private:
     std::queue<glm::ivec3> m_RadianceUpdateQueue;
 
     std::unordered_set<BiomeType> m_BiomeTypes;
+    std::mutex m_BiomeMutex;
 };
 
 }

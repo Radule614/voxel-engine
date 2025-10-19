@@ -83,9 +83,9 @@ void VoxelLayer::OnEvent(Event& event)
 
 void VoxelLayer::OnUpdate(const Timestep ts)
 {
-    PollChunkRenderQueue();
-
     RemoveDistantChunks();
+
+    PollChunkRenderQueue();
 
     timeSinceLastColliderOptimization += ts;
     if (timeSinceLastColliderOptimization >= 3.0f)
@@ -130,7 +130,7 @@ void VoxelLayer::OnImGuiRender()
 
     const char* polygonModes[] = {"Fill", "Line"};
     ImGui::Combo("Polygon Mode", &m_UIState.PolygonMode, polygonModes, IM_ARRAYSIZE(polygonModes));
-    const char* threadCounts[] = {"1", "2", "3", "4"};
+    const char* threadCounts[] = {"1", "2", "3", "4", "5", "6", "7", "8"};
     ImGui::Combo("Thread Count", &m_UIState.ThreadCount, threadCounts, IM_ARRAYSIZE(threadCounts));
 
     if (ImGui::Button("Apply"))
@@ -156,8 +156,8 @@ void VoxelLayer::ResetWorld() const
     m_World->GetLock().lock();
     m_World->StopGeneration();
 
-    for (auto [_, chunk]: m_World->GetChunkMap())
-        ResetChunkRenderData(*chunk);
+    for (auto& [_, chunk]: m_World->GetChunkMap())
+        DeleteChunkRenderData(*chunk);
 
     m_World->Reset();
     m_World->GetLock().unlock();
@@ -165,20 +165,28 @@ void VoxelLayer::ResetWorld() const
 
 void VoxelLayer::RemoveDistantChunks() const
 {
-    m_World->GetLock().lock();
+
+    if (!m_World->GetLock().try_lock())
+        return;
 
     std::vector<std::pair<Position2D, std::shared_ptr<Chunk> > > distantChunks = m_World->FindDistantChunks();
     std::vector<std::thread> threads = {};
 
-    for (const auto& [position, chunk]: distantChunks)
+    for (const auto [position, chunk]: distantChunks)
     {
         if (threads.size() >= TerrainConfig::ThreadCount)
             break;
 
+        if (!chunk->GetLock().try_lock())
+            continue;
+
         threads.emplace_back([this, position, chunk] {
-            ResetChunkRenderData(*chunk);
+            DeleteChunkRenderData(*chunk);
+
             m_World->RemoveChunk(position);
         });
+
+        chunk->GetLock().unlock();
     }
 
     for (auto& thread: threads)
@@ -190,18 +198,24 @@ void VoxelLayer::RemoveDistantChunks() const
     m_World->GetLock().unlock();
 }
 
-void VoxelLayer::ResetChunkRenderData(const Chunk& chunk) const
+void VoxelLayer::DeleteChunkRenderData(const Chunk& chunk) const
 {
-    auto& renderDataMap = *m_RenderData;
-    if (const auto renderData = renderDataMap.find(chunk.GetPosition()); renderData != renderDataMap.end())
+    const auto it = m_RenderData->find(chunk.GetPosition());
+    if (it != m_RenderData->end())
     {
-        ChunkRenderData& m = renderData->second;
-        glDeleteVertexArrays(1, &m.VertexArray);
-        glDeleteBuffers(1, &m.VertexBuffer);
-        glDeleteBuffers(1, &m.IndexBuffer);
-        glDeleteBuffers(1, &m.RadianceStorageBuffer);
-        m.Indices.clear();
-        renderDataMap.erase(chunk.GetPosition());
+        const ChunkRenderData& renderData = it->second;
+
+        glBindVertexArray(0);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glDeleteBuffers(1, &renderData.VertexBuffer);
+        glDeleteBuffers(1, &renderData.IndexBuffer);
+        glDeleteBuffers(1, &renderData.RadianceStorageBuffer);
+        glDeleteVertexArrays(1, &renderData.VertexArray);
+
+        m_RenderData->erase(chunk.GetPosition());
     }
 }
 
@@ -273,7 +287,7 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
 
 void VoxelLayer::OptimizeColliders()
 {
-    LOG_INFO("Terrain voxel collider count before optimization: {0}", m_ColliderPositions.size());
+    // LOG_INFO("Terrain voxel collider count before optimization: {0}", m_ColliderPositions.size());
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
     BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
     std::unordered_set collidersToRemove(m_ColliderPositions);
@@ -309,35 +323,41 @@ void VoxelLayer::OptimizeColliders()
 
     CreateTerrainCollider();
 
-    LOG_INFO("Terrain voxel collider count after optimization: {0}", m_ColliderPositions.size());
+    // LOG_INFO("Terrain voxel collider count after optimization: {0}", m_ColliderPositions.size());
 }
 
 void VoxelLayer::PollChunkRenderQueue() const
 {
-    auto& worldLock = m_World->GetLock();
     auto& chunks = m_World->GetRenderQueue();
-    if (chunks.empty() || !worldLock.try_lock())
+
+    if (chunks.empty() || !m_World->GetLock().try_lock())
         return;
+
     auto it = chunks.begin();
     while (it != chunks.end())
     {
         std::shared_ptr<Chunk> chunk = *it;
+
         auto& chunkLock = chunk->GetLock();
         if (!chunkLock.try_lock())
         {
             ++it;
             continue;
         }
+
         SetupRenderData(chunk);
+
         it = chunks.erase(it);
+
         chunkLock.unlock();
     }
-    worldLock.unlock();
+
+    m_World->GetLock().unlock();
 }
 
 void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
 {
-    ResetChunkRenderData(*chunk);
+    DeleteChunkRenderData(*chunk);
 
     ChunkRenderData data = {};
 

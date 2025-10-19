@@ -41,7 +41,7 @@ private:
     void ResetWorld() const;
     void RemoveDistantChunks() const;
 
-    void ResetChunkRenderData(const Chunk& chunk) const;
+    void DeleteChunkRenderData(const Chunk& chunk) const;
 
     void CreateTerrainCollider() const;
     void OnColliderLocationChanged(glm::vec3 pos);

@@ -5,7 +5,7 @@ namespace VoxelEngine
 {
 
 int32_t TerrainConfig::ThreadCount = 4;
-int32_t TerrainConfig::MaxChunkDistance = 25;
+int32_t TerrainConfig::MaxChunkDistance = 20;
 
 int32_t TerrainConfig::PolygonMode = GL_FILL;
 

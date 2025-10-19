@@ -39,12 +39,12 @@ void World::Reset()
     m_DeferredUpdateQueueMap.clear();
 }
 
-std::vector<std::pair<Position2D, std::shared_ptr<Chunk>>> World::FindDistantChunks()
+std::vector<std::pair<Position2D, std::shared_ptr<Chunk> > > World::FindDistantChunks()
 {
     const Position2D center = GlobalToChunkSpace(m_CameraController->GetCamera().GetPosition());
-    std::vector<std::pair<Position2D, std::shared_ptr<Chunk>>> distantChunks{};
+    std::vector<std::pair<Position2D, std::shared_ptr<Chunk> > > distantChunks{};
 
-    for (const auto& [position, chunk]: m_ChunkMap)
+    for (const auto [position, chunk]: m_ChunkMap)
     {
         if (GetDistance(position, center) > TerrainConfig::MaxChunkDistance)
             distantChunks.emplace_back(position, chunk);
@@ -286,7 +286,7 @@ void World::SyncMeshWithNeighbour(Voxel& v1, Voxel& v2, const VoxelFace face)
 void World::GetNeighbours(const Chunk& chunk, std::map<Position2D, std::shared_ptr<Chunk> >& neighbours)
 {
     const Position2D position = chunk.GetPosition();
-    const int dirs[8][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
+    const int32_t dirs[8][2] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}};
 
     for (const auto& [dx, dy]: dirs)
     {
@@ -341,12 +341,12 @@ std::vector<Position2D> World::GetNextChunkPositionBatch(const Position2D center
     {
         for (int32_t x = 0; x <= r; ++x)
         {
-            const int offsets[8][2] = {{x, -r}, {x, r}, {-r, x}, {r, x}, {-x, -r}, {-x, r}, {-r, -x}, {r, -x}};
+            const int32_t offsets[8][2] = {{x, -r}, {x, r}, {-r, x}, {r, x}, {-x, -r}, {-x, r}, {-r, -x}, {r, -x}};
 
             for (auto& [dx, dy]: offsets)
             {
                 Position2D position = center + Position2D(dx, dy);
-                if (GetDistance(position, center) > maxDistance || !IsChunkPositionValidInBatch(batch, position))
+                if (GetDistance(position, center) >= maxDistance || !IsChunkPositionValidInBatch(batch, position))
                     continue;
 
                 batch.emplace_back(position);
@@ -364,7 +364,7 @@ bool World::IsChunkPositionValidInBatch(const std::vector<Position2D>& batchPosi
 {
     for (const auto existingPosition: batchPositions)
     {
-        if (GetDistance(existingPosition, newPosition) < 4.0f)
+        if (GetDistance(existingPosition, newPosition) < 5.0f)
             return false;
     }
 
