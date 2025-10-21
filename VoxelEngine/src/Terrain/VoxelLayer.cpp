@@ -19,7 +19,6 @@ namespace VoxelEngine
 VoxelLayer::VoxelLayer(EngineState& state)
     : Layer("VoxelLayer"),
       m_EngineState(state),
-      m_World(nullptr),
       m_ColliderPositions({})
 {
     m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
@@ -165,11 +164,10 @@ void VoxelLayer::ResetWorld() const
 
 void VoxelLayer::RemoveDistantChunks() const
 {
-
     if (!m_World->GetLock().try_lock())
         return;
 
-    std::vector<std::pair<Position2D, std::shared_ptr<Chunk> > > distantChunks = m_World->FindDistantChunks();
+    std::vector<std::pair<Position2D, Chunk*> > distantChunks = m_World->FindDistantChunks();
     std::vector<std::thread> threads = {};
 
     for (const auto [position, chunk]: distantChunks)
@@ -330,15 +328,21 @@ void VoxelLayer::PollChunkRenderQueue() const
 {
     auto& chunks = m_World->GetRenderQueue();
 
-    if (chunks.empty() || !m_World->GetLock().try_lock())
+    if (!m_World->GetLock().try_lock())
         return;
+
+    if (chunks.empty())
+    {
+        m_World->GetLock().unlock();
+        return;
+    }
 
     auto it = chunks.begin();
     while (it != chunks.end())
     {
-        std::shared_ptr<Chunk> chunk = *it;
+        Chunk& chunk = *it->second;
 
-        auto& chunkLock = chunk->GetLock();
+        auto& chunkLock = chunk.GetLock();
         if (!chunkLock.try_lock())
         {
             ++it;
@@ -347,34 +351,34 @@ void VoxelLayer::PollChunkRenderQueue() const
 
         SetupRenderData(chunk);
 
-        it = chunks.erase(it);
-
         chunkLock.unlock();
+
+        it = chunks.erase(it);
     }
 
     m_World->GetLock().unlock();
 }
 
-void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
+void VoxelLayer::SetupRenderData(const Chunk& chunk) const
 {
-    DeleteChunkRenderData(*chunk);
+    DeleteChunkRenderData(chunk);
 
     ChunkRenderData data = {};
 
     std::vector<VoxelVertex> vertices = {};
-    vertices.insert(vertices.end(), chunk->GetMesh().begin(), chunk->GetMesh().end());
+    vertices.insert(vertices.end(), chunk.GetMesh().begin(), chunk.GetMesh().end());
     vertices.insert(vertices.end(),
-                    chunk->GetBorderMesh(FRONT).begin(),
-                    chunk->GetBorderMesh(FRONT).end());
+                    chunk.GetBorderMesh(FRONT).begin(),
+                    chunk.GetBorderMesh(FRONT).end());
     vertices.insert(vertices.end(),
-                    chunk->GetBorderMesh(RIGHT).begin(),
-                    chunk->GetBorderMesh(RIGHT).end());
+                    chunk.GetBorderMesh(RIGHT).begin(),
+                    chunk.GetBorderMesh(RIGHT).end());
     vertices.insert(vertices.end(),
-                    chunk->GetBorderMesh(BACK).begin(),
-                    chunk->GetBorderMesh(BACK).end());
+                    chunk.GetBorderMesh(BACK).begin(),
+                    chunk.GetBorderMesh(BACK).end());
     vertices.insert(vertices.end(),
-                    chunk->GetBorderMesh(LEFT).begin(),
-                    chunk->GetBorderMesh(LEFT).end());
+                    chunk.GetBorderMesh(LEFT).begin(),
+                    chunk.GetBorderMesh(LEFT).end());
 
     if (vertices.empty())
         return;
@@ -409,31 +413,29 @@ void VoxelLayer::SetupRenderData(const std::shared_ptr<Chunk>& chunk) const
 
     glCreateBuffers(1, &data.RadianceStorageBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, data.RadianceStorageBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(RadianceArray), chunk->GetRadianceGrid(), GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(RadianceArray), chunk.GetRadianceGrid(), GL_STATIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, data.RadianceStorageBuffer);
 
-    std::vector<uint32_t> indices = {};
     const uint32_t faceCount = vertices.size() / 4;
     for (uint32_t i = 0; i < faceCount; ++i)
     {
-        indices.push_back(i * 4 + 0);
-        indices.push_back(i * 4 + 1);
-        indices.push_back(i * 4 + 2);
-        indices.push_back(i * 4 + 2);
-        indices.push_back(i * 4 + 3);
-        indices.push_back(i * 4 + 0);
+        data.Indices.push_back(i * 4 + 0);
+        data.Indices.push_back(i * 4 + 1);
+        data.Indices.push_back(i * 4 + 2);
+        data.Indices.push_back(i * 4 + 2);
+        data.Indices.push_back(i * 4 + 3);
+        data.Indices.push_back(i * 4 + 0);
     }
     glCreateBuffers(1, &data.IndexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.IndexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), &indices[0], GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.Indices.size() * sizeof(uint32_t), &data.Indices[0], GL_STATIC_DRAW);
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
     glBindVertexArray(0);
 
-    data.Indices = indices;
-    data.ModelMatrix = chunk->GetModelMatrix();
+    data.ModelMatrix = chunk.GetModelMatrix();
 
-    m_RenderData->insert({chunk->GetPosition(), data});
+    m_RenderData->emplace(chunk.GetPosition(), std::move(data));
 }
 
 };

@@ -29,6 +29,8 @@ public:
     Chunk(World& world, const Biome& biome);
     Chunk(World& world, Position2D position, const Biome& biome);
     ~Chunk();
+    Chunk(const Chunk&) = delete;
+    Chunk& operator=(const Chunk&) = delete;
 
     void Generate();
     void GenerateMesh();
@@ -36,7 +38,7 @@ public:
     std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::ivec3 pos) const;
 
     VoxelGrid& GetVoxelGrid();
-    RadianceArray& GetRadianceGrid();
+    const RadianceArray& GetRadianceGrid() const;
     Voxel& GetVoxelFromGrid(Position3D positionInGrid);
 
     const std::vector<VoxelVertex>& GetMesh() const;
@@ -65,7 +67,7 @@ private:
     VoxelGrid m_VoxelGrid;
     std::vector<VoxelVertex> m_Mesh;
     std::unordered_map<VoxelFace, std::vector<VoxelVertex> > m_BorderMeshes;
-    std::mutex m_Mutex;
+    std::mutex m_Lock;
 
     const Biome& m_Biome;
 
@@ -73,7 +75,7 @@ private:
     std::queue<glm::ivec3> m_RadianceUpdateQueue;
 
     std::unordered_set<BiomeType> m_BiomeTypes;
-    std::mutex m_BiomeMutex;
+    std::mutex m_BiomeLock;
 };
 
 }

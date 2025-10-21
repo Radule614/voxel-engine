@@ -18,6 +18,8 @@ class VoxelLayer : public GLCore::Layer
 public:
     explicit VoxelLayer(EngineState& state);
     ~VoxelLayer() override;
+    VoxelLayer(const VoxelLayer&) = delete;
+    VoxelLayer& operator=(const VoxelLayer&) = delete;
 
     void OnAttach() override;
     void OnDetach() override;
@@ -36,7 +38,7 @@ private:
     };
 
     void PollChunkRenderQueue() const;
-    void SetupRenderData(const std::shared_ptr<Chunk>& chunk) const;
+    void SetupRenderData(const Chunk& chunk) const;
     void ApplyState() const;
     void ResetWorld() const;
     void RemoveDistantChunks() const;

@@ -18,11 +18,10 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     : m_World(world),
       m_Position(position),
       m_VoxelGrid(),
-      m_Mesh({}),
-      m_Mutex(std::mutex()),
+      m_Lock(std::mutex()),
       m_Biome(biome),
       m_RadianceGrid{},
-      m_BiomeMutex(std::mutex())
+      m_BiomeLock(std::mutex())
 {
     m_BorderMeshes.insert({FRONT, {}});
     m_BorderMeshes.insert({RIGHT, {}});
@@ -39,7 +38,10 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     }
 }
 
-Chunk::~Chunk() = default;
+Chunk::~Chunk()
+{
+    LOG_INFO("DESTRUCTOR CALLED: {}", m_Position.ToString());
+}
 
 void Chunk::Generate()
 {
@@ -80,7 +82,7 @@ void Chunk::Generate()
 
 void Chunk::AddStructures(const std::vector<Structure>& structures)
 {
-    std::unordered_set<std::shared_ptr<Chunk> > changedChunks{};
+    std::unordered_set<Chunk* > changedChunks{};
     auto& deferredQueueMap = m_World.GetDeferredUpdateQueueMap();
 
     for (auto& structure: structures)
@@ -116,7 +118,7 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
                 Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.GetY()];
                 voxel.SetVoxelType(voxelType);
                 voxel.SetPosition(voxelPosition);
-                changedChunks.insert(chunk);
+                changedChunks.insert(chunk.get());
 
                 chunk->GetLock().unlock();
 
@@ -351,17 +353,17 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h)
 
     if (!m_BiomeTypes.contains(biomeType))
     {
-        m_BiomeMutex.lock();
+        m_BiomeLock.lock();
 
         m_BiomeTypes.insert(biomeType);
 
-        m_BiomeMutex.unlock();
+        m_BiomeLock.unlock();
     }
 }
 
 VoxelGrid& Chunk::GetVoxelGrid() { return m_VoxelGrid; }
 
-RadianceArray& Chunk::GetRadianceGrid() { return m_RadianceGrid; }
+const RadianceArray& Chunk::GetRadianceGrid() const { return m_RadianceGrid; }
 
 Voxel& Chunk::GetVoxelFromGrid(const Position3D positionInGrid)
 {
@@ -374,7 +376,7 @@ const std::vector<VoxelVertex>& Chunk::GetBorderMesh(const VoxelFace face) const
 
 Position2D Chunk::GetPosition() const { return m_Position; }
 
-std::mutex& Chunk::GetLock() { return m_Mutex; }
+std::mutex& Chunk::GetLock() { return m_Lock; }
 
 glm::mat4 Chunk::GetModelMatrix() const
 {
