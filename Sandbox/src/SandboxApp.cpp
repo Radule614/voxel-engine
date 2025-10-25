@@ -13,13 +13,11 @@ using namespace VoxelEngine;
 
 void SandboxApp::Setup()
 {
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    constexpr auto cameraPosition = glm::vec3(-140.5f * CHUNK_WIDTH, CHUNK_HEIGHT - 24, 30.5f * CHUNK_WIDTH);
 
     auto cameraController = std::make_shared<Utils::PerspectiveCameraController>(45.0f, 16.0f / 9.0f, 100.0f);
     cameraController->SetFreeFly(true);
-    cameraController->GetCamera().SetPosition(glm::vec3(CHUNK_WIDTH / 2, CHUNK_HEIGHT - 24, CHUNK_WIDTH / 2));
+    cameraController->GetCamera().SetPosition(cameraPosition);
     m_State.CameraController = std::move(cameraController);
 
     WorldSettings settings{};
