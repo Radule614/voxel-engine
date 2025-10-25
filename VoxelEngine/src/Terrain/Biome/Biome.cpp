@@ -6,7 +6,6 @@
 #include "../TerrainConfig.hpp"
 #include "Structures/Cactus/CactusGenerator.hpp"
 #include "Structures/DarkTree/DarkTreeGenerator.hpp"
-#include "Structures/Shrine/ShrineGenerator.hpp"
 #include "Structures/Tree/TreeGenerator.hpp"
 
 namespace VoxelEngine
@@ -17,15 +16,12 @@ Biome::Biome(const uint32_t seed) : m_Perlin(seed),
 {
     m_Generators[PLAINS] = std::vector<std::unique_ptr<StructureGenerator> >{};
     m_Generators[PLAINS].emplace_back(std::make_unique<TreeGenerator>());
-    m_Generators[PLAINS].emplace_back(std::make_unique<ShrineGenerator>());
 
     m_Generators[DESERT] = std::vector<std::unique_ptr<StructureGenerator> >{};
     m_Generators[DESERT].emplace_back(std::make_unique<CactusGenerator>());
-    m_Generators[DESERT].emplace_back(std::make_unique<ShrineGenerator>());
 
     m_Generators[SNOWY_PLAINS] = std::vector<std::unique_ptr<StructureGenerator> >{};
     m_Generators[SNOWY_PLAINS].emplace_back(std::make_unique<DarkTreeGenerator>());
-    m_Generators[SNOWY_PLAINS].emplace_back(std::make_unique<ShrineGenerator>());
 }
 
 Biome::GeneratorContext::GeneratorContext(const Voxel (&surfaceLayer)[16][16],
@@ -35,6 +31,11 @@ Biome::GeneratorContext::GeneratorContext(const Voxel (&surfaceLayer)[16][16],
       ChunkPosition(chunkPosition),
       ChunkBiomeTypes(chunkBiomeTypes)
 {
+}
+
+void Biome::AddGenerator(BiomeType biomeType, std::unique_ptr<StructureGenerator> generator)
+{
+    m_Generators[biomeType].emplace_back(std::move(generator));
 }
 
 std::tuple<BiomeType, VoxelType> Biome::ResolveBiomeFeatures(const glm::i32vec3 position, const int32_t height) const

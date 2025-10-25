@@ -4,12 +4,12 @@
 
 #include "ShrineGenerator.hpp"
 #include "ShrineFactory.hpp"
-#include "../../../World/World.hpp"
+#include "Terrain/World/World.hpp";
 
-namespace VoxelEngine
+using namespace VoxelEngine;
+
+namespace Sandbox
 {
-
-class World;
 
 void ShrineGenerator::Generate(const Context& context, std::vector<Structure>& output) const
 {

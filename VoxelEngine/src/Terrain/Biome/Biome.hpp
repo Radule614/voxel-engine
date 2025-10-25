@@ -32,6 +32,8 @@ public:
                          const std::unordered_set<BiomeType>& chunkBiomeTypes);
     };
 
+    void AddGenerator(BiomeType biomeType, std::unique_ptr<StructureGenerator> generator);
+
     std::tuple<BiomeType, VoxelType> ResolveBiomeFeatures(glm::i32vec3 position, int32_t height) const;
     int32_t GetHeight(int32_t x, int32_t z) const;
     void GenerateStructures(const GeneratorContext& ctx, std::vector<Structure>& output) const;
@@ -44,7 +46,7 @@ private:
     const siv::PerlinNoise m_Perlin;
     const int32_t m_PerlinSeed;
 
-    std::map<BiomeType, std::vector<std::unique_ptr<StructureGenerator>>> m_Generators;
+    std::map<BiomeType, std::vector<std::unique_ptr<StructureGenerator> > > m_Generators;
 };
 
 }

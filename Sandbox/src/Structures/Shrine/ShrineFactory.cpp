@@ -4,9 +4,10 @@
 
 #include "ShrineFactory.hpp"
 
-namespace VoxelEngine
-{
+using namespace VoxelEngine;
 
+namespace Sandbox
+{
 
 Structure ShrineFactory::CreateShrine(const Position3D position)
 {
