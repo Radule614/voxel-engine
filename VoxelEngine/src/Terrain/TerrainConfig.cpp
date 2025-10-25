@@ -9,7 +9,7 @@ int32_t TerrainConfig::MaxChunkDistance = 20;
 
 int32_t TerrainConfig::PolygonMode = GL_FILL;
 
-int32_t TerrainConfig::MaxRadiance = 10;
-int32_t TerrainConfig::SunRadiance = 10;
+int32_t TerrainConfig::MaxRadiance = 12;
+int32_t TerrainConfig::SunRadiance = 12;
 
 }
