@@ -38,10 +38,7 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     }
 }
 
-Chunk::~Chunk()
-{
-    LOG_INFO("DESTRUCTOR CALLED: {}", m_Position.ToString());
-}
+Chunk::~Chunk() = default;
 
 void Chunk::Generate()
 {
@@ -82,7 +79,7 @@ void Chunk::Generate()
 
 void Chunk::AddStructures(const std::vector<Structure>& structures)
 {
-    std::unordered_set<Chunk* > changedChunks{};
+    std::unordered_set<Chunk*> changedChunks{};
     auto& deferredQueueMap = m_World.GetDeferredUpdateQueueMap();
 
     for (auto& structure: structures)

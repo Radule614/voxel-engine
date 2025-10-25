@@ -168,29 +168,20 @@ void VoxelLayer::RemoveDistantChunks() const
         return;
 
     std::vector<std::pair<Position2D, Chunk*> > distantChunks = m_World->FindDistantChunks();
-    std::vector<std::thread> threads = {};
 
+    int count = 0;
     for (const auto [position, chunk]: distantChunks)
     {
-        if (threads.size() >= TerrainConfig::ThreadCount)
+        if (count >= TerrainConfig::ThreadCount)
             break;
 
         if (!chunk->GetLock().try_lock())
             continue;
 
-        threads.emplace_back([this, position, chunk] {
-            DeleteChunkRenderData(*chunk);
+        DeleteChunkRenderData(*chunk);
+        m_World->RemoveChunk(position);
 
-            m_World->RemoveChunk(position);
-        });
-
-        chunk->GetLock().unlock();
-    }
-
-    for (auto& thread: threads)
-    {
-        if (thread.joinable())
-            thread.join();
+        ++count;
     }
 
     m_World->GetLock().unlock();
@@ -204,10 +195,6 @@ void VoxelLayer::DeleteChunkRenderData(const Chunk& chunk) const
         const ChunkRenderData& renderData = it->second;
 
         glBindVertexArray(0);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
         glDeleteBuffers(1, &renderData.VertexBuffer);
         glDeleteBuffers(1, &renderData.IndexBuffer);
         glDeleteBuffers(1, &renderData.RadianceStorageBuffer);
