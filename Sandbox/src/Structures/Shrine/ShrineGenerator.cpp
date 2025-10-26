@@ -31,6 +31,9 @@ void ShrineGenerator::Generate(const Context& context, std::vector<Structure>& o
 
             const Voxel& surface = context.SurfaceLayer[rx][rz];
 
+            if (surface.GetVoxelType() == AIR)
+                continue;
+
             possibleLocations.emplace_back(surface, locationBias);
         }
     }
@@ -42,7 +45,7 @@ void ShrineGenerator::Generate(const Context& context, std::vector<Structure>& o
     {
         auto& [voxel, bias] = possibleLocations[0];
 
-        if (bias > 0.75)
+        if (bias > 0.85)
             output.emplace_back(ShrineFactory::CreateShrine(voxel.GetPosition()));
     }
 }

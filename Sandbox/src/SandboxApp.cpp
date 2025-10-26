@@ -4,7 +4,7 @@
 
 #include "SandboxApp.hpp"
 #include "Balls/BallLayer.hpp"
-#include "GLFW/include/GLFW/glfw3.h"
+#include "Structures/Lamp/LampGenerator.hpp"
 #include "Structures/Shrine/ShrineGenerator.hpp"
 #include "Terrain/VoxelLayer.hpp"
 
@@ -24,6 +24,7 @@ void SandboxApp::Setup()
     WorldSettings settings{};
     settings.m_Biome = std::make_unique<Biome>(6512u);
     settings.m_Biome->AddGenerator(PLAINS, std::make_unique<ShrineGenerator>());
+    settings.m_Biome->AddGenerator(PLAINS, std::make_unique<LampGenerator>());
 
     auto* voxelLayer = new VoxelLayer(m_State);
     voxelLayer->Init(std::move(settings));
