@@ -9,8 +9,6 @@
 namespace VoxelEngine
 {
 
-class World;
-
 void DarkTreeGenerator::Generate(const Context& context, std::vector<Structure>& output) const
 {
     constexpr size_t offset = 0;

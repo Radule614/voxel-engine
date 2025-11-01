@@ -103,6 +103,10 @@ void Renderer::RenderMesh(const MeshComponent& meshComponent,
         uint32_t specularNr = 1;
         uint32_t normalNr = 1;
         const auto& textures = mesh.GetTextures();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
         for (size_t i = 0; i < textures.size(); i++)
         {
             glActiveTexture(GL_TEXTURE0 + i);

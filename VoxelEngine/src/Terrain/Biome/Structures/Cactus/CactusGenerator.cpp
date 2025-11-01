@@ -9,8 +9,6 @@
 namespace VoxelEngine
 {
 
-class World;
-
 void CactusGenerator::Generate(const Context& context, std::vector<Structure>& output) const
 {
     constexpr size_t regionSize = CHUNK_WIDTH / 4;

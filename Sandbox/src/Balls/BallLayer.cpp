@@ -6,6 +6,7 @@
 #include "Ecs/Components/ColliderComponent.hpp"
 #include "Ecs/Components/MeshComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
+#include "Enemy/Enemy.hpp"
 #include "Physics/Utils/BodyBuilder.hpp"
 #include "Physics/Character/CharacterBuilder.hpp"
 
@@ -51,6 +52,8 @@ void BallLayer::OnAttach()
         registry.emplace<CharacterComponent>(entity, std::move(characterController));
         registry.emplace<CameraComponent>(entity, cameraController);
     }
+
+    new Enemy(cameraController->GetCamera().GetPosition());
 }
 
 void BallLayer::OnEvent(Event& event)
