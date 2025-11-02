@@ -1,6 +1,5 @@
 #pragma once
 
-#include "GLCoreUtils.hpp"
 #include "EngineState.hpp"
 #include "Assets/Model.hpp"
 #include "Ecs/Ecs.hpp"
