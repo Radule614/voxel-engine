@@ -1,6 +1,6 @@
 #include "GLCore.hpp"
 #include "AssetManager.hpp"
-#include "stb_image/stb_image.h"
+#include "stb_image.hpp"
 #include <glad/glad.h>
 
 #include "assimp/postprocess.h"

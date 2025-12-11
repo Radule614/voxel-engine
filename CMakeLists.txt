@@ -5,9 +5,9 @@ project(VoxelEngine)
 set(CMAKE_SYSTEM_PROCESSOR x86_64)
 
 # Static runtime (for MSVC)
-if(MSVC)
+if (MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-endif()
+endif ()
 
 # Define configurations
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)

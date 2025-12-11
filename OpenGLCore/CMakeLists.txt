@@ -15,12 +15,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${TARGET_OUTPUT_DIR})
 
 # Collect source files
 file(GLOB_RECURSE OPENGLCORE_SOURCES
-    "src/*.cpp"
-    "src/*.hpp"
-    "vendor/stb_image/*.h"
-    "vendor/stb_image/*.cpp"
-    "vendor/glm/glm/**/*.hpp"
-    "vendor/glm/glm/**/*.cpp"
+        "src/*.cpp"
+        "src/*.hpp"
+        "vendor/stb_image/*.h"
+        "vendor/stb_image/*.cpp"
+        "vendor/glm/glm/**/*.hpp"
+        "vendor/glm/glm/**/*.cpp"
 )
 
 # Create static library
@@ -31,38 +31,37 @@ target_precompile_headers(OpenGLCore PRIVATE src/glpch.hpp)
 
 # Preprocessor definitions
 target_compile_definitions(OpenGLCore PRIVATE
-    _CRT_SECURE_NO_WARNINGS
+        _CRT_SECURE_NO_WARNINGS
 )
 
 # Include directories
 target_include_directories(OpenGLCore PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/GLFW/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/Glad/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm
-    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/stb_image
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/spdlog/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/GLFW/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/Glad/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glm
 )
 
 # Linked libraries
 target_link_libraries(OpenGLCore PRIVATE
-    GLFW
-    Glad
-    ImGui
-    opengl32
+        GLFW
+        Glad
+        ImGui
+        opengl32
 )
 
 # Platform-specific settings
-if(WIN32)
+if (WIN32)
     target_compile_definitions(OpenGLCore PRIVATE
-        GLCORE_PLATFORM_WINDOWS
-        GLFW_INCLUDE_NONE
+            GLCORE_PLATFORM_WINDOWS
+            GLFW_INCLUDE_NONE
     )
-endif()
+endif ()
 
 # Config-specific defines
 target_compile_definitions(OpenGLCore PRIVATE
-    $<$<CONFIG:Debug>:GLCORE_DEBUG>
-    $<$<CONFIG:Release>:GLCORE_RELEASE>
+        $<$<CONFIG:Debug>:GLCORE_DEBUG>
+        $<$<CONFIG:Release>:GLCORE_RELEASE>
 )
