@@ -1,20 +1,35 @@
+//
+// Created by RadU on 12/11/2025.
+//
+
 #pragma once
-#include "Mesh.hpp"
+
+#include <memory>
+#include "tiny_gltf.hpp"
+#include "glad/glad.h"
 
 namespace VoxelEngine
 {
 
-struct Model
+class Model
 {
-    std::vector<Mesh> Meshes;
+public:
+    explicit Model(tinygltf::Model* model);
 
-    Model()
-    {
-    }
+    void Bind();
+    void Draw();
 
-    Model(const std::vector<Mesh>& meshes) : Meshes(meshes)
-    {
-    }
+private:
+    void BindMesh(tinygltf::Model& model, tinygltf::Mesh& mesh);
+    void BindNodes(tinygltf::Model& model, tinygltf::Node& node);
+
+    void DrawMesh(tinygltf::Model& model, tinygltf::Mesh& mesh);
+    void DrawNodes(tinygltf::Model& model,tinygltf::Node& node);
+
+    std::unique_ptr<tinygltf::Model> m_GltfModel;
+
+    GLuint m_Vao;
+    std::map<int32_t, GLuint> m_Ebos;
 };
 
 }

@@ -6,6 +6,7 @@
 #include "../Terrain/Utils/Position2D.hpp"
 #include "../Ecs/Components/TerrainComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
+#include "../Assets/Texture.hpp"
 
 #define SHADOW_WIDTH 4096
 #define SHADOW_HEIGHT 4096

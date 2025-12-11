@@ -25,7 +25,7 @@ Renderer::Renderer(Window& window) : m_Window(window)
 {
     m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
     m_TerrainShader = Shader::FromGLSLTextFiles("assets/shaders/voxel.vert.glsl", "assets/shaders/voxel.frag.glsl");
-    m_MeshShader = Shader::FromGLSLTextFiles("assets/shaders/default.vert.glsl", "assets/shaders/default.frag.glsl");
+    m_MeshShader = Shader::FromGLSLTextFiles("assets/shaders/pbr.vert.glsl", "assets/shaders/pbr.frag.glsl");
 
     const DirectionalLight light = {
         glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f)),
@@ -69,6 +69,7 @@ void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShad
         model = glm::translate(model, transform.Position);
         model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
         model = glm::scale(model, transform.Scale);
+
         RenderMesh(mesh, camera, model, meshShader);
     }
     glCullFace(GL_FRONT);
@@ -97,36 +98,10 @@ void Renderer::RenderMesh(const MeshComponent& meshComponent,
     shader->SetVec3("u_CameraPos", camera.GetPosition());
     shader->SetModel(model);
     SetDirectionalLightUniform(*shader, "u_DirectionalLight", m_DirectionalLight);
-    for (const Mesh& mesh: meshComponent.Meshes)
-    {
-        uint32_t diffuseNr = 1;
-        uint32_t specularNr = 1;
-        uint32_t normalNr = 1;
-        const auto& textures = mesh.GetTextures();
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+    meshComponent.Model->Bind();
+    meshComponent.Model->Draw();
 
-        for (size_t i = 0; i < textures.size(); i++)
-        {
-            glActiveTexture(GL_TEXTURE0 + i);
-            std::string number;
-            std::string name = textures[i].type;
-            if (name == "Diffuse")
-                number = std::to_string(diffuseNr++);
-            else if (name == "Specular")
-                number = std::to_string(specularNr++);
-            else if (name == "Normal")
-                number = std::to_string(normalNr++);
-            const std::string uniform = "u_Texture" + name + "_" + number;
-            glUniform1i(glGetUniformLocation(shader->GetRendererID(), uniform.c_str()), i);
-            glBindTexture(GL_TEXTURE_2D, textures[i].id);
-        }
-        glActiveTexture(GL_TEXTURE0);
-        glBindVertexArray(mesh.GetVAO());
-        glDrawElements(GL_TRIANGLES, mesh.GetIndexCount(), GL_UNSIGNED_INT, nullptr);
-        glBindVertexArray(0);
-    }
     glUseProgram(0);
 }
 
