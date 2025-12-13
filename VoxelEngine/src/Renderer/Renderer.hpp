@@ -14,14 +14,6 @@
 namespace VoxelEngine
 {
 
-struct Material
-{
-    glm::vec3 Ambient;
-    glm::vec3 Diffuse;
-    glm::vec3 Specular;
-    float_t Shininess;
-};
-
 struct PointLight
 {
     glm::vec3 Position;

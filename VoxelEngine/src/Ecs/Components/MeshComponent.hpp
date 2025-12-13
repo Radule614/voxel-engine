@@ -7,11 +7,11 @@ namespace VoxelEngine
 
 struct MeshComponent
 {
-    explicit MeshComponent(const std::shared_ptr<Model>& model) : Model(model)
+    explicit MeshComponent(const Model& model) : Model(model)
     {
     }
 
-    std::shared_ptr<Model> Model;
+    const Model& Model;
 };
 
 }

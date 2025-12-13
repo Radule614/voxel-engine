@@ -17,9 +17,8 @@ struct DirectionalLight {
 
 uniform DirectionalLight u_DirectionalLight;
 uniform vec3 u_CameraPos;
-uniform sampler2D u_TextureDiffuse_1;
-uniform sampler2D u_TextureSpecular_1;
-uniform vec3 u_Color;
+
+uniform vec4 u_BaseColorFactor;
 
 vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir) {
     vec3 norm = normalize(normal);
@@ -29,15 +28,14 @@ vec3 CalculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), 128);
 
-    vec3 ambient = light.Ambient * 0.1 * u_Color;
-    vec3 diffuse = light.Diffuse * diff * u_Color;
+    vec3 ambient = light.Ambient * 0.3 * vec3(u_BaseColorFactor);
+    vec3 diffuse = light.Diffuse * diff * vec3(u_BaseColorFactor);
 
     return (ambient + diffuse);
 }
 
 void main() {
     vec3 viewDir = normalize(u_CameraPos - i_Fragment.FragPos);
-
 
     o_Color = vec4(CalculateDirectionalLight(u_DirectionalLight, i_Fragment.FragNormal, viewDir), 1.0);
 }

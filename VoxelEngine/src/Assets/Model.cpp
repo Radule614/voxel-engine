@@ -2,165 +2,215 @@
 // Created by RadU on 12/11/2025.
 //
 
+#include <ranges>
 #include "Model.hpp"
 #include "GLCoreUtils.hpp"
+#include "../Utils/Utils.hpp"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace VoxelEngine
 {
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
-Model::Model(tinygltf::Model* model) : m_GltfModel(model)
+static std::map<std::string, GLuint> VertexAttributeIndexMap = {
+    {"POSITION", 0},
+    {"NORMAL", 1},
+    {"TEXCOORD_0", 2},
+};
+
+Model::Model(tinygltf::Model* model) : m_GltfModel(model) { Load(); }
+
+Model::~Model()
 {
+    for (auto glBuffer: m_AllocatedBuffers | std::views::values)
+        glDeleteBuffers(1, &glBuffer);
+
+    for (const auto& primitives: m_MeshPrimitiveMap | std::views::values)
+        for (auto primitive: primitives)
+            glDeleteVertexArrays(1, &primitive.Vao);
 }
 
-void Model::Bind()
+void Model::Load()
 {
     tinygltf::Model& model = *m_GltfModel;
 
-    std::map<int, GLuint> vbos;
-    glGenVertexArrays(1, &m_Vao);
-    glBindVertexArray(m_Vao);
-
     const tinygltf::Scene& scene = model.scenes[model.defaultScene];
-    for (size_t i = 0; i < scene.nodes.size(); ++i)
+    for (const int32_t node: scene.nodes)
     {
-        assert((scene.nodes[i] >= 0) && (scene.nodes[i] < model.nodes.size()));
-        BindNodes(model, model.nodes[scene.nodes[i]]);
-    }
-
-    glBindVertexArray(0);
-    // cleanup vbos but do not delete index buffers yet
-    for (auto it = vbos.cbegin(); it != vbos.cend();)
-    {
-        tinygltf::BufferView bufferView = model.bufferViews[it->first];
-        if (bufferView.target != GL_ELEMENT_ARRAY_BUFFER)
-        {
-            glDeleteBuffers(1, &vbos[it->first]);
-            vbos.erase(it++);
-        }
-        else { ++it; }
+        GLCORE_ASSERT((node >= 0) && (node < model.nodes.size()));
+        LoadNodes(model.nodes[node]);
     }
 }
 
-void Model::Draw()
+void Model::Draw(const GLCore::Utils::Shader& shader, glm::mat4 modelMatrix) const
 {
     tinygltf::Model& model = *m_GltfModel;
 
-    glBindVertexArray(m_Vao);
-
     const tinygltf::Scene& scene = model.scenes[model.defaultScene];
-    for (size_t i = 0; i < scene.nodes.size(); ++i) { DrawNodes(model, model.nodes[scene.nodes[i]]); }
+    for (const int32_t node: scene.nodes)
+        DrawNodes(shader, model.nodes[node], modelMatrix);
+}
+
+void Model::DrawMesh(const GLCore::Utils::Shader& shader,
+                     tinygltf::Mesh& mesh,
+                     int32_t meshIndex,
+                     glm::mat4 modelMatrix) const
+{
+    std::vector<RenderPrimitive> renderPrimitives = m_MeshPrimitiveMap.at(meshIndex);
+    GLCORE_ASSERT(renderPrimitives.size() == mesh.primitives.size());
+
+    for (size_t i = 0; i < mesh.primitives.size(); ++i)
+    {
+        auto [Vao, Mode, IndexCount, IndexType, Material] = renderPrimitives[i];
+
+        glBindVertexArray(Vao);
+
+        shader.SetModel(modelMatrix);
+
+        shader.SetVec4("u_BaseColorFactor", Material.BaseColorFactor);
+
+        glDrawElements(Mode, IndexCount, IndexType, nullptr);
+    }
 
     glBindVertexArray(0);
 }
 
-void Model::DrawMesh(tinygltf::Model& model, tinygltf::Mesh& mesh)
+glm::mat4 Model::GetLocalTransformMatrix(const tinygltf::Node& node)
 {
-    for (size_t i = 0; i < mesh.primitives.size(); ++i)
+    if (!node.matrix.empty())
+        return VectorToMat4(node.matrix);
+
+    glm::vec3 T = node.translation.size() == 3
+    ? glm::vec3(node.translation[0], node.translation[1], node.translation[2])
+    : glm::vec3(0.0f);
+
+    glm::quat R = node.rotation.size() == 4
+        ? glm::quat(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2])
+        : glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+
+    glm::vec3 S = node.scale.size() == 3
+        ? glm::vec3(node.scale[0], node.scale[1], node.scale[2])
+        : glm::vec3(1.0f);
+
+    return glm::translate(glm::mat4(1.0f), T) * glm::mat4_cast(R) * glm::scale(glm::mat4(1.0f), S);
+}
+
+void Model::DrawNodes(const GLCore::Utils::Shader& shader, tinygltf::Node& node, glm::mat4 modelMatrix) const
+{
+    tinygltf::Model& model = *m_GltfModel;
+
+    glm::mat4 localMatrix = GetLocalTransformMatrix(node);
+    modelMatrix = modelMatrix * localMatrix;
+
+    if ((node.mesh >= 0) && (node.mesh < model.meshes.size()))
+        DrawMesh(shader, model.meshes[node.mesh], node.mesh, modelMatrix);
+
+    for (const int32_t childNode: node.children)
+        DrawNodes(shader, model.nodes[childNode], modelMatrix);
+}
+
+GLuint Model::GetBuffer(int32_t bufferViewIndex)
+{
+    if (m_AllocatedBuffers.contains(bufferViewIndex))
+        return m_AllocatedBuffers[bufferViewIndex];
+
+    const tinygltf::Model& model = *m_GltfModel;
+
+    const tinygltf::BufferView& bufferView = model.bufferViews[bufferViewIndex];
+    const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+    LOG_INFO("bufferview.target: {0}", bufferView.target)
+    LOG_INFO("buffer.data.size = {0}, bufferview.byteOffset = {1}", buffer.data.size(), bufferView.byteOffset)
+
+    GLuint glBuffer;
+    glGenBuffers(1, &glBuffer);
+    glBindBuffer(bufferView.target, glBuffer);
+    glBufferData(bufferView.target,
+                 bufferView.byteLength,
+                 &buffer.data.at(0) + bufferView.byteOffset,
+                 GL_STATIC_DRAW);
+
+    m_AllocatedBuffers[bufferViewIndex] = glBuffer;
+
+    return glBuffer;
+}
+
+void Model::LoadNodes(tinygltf::Node& node)
+{
+    tinygltf::Model& model = *m_GltfModel;
+
+    if ((node.mesh >= 0) && (node.mesh < model.meshes.size()))
+        LoadMesh(model.meshes[node.mesh], node.mesh);
+
+    for (const int32_t childNode: node.children)
     {
-        tinygltf::Primitive primitive = mesh.primitives[i];
-        tinygltf::Accessor indexAccessor = model.accessors[primitive.indices];
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Ebos.at(indexAccessor.bufferView));
-
-        glDrawElements(primitive.mode,
-                       indexAccessor.count,
-                       indexAccessor.componentType,
-                       BUFFER_OFFSET(indexAccessor.byteOffset));
+        GLCORE_ASSERT((node.children[i] >= 0) && (node.children[i] < model.nodes.size()));
+        LoadNodes(model.nodes[childNode]);
     }
 }
 
-// recursively draw node and children nodes of model
-void Model::DrawNodes(tinygltf::Model& model, tinygltf::Node& node)
+void Model::LoadMesh(tinygltf::Mesh& mesh, int32_t meshIndex)
 {
-    if ((node.mesh >= 0) && (node.mesh < model.meshes.size())) { DrawMesh(model, model.meshes[node.mesh]); }
-    for (size_t i = 0; i < node.children.size(); i++) { DrawNodes(model, model.nodes[node.children[i]]); }
-}
+    const tinygltf::Model& model = *m_GltfModel;
 
-void Model::BindNodes(tinygltf::Model& model, tinygltf::Node& node)
-{
-    if ((node.mesh >= 0) && (node.mesh < model.meshes.size())) { BindMesh(model, model.meshes[node.mesh]); }
+    std::vector<RenderPrimitive> vaoArray{};
 
-    for (size_t i = 0; i < node.children.size(); i++)
+    for (const auto& primitive: mesh.primitives)
     {
-        assert((node.children[i] >= 0) && (node.children[i] < model.nodes.size()));
-        BindNodes(model, model.nodes[node.children[i]]);
-    }
-}
+        GLuint vao;
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
 
-void Model::BindMesh(tinygltf::Model& model, tinygltf::Mesh& mesh)
-{
-    for (size_t i = 0; i < model.bufferViews.size(); ++i)
-    {
-        const tinygltf::BufferView& bufferView = model.bufferViews[i];
-        if (bufferView.target == 0)
+        for (const auto& [primitiveType, accessorIndex]: primitive.attributes)
         {
-            // TODO impl drawarrays
-            LOG_WARN("bufferView.target is zero")
-
-            continue;
-        }
-
-        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-        LOG_INFO("bufferview.target: {0}", bufferView.target)
-
-        GLuint vbo;
-        glGenBuffers(1, &vbo);
-        m_Ebos[i] = vbo;
-        glBindBuffer(bufferView.target, vbo);
-
-        LOG_INFO("buffer.data.size = {0}, bufferview.byteOffset = {1}", buffer.data.size(), bufferView.byteOffset)
-
-        glBufferData(bufferView.target,
-                     bufferView.byteLength,
-                     &buffer.data.at(0) + bufferView.byteOffset,
-                     GL_STATIC_DRAW);
-    }
-
-    for (size_t i = 0; i < mesh.primitives.size(); ++i)
-    {
-        tinygltf::Primitive primitive = mesh.primitives[i];
-        tinygltf::Accessor indexAccessor = model.accessors[primitive.indices];
-
-        for (auto& attrib: primitive.attributes)
-        {
-            tinygltf::Accessor accessor = model.accessors[attrib.second];
-            int byteStride =
-                    accessor.ByteStride(model.bufferViews[accessor.bufferView]);
-            glBindBuffer(GL_ARRAY_BUFFER, m_Ebos[accessor.bufferView]);
+            tinygltf::Accessor accessor = model.accessors[accessorIndex];
+            int byteStride = accessor.ByteStride(model.bufferViews[accessor.bufferView]);
+            glBindBuffer(GL_ARRAY_BUFFER, GetBuffer(accessor.bufferView));
 
             int size = 1;
             if (accessor.type != TINYGLTF_TYPE_SCALAR) { size = accessor.type; }
 
-            int vaa = -1;
-            if (attrib.first.compare("POSITION") == 0) vaa = 0;
-            if (attrib.first.compare("NORMAL") == 0) vaa = 1;
-            if (attrib.first.compare("TEXCOORD_0") == 0) vaa = 2;
-            if (vaa > -1)
+            if (VertexAttributeIndexMap.contains(primitiveType))
             {
-                glEnableVertexAttribArray(vaa);
-                glVertexAttribPointer(vaa,
-                                      size,
-                                      accessor.componentType,
-                                      accessor.normalized ? GL_TRUE : GL_FALSE,
-                                      byteStride,
-                                      BUFFER_OFFSET(accessor.byteOffset));
+                const GLuint index = VertexAttributeIndexMap[primitiveType];
+
+                const auto& offset = BUFFER_OFFSET(accessor.byteOffset);
+                const auto isNormalized = accessor.normalized ? GL_TRUE : GL_FALSE;
+
+                glEnableVertexAttribArray(index);
+                glVertexAttribPointer(index, size, accessor.componentType, isNormalized, byteStride, offset);
             }
             else
-                LOG_WARN("vaa missing: {0}", attrib.first);
+                LOG_WARN("vaa missing: {0}", primitiveType);
         }
 
-        if (!model.materials.empty())
+        tinygltf::Accessor indexBufferAccessor = model.accessors[primitive.indices];
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetBuffer(indexBufferAccessor.bufferView));
+
+        RenderPrimitive renderPrimitive{};
+        renderPrimitive.Vao = vao;
+        renderPrimitive.Mode = primitive.mode;
+        renderPrimitive.IndexCount = indexBufferAccessor.count;
+        renderPrimitive.IndexType = indexBufferAccessor.componentType;
+
+        if (primitive.material >= 0)
         {
-            auto material = model.materials[0];
+            const tinygltf::Material& material = model.materials[primitive.material];
+            const std::vector<double>& color = material.pbrMetallicRoughness.baseColorFactor;
 
-            auto values = material.values["baseColorFactor"].number_array;
-            glm::vec3 color = glm::vec3(values[0], values[1], values[2]);
-
-
+            renderPrimitive.Material.BaseColorFactor = glm::vec4(color[0], color[1], color[2], color[3]);
         }
+
+        glBindVertexArray(0);
+
+        vaoArray.push_back(renderPrimitive);
     }
+
+    m_MeshPrimitiveMap[meshIndex] = vaoArray;
 }
 
 }

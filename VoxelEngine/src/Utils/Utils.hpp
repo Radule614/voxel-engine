@@ -25,4 +25,15 @@ inline float_t GetDistance(const Position2D a, const Position2D b)
     return glm::distance((glm::vec2) a, (glm::vec2) b);
 }
 
+inline glm::mat4 VectorToMat4(const std::vector<double>& m)
+{
+    if (m.size() != 16) return glm::mat4(1.0f);
+
+    glm::mat4 mat;
+    for (int i = 0; i < 16; ++i)
+        mat[i / 4][i % 4] = static_cast<float>(m[i]);
+
+    return mat;
+}
+
 }

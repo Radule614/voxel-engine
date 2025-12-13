@@ -4,6 +4,7 @@
 
 #include "SandboxApp.hpp"
 #include "Balls/BallLayer.hpp"
+#include "Sponza/SponzaLayer.hpp"
 #include "Structures/Shrine/ShrineGenerator.hpp"
 #include "Terrain/VoxelLayer.hpp"
 
@@ -29,6 +30,8 @@ void SandboxApp::Setup()
 
     PushLayer(voxelLayer);
     PushLayer(new BallLayer(m_State));
+
+    // PushLayer(new SponzaLayer(m_State));
 }
 
 }

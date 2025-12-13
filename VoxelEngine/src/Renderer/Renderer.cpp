@@ -28,8 +28,8 @@ Renderer::Renderer(Window& window) : m_Window(window)
     m_MeshShader = Shader::FromGLSLTextFiles("assets/shaders/pbr.vert.glsl", "assets/shaders/pbr.frag.glsl");
 
     const DirectionalLight light = {
-        glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f)),
-        glm::vec3(0.25f),
+        glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)),
+        glm::vec3(0.5f),
         glm::vec3(1.0f),
         glm::vec3(0.1f)
     };
@@ -96,11 +96,9 @@ void Renderer::RenderMesh(const MeshComponent& meshComponent,
 {
     glUseProgram(shader->GetRendererID());
     shader->SetVec3("u_CameraPos", camera.GetPosition());
-    shader->SetModel(model);
     SetDirectionalLightUniform(*shader, "u_DirectionalLight", m_DirectionalLight);
 
-    meshComponent.Model->Bind();
-    meshComponent.Model->Draw();
+    meshComponent.Model.Draw(*shader, model);
 
     glUseProgram(0);
 }
