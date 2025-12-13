@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EngineState.hpp"
-#include "Assets/Model.hpp"
+#include "Assets/Gltf/Model.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Physics/Utils/ShapeFactory.hpp"
 

@@ -24,16 +24,15 @@ public:
     void Draw(const GLCore::Utils::Shader& shader, glm::mat4 modelMatrix) const;
 
 private:
-    void LoadNodes(tinygltf::Node& node);
-    void LoadMesh(tinygltf::Mesh& mesh, int32_t meshIndex);
+    void LoadNodes(const tinygltf::Node& node);
+    void LoadMesh(const tinygltf::Mesh& mesh, int32_t meshIndex);
 
-    void DrawNodes(const GLCore::Utils::Shader& shader, tinygltf::Node& node, glm::mat4 modelMatrix) const;
+    void DrawNodes(const GLCore::Utils::Shader& shader, glm::mat4 modelMatrix, const tinygltf::Node& node) const;
     void DrawMesh(const GLCore::Utils::Shader& shader,
-                  tinygltf::Mesh& mesh,
-                  int32_t meshIndex,
-                  glm::mat4 modelMatrix) const;
+                  glm::mat4 modelMatrix,
+                  const tinygltf::Mesh& mesh,
+                  int32_t meshIndex) const;
 
-    static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node);
     GLuint GetBuffer(int32_t bufferViewIndex);
 
     std::unique_ptr<tinygltf::Model> m_GltfModel;

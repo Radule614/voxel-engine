@@ -5,7 +5,7 @@
 #pragma once
 
 #include "GLCoreUtils.hpp"
-#include "Model.hpp"
+#include "Gltf/Model.hpp"
 #include "Texture.hpp"
 
 namespace VoxelEngine

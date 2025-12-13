@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Assets/Model.hpp"
+#include "../../Assets/Gltf/Model.hpp"
 
 namespace VoxelEngine
 {

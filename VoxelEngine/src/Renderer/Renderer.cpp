@@ -1,5 +1,7 @@
 #include "Renderer.hpp"
 
+#include <ranges>
+
 #include "../Assets/AssetManager.hpp"
 #include "../Terrain/TerrainConfig.hpp"
 #include "../Ecs/Ecs.hpp"
@@ -46,7 +48,7 @@ void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShad
     constexpr glm::vec3 nightColor(0.1f);
     constexpr glm::vec3 dayColor(0.14f, 0.59f, 0.74f);
 
-    const float ratio = (TerrainConfig::SunRadiance - 1.0f) / TerrainConfig::MaxRadiance;
+    const float_t ratio = (TerrainConfig::SunRadiance - 1.0f) / TerrainConfig::MaxRadiance;
     const auto skyColor = glm::mix(nightColor, dayColor, ratio);
 
     glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
@@ -65,6 +67,7 @@ void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShad
     {
         auto& mesh = view.get<MeshComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
+
         auto model = glm::mat4(1.0);
         model = glm::translate(model, transform.Position);
         model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
@@ -95,8 +98,9 @@ void Renderer::RenderMesh(const MeshComponent& meshComponent,
                           const Shader* shader) const
 {
     glUseProgram(shader->GetRendererID());
-    shader->SetVec3("u_CameraPos", camera.GetPosition());
+
     SetDirectionalLightUniform(*shader, "u_DirectionalLight", m_DirectionalLight);
+    shader->SetVec3("u_CameraPos", camera.GetPosition());
 
     meshComponent.Model.Draw(*shader, model);
 
@@ -107,7 +111,8 @@ void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderDat
                              const Shader* shader) const
 {
     glUseProgram(shader->GetRendererID());
-    for (const auto& [position, metadata]: renderDataMap)
+
+    for (const auto& metadata: renderDataMap | std::views::values)
     {
         shader->SetModel(metadata.ModelMatrix);
 

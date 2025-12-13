@@ -26,13 +26,6 @@ void SponzaLayer::OnAttach()
 {
     static Model* model = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
 
-    EnableGLDebugging();
-    glEnable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-    glCullFace(GL_FRONT);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     const auto& cameraController = m_State.CameraController;
     const auto cameraPosition = cameraController->GetCamera().GetPosition();
 
