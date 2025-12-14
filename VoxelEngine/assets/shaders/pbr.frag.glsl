@@ -16,7 +16,7 @@ struct DirectionalLight {
 };
 
 struct Material {
-    vec3 Diffuse;
+    vec4 Diffuse;
 };
 
 uniform DirectionalLight u_DirectionalLight;
@@ -34,24 +34,31 @@ vec3 CalculateDirectionalLight(DirectionalLight light, Material material, vec3 n
     vec3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(norm, halfwayDir), 0.0), 128);
 
-    vec3 ambient = light.Ambient * 0.3 * material.Diffuse;
-    vec3 diffuse = light.Diffuse * diff * material.Diffuse;
+    vec3 ambient = light.Ambient * 0.3 * vec3(material.Diffuse);
+    vec3 diffuse = light.Diffuse * diff * vec3(material.Diffuse);
 
     return (ambient + diffuse);
 }
 
-void main() {
+Material CreateMaterial() {
     Material material;
-    if (u_HasBaseTexture) {
-        material.Diffuse = vec3(texture(u_BaseTexture, i_Fragment.FragTexCoords));
 
-        o_Color = texture(u_BaseTexture, i_Fragment.FragTexCoords);
-        return;
+    if (u_HasBaseTexture) {
+        material.Diffuse = texture(u_BaseTexture, i_Fragment.FragTexCoords);
     } else {
-        material.Diffuse = vec3(u_BaseColorFactor);
+        material.Diffuse = u_BaseColorFactor;
+    }
+
+    return material;
+}
+
+void main() {
+    Material material = CreateMaterial();
+
+    if (material.Diffuse.a < 0.5) {
+        discard;
     }
 
     vec3 viewDir = normalize(u_CameraPos - i_Fragment.FragPos);
-
     o_Color = vec4(CalculateDirectionalLight(u_DirectionalLight, material, i_Fragment.FragNormal, viewDir), 1.0);
 }

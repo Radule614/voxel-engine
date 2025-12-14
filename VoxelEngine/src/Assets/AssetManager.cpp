@@ -64,6 +64,7 @@ uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, const in
         glGenerateMipmap(GL_TEXTURE_2D);
     }
     else { LOG_INFO("Failed to load texture"); }
+    stbi_set_flip_vertically_on_load(false);
     stbi_image_free(data);
     LOG_INFO("Loaded: {0}", fullpath);
     return id;
@@ -88,7 +89,7 @@ Model* AssetManager::LoadModel(std::string filename)
     if (!res)
         LOG_ERROR("Failed to load glTF: {0}", filename)
     else
-        LOG_ERROR("Loaded glTF: {0}", filename)
+        LOG_INFO("Loaded glTF: {0}", filename)
 
     GLCORE_ASSERT(gltfModel != nullptr)
 

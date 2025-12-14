@@ -40,11 +40,12 @@ Model::~Model()
 void Model::Load()
 {
     const tinygltf::Model& model = *m_GltfModel;
-
     const tinygltf::Scene& scene = model.scenes[model.defaultScene];
+
     for (const int32_t node: scene.nodes)
     {
         GLCORE_ASSERT((node >= 0) && (node < model.nodes.size()));
+
         LoadNodes(model.nodes[node]);
     }
 }
@@ -55,7 +56,6 @@ GLuint Model::LoadBuffer(const int32_t bufferViewIndex)
         return m_AllocatedBuffers[bufferViewIndex];
 
     const tinygltf::Model& model = *m_GltfModel;
-
     const tinygltf::BufferView& bufferView = model.bufferViews[bufferViewIndex];
     const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
 
@@ -90,7 +90,7 @@ void Model::LoadNodes(const tinygltf::Node& node)
 void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
 {
     const tinygltf::Model& model = *m_GltfModel;
-    std::vector<RenderPrimitive> vaoArray{};
+    std::vector<RenderPrimitive> renderPrimitives{};
 
     for (const auto& primitive: mesh.primitives)
     {
@@ -141,10 +141,10 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
 
         glBindVertexArray(0);
 
-        vaoArray.push_back(renderPrimitive);
+        renderPrimitives.push_back(renderPrimitive);
     }
 
-    m_MeshPrimitiveMap[meshIndex] = vaoArray;
+    m_MeshPrimitiveMap[meshIndex] = renderPrimitives;
 }
 
 GLuint Model::LoadTexture(const int32_t textureIndex)
@@ -164,8 +164,6 @@ GLuint Model::LoadTexture(const int32_t textureIndex)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     GLenum format = GL_RGBA;
 

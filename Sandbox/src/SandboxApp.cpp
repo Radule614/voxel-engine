@@ -16,7 +16,7 @@ void SandboxApp::Setup()
 {
     constexpr auto cameraPosition = glm::vec3(-140.5f * CHUNK_WIDTH, CHUNK_HEIGHT - 24, 30.5f * CHUNK_WIDTH);
 
-    auto cameraController = std::make_shared<Utils::PerspectiveCameraController>(45.0f, 16.0f / 9.0f, 100.0f);
+    auto cameraController = std::make_shared<Utils::PerspectiveCameraController>(45.0f, 16.0f / 9.0f, 10.0f);
     cameraController->SetFreeFly(true);
     cameraController->GetCamera().SetPosition(cameraPosition);
     m_State.CameraController = std::move(cameraController);
