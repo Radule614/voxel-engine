@@ -60,6 +60,17 @@ void Model::DrawMesh(const Shader& shader,
         shader.SetModel(modelMatrix);
         shader.SetVec4("u_BaseColorFactor", Material.BaseColorFactor);
 
+        if (Material.TextureId >= 0)
+        {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, Material.TextureId);
+
+            shader.SetBool("u_HasBaseTexture", true);
+            shader.SetInt("u_BaseTexture", 0);
+        }
+        else
+            shader.SetBool("u_HasBaseTexture", false);
+
         glDrawElements(Mode, IndexCount, IndexType, nullptr);
     }
 

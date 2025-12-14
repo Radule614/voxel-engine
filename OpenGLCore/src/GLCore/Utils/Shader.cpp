@@ -70,14 +70,19 @@ void Shader::SetVec4(const std::string& uniform, const glm::vec4& v) const
     glUniform4fv(glGetUniformLocation(m_RendererID, uniform.c_str()), 1, &v[0]);
 }
 
-void Shader::SetFloat(const std::string& uniform, float_t x) const
+void Shader::SetFloat(const std::string& uniform, const float_t x) const
 {
     glUniform1f(glGetUniformLocation(m_RendererID, uniform.c_str()), x);
 }
 
-void Shader::SetInt(const std::string& uniform, int32_t i) const
+void Shader::SetInt(const std::string& uniform, const int32_t i) const
 {
     glUniform1i(glGetUniformLocation(m_RendererID, uniform.c_str()), i);
+}
+
+void Shader::SetBool(const std::string& uniform, const bool b) const
+{
+    glUniform1i(glGetUniformLocation(m_RendererID, uniform.c_str()), b);
 }
 
 void Shader::SetViewProjection(const glm::mat4& viewProjection) const

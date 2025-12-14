@@ -13,7 +13,7 @@ namespace VoxelEngine
 struct Material
 {
     glm::vec4 BaseColorFactor;
-    int32_t TextureId;
+    int32_t TextureId = -1;
 };
 
 struct RenderPrimitive

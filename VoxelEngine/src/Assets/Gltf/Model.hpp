@@ -33,7 +33,8 @@ private:
                   const tinygltf::Mesh& mesh,
                   int32_t meshIndex) const;
 
-    GLuint GetBuffer(int32_t bufferViewIndex);
+    GLuint LoadBuffer(int32_t bufferViewIndex);
+    GLuint LoadTexture(int32_t textureIndex);
 
     std::unique_ptr<tinygltf::Model> m_GltfModel;
 

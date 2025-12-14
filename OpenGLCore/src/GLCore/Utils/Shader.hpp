@@ -23,6 +23,7 @@ public:
 	void SetModel(const glm::mat4&) const;
 	void SetFloat(const std::string&, float_t) const;
 	void SetInt(const std::string&, int32_t) const;
+	void SetBool(const std::string&, bool) const;
 
 private:
 	Shader() = default;

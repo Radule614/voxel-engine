@@ -4,12 +4,9 @@
 
 #include "Model.hpp"
 #include "GLCoreUtils.hpp"
-#include "../../Utils/Utils.hpp"
-
+#include "stb_image.hpp"
 #include <ranges>
 #include <glm/glm.hpp>
-
-#include "stb_image.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -24,8 +21,6 @@ static std::map<std::string, GLuint> VertexAttributeIndexMap = {
     {"NORMAL", 1},
     {"TEXCOORD_0", 2},
 };
-
-static GLuint LoadImage(const tinygltf::Image& image);
 
 Model::Model(tinygltf::Model* model) : m_GltfModel(model) { Load(); }
 
@@ -54,7 +49,7 @@ void Model::Load()
     }
 }
 
-GLuint Model::GetBuffer(const int32_t bufferViewIndex)
+GLuint Model::LoadBuffer(const int32_t bufferViewIndex)
 {
     if (m_AllocatedBuffers.contains(bufferViewIndex))
         return m_AllocatedBuffers[bufferViewIndex];
@@ -63,8 +58,6 @@ GLuint Model::GetBuffer(const int32_t bufferViewIndex)
 
     const tinygltf::BufferView& bufferView = model.bufferViews[bufferViewIndex];
     const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-    LOG_INFO("bufferview.target: {0}", bufferView.target)
-    LOG_INFO("buffer.data.size = {0}, bufferview.byteOffset = {1}", buffer.data.size(), bufferView.byteOffset)
 
     GLuint glBuffer;
     glGenBuffers(1, &glBuffer);
@@ -111,7 +104,7 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
                 continue;
 
             tinygltf::Accessor accessor = model.accessors[accessorIndex];
-            glBindBuffer(GL_ARRAY_BUFFER, GetBuffer(accessor.bufferView));
+            glBindBuffer(GL_ARRAY_BUFFER, LoadBuffer(accessor.bufferView));
 
             const GLuint index = VertexAttributeIndexMap[primitiveType];
 
@@ -125,7 +118,7 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
         }
 
         const tinygltf::Accessor indexBufferAccessor = model.accessors[primitive.indices];
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, GetBuffer(indexBufferAccessor.bufferView));
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, LoadBuffer(indexBufferAccessor.bufferView));
 
         RenderPrimitive renderPrimitive{};
         renderPrimitive.Vao = vao;
@@ -141,10 +134,9 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
             if (color.size() == 4)
                 renderPrimitive.Material.BaseColorFactor = glm::vec4(color[0], color[1], color[2], color[3]);
 
-            int32_t textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+            const int32_t textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
             if (textureIndex >= 0)
-            {
-            }
+                renderPrimitive.Material.TextureId = LoadTexture(textureIndex);
         }
 
         glBindVertexArray(0);
@@ -155,20 +147,49 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
     m_MeshPrimitiveMap[meshIndex] = vaoArray;
 }
 
-static GLuint LoadImage(const tinygltf::Image& image)
+GLuint Model::LoadTexture(const int32_t textureIndex)
 {
-    uint32_t id;
-    glGenTextures(1, &id);
+    if (m_Textures.contains(textureIndex))
+        return m_Textures[textureIndex];
+
+    const tinygltf::Model& model = *m_GltfModel;
+    const tinygltf::Texture& texture = model.textures[textureIndex];
+    const tinygltf::Image& image = model.images[texture.source];
+
+    uint32_t textureId;
+    glGenTextures(1, &textureId);
+    glBindTexture(GL_TEXTURE_2D, textureId);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image.image[0]);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    GLenum format = GL_RGBA;
+
+    if (image.component == 1) format = GL_RED;
+    else if (image.component == 2) format = GL_RG;
+    else if (image.component == 3) format = GL_RGB;
+    else if (image.component == 4) format = GL_RGBA;
+    else
+        assert(false);
+
+    glTexImage2D(GL_TEXTURE_2D,
+                 0,
+                 format,
+                 image.width,
+                 image.height,
+                 0,
+                 format,
+                 image.pixel_type,
+                 &image.image[0]);
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    return id;
+    m_Textures[textureIndex] = textureId;
+
+    return textureId;
 }
 
 }
