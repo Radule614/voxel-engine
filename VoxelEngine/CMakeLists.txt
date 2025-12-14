@@ -23,7 +23,7 @@ file(GLOB_RECURSE VOXEL_ENGINE_SOURCES
         "src/*.cpp"
         "src/*.hpp"
         "vendor/PerlinNoise/*.hpp"
-        "vendor/Entt/*.hpp" ,
+        "vendor/Entt/*.hpp"
         "vendor/AssetUtils/*.hpp"
         "vendor/AssetUtils/*.cpp"
 )
