@@ -18,6 +18,7 @@ namespace VoxelEngine
 {
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node);
+static void SetShaderMaterial(const Shader& shader, const Material& material);
 
 void Model::DrawNodes(const Shader& shader,
                       glm::mat4 modelMatrix,
@@ -58,23 +59,29 @@ void Model::DrawMesh(const Shader& shader,
         glBindVertexArray(Vao);
 
         shader.SetModel(modelMatrix);
-        shader.SetVec4("u_BaseColorFactor", Material.BaseColorFactor);
 
-        if (Material.TextureId >= 0)
-        {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, Material.TextureId);
-
-            shader.SetBool("u_HasBaseTexture", true);
-            shader.SetInt("u_BaseTexture", 0);
-        }
-        else
-            shader.SetBool("u_HasBaseTexture", false);
+        SetShaderMaterial(shader, Material);
 
         glDrawElements(Mode, IndexCount, IndexType, nullptr);
     }
 
     glBindVertexArray(0);
+}
+
+static void SetShaderMaterial(const Shader& shader, const Material& material)
+{
+    shader.SetVec4("u_BaseColorFactor", material.BaseColorFactor);
+
+    if (material.TextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, material.TextureId);
+
+        shader.SetBool("u_HasBaseTexture", true);
+        shader.SetInt("u_BaseTexture", 0);
+    }
+    else
+        shader.SetBool("u_HasBaseTexture", false);
 }
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node)

@@ -4,17 +4,10 @@
 
 #pragma once
 
-#include "glad/glad.h"
-#include "glm/glm.hpp"
+#include "Material.hpp"
 
 namespace VoxelEngine
 {
-
-struct Material
-{
-    glm::vec4 BaseColorFactor;
-    int32_t TextureId = -1;
-};
 
 struct RenderPrimitive
 {

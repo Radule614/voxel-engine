@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "RenderPrimitive.hpp"
+#include "../RenderPrimitive.hpp"
 #include "tiny_gltf.hpp"
 #include "glad/glad.h"
 #include "GLCore/Utils/Shader.hpp"

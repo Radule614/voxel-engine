@@ -22,6 +22,8 @@ static std::map<std::string, GLuint> VertexAttributeIndexMap = {
     {"TEXCOORD_0", 2},
 };
 
+static glm::vec4 Vec4FromVector(std::vector<double_t> vector);
+
 Model::Model(tinygltf::Model* model) : m_GltfModel(model) { Load(); }
 
 Model::~Model()
@@ -129,14 +131,9 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
         if (primitive.material >= 0)
         {
             const tinygltf::Material& material = model.materials[primitive.material];
-            const std::vector<double_t>& color = material.pbrMetallicRoughness.baseColorFactor;
 
-            if (color.size() == 4)
-                renderPrimitive.Material.BaseColorFactor = glm::vec4(color[0], color[1], color[2], color[3]);
-
-            const int32_t textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
-            if (textureIndex >= 0)
-                renderPrimitive.Material.TextureId = LoadTexture(textureIndex);
+            renderPrimitive.Material.BaseColorFactor = Vec4FromVector(material.pbrMetallicRoughness.baseColorFactor);
+            renderPrimitive.Material.TextureId = LoadTexture(material.pbrMetallicRoughness.baseColorTexture.index);
         }
 
         glBindVertexArray(0);
@@ -149,6 +146,9 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
 
 GLuint Model::LoadTexture(const int32_t textureIndex)
 {
+    if (textureIndex < 0)
+        return 0;
+
     if (m_Textures.contains(textureIndex))
         return m_Textures[textureIndex];
 
@@ -188,6 +188,14 @@ GLuint Model::LoadTexture(const int32_t textureIndex)
     m_Textures[textureIndex] = textureId;
 
     return textureId;
+}
+
+static glm::vec4 Vec4FromVector(std::vector<double_t> vector)
+{
+    if (vector.size() != 4)
+        return glm::vec4(0.0f);
+
+    return {vector[0], vector[1], vector[2], vector[3]};
 }
 
 }
