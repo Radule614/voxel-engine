@@ -20,7 +20,6 @@ add_subdirectory(OpenGLCore/vendor/GLFW)
 add_subdirectory(OpenGLCore/vendor/Glad)
 add_subdirectory(OpenGLCore/vendor/imgui)
 add_subdirectory(VoxelEngine/vendor/JoltPhysics)
-add_subdirectory(VoxelEngine/vendor/Assimp)
 
 # Add main projects
 add_subdirectory(OpenGLCore)

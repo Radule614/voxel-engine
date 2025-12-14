@@ -26,9 +26,9 @@ project "Sandbox"
 		"../OpenGLCore/%{IncludeDir.Glad}",
 		"../OpenGLCore/%{IncludeDir.ImGui}",
 		"../VoxelEngine/%{IncludeDir.JoltPhysics}",
-		"../VoxelEngine/%{IncludeDir.Assimp}",
 		"../VoxelEngine/%{IncludeDir.PerlinNoise}",
 		"../VoxelEngine/%{IncludeDir.Entt}",
+		"../VoxelEngine/%{IncludeDir.AssetUtils}",
         "../VoxelEngine/src"
 	}
 
@@ -36,7 +36,6 @@ project "Sandbox"
 	{
 		"OpenGLCore",
 		"JoltPhysics",
-		"Assimp",
 		"VoxelEngine"
 	}
 

@@ -21,17 +21,17 @@ void SandboxApp::Setup()
     cameraController->GetCamera().SetPosition(cameraPosition);
     m_State.CameraController = std::move(cameraController);
 
-    WorldSettings settings{};
-    settings.m_Biome = std::make_unique<Biome>(6512u);
-    settings.m_Biome->AddGenerator(PLAINS, std::make_unique<ShrineGenerator>());
+    // WorldSettings settings{};
+    // settings.m_Biome = std::make_unique<Biome>(6512u);
+    // settings.m_Biome->AddGenerator(PLAINS, std::make_unique<ShrineGenerator>());
+    //
+    // auto* voxelLayer = new VoxelLayer(m_State);
+    // voxelLayer->Init(std::move(settings));
+    //
+    // PushLayer(voxelLayer);
+    // PushLayer(new BallLayer(m_State));
 
-    auto* voxelLayer = new VoxelLayer(m_State);
-    voxelLayer->Init(std::move(settings));
-
-    PushLayer(voxelLayer);
-    PushLayer(new BallLayer(m_State));
-
-    // PushLayer(new SponzaLayer(m_State));
+    PushLayer(new SponzaLayer(m_State));
 }
 
 }
