@@ -9,6 +9,8 @@
 #include <ranges>
 #include <glm/glm.hpp>
 
+#include "stb_image.hpp"
+
 using namespace GLCore;
 using namespace GLCore::Utils;
 
@@ -23,6 +25,8 @@ static std::map<std::string, GLuint> VertexAttributeIndexMap = {
     {"TEXCOORD_0", 2},
 };
 
+static GLuint LoadImage(const tinygltf::Image& image);
+
 Model::Model(tinygltf::Model* model) : m_GltfModel(model) { Load(); }
 
 Model::~Model()
@@ -33,11 +37,14 @@ Model::~Model()
     for (const auto& primitives: m_MeshPrimitiveMap | std::views::values)
         for (auto primitive: primitives)
             glDeleteVertexArrays(1, &primitive.Vao);
+
+    for (auto textureId: m_Textures | std::views::values)
+        glDeleteTextures(1, &textureId);
 }
 
 void Model::Load()
 {
-    tinygltf::Model& model = *m_GltfModel;
+    const tinygltf::Model& model = *m_GltfModel;
 
     const tinygltf::Scene& scene = model.scenes[model.defaultScene];
     for (const int32_t node: scene.nodes)
@@ -131,7 +138,13 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
             const tinygltf::Material& material = model.materials[primitive.material];
             const std::vector<double_t>& color = material.pbrMetallicRoughness.baseColorFactor;
 
-            renderPrimitive.Material.BaseColorFactor = glm::vec4(color[0], color[1], color[2], color[3]);
+            if (color.size() == 4)
+                renderPrimitive.Material.BaseColorFactor = glm::vec4(color[0], color[1], color[2], color[3]);
+
+            int32_t textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+            if (textureIndex >= 0)
+            {
+            }
         }
 
         glBindVertexArray(0);
@@ -140,6 +153,22 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
     }
 
     m_MeshPrimitiveMap[meshIndex] = vaoArray;
+}
+
+static GLuint LoadImage(const tinygltf::Image& image)
+{
+    uint32_t id;
+    glGenTextures(1, &id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image.image[0]);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    return id;
 }
 
 }

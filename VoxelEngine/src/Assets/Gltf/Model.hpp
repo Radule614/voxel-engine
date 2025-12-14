@@ -38,6 +38,7 @@ private:
     std::unique_ptr<tinygltf::Model> m_GltfModel;
 
     std::map<int32_t, GLuint> m_AllocatedBuffers;
+    std::map<int32_t, GLuint> m_Textures;
     std::map<int32_t, std::vector<RenderPrimitive> > m_MeshPrimitiveMap;
 };
 
