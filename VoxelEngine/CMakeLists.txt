@@ -23,7 +23,7 @@ file(GLOB_RECURSE VOXEL_ENGINE_SOURCES
         "src/*.cpp"
         "src/*.hpp"
         "vendor/PerlinNoise/*.hpp"
-        "vendor/Entt/*.hpp",
+        "vendor/Entt/*.hpp"
         "vendor/AssetUtils/*.hpp"
         "vendor/AssetUtils/*.cpp"
 )
@@ -46,7 +46,6 @@ target_include_directories(VoxelEngine PUBLIC
         ../OpenGLCore/vendor/Glad/include
         ../OpenGLCore/vendor/imgui
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/JoltPhysics
-        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/Assimp/include
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/PerlinNoise
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/Entt
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/AssetUtils
@@ -56,5 +55,4 @@ target_include_directories(VoxelEngine PUBLIC
 target_link_libraries(VoxelEngine PUBLIC
         OpenGLCore
         JoltPhysics
-        Assimp
 )

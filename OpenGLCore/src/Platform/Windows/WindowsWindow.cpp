@@ -47,10 +47,10 @@ void WindowsWindow::Init(const WindowProps &props)
     int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     GLCORE_ASSERT(status, "Failed to initualize Glad!");
 
-    LOG_INFO("OpenGL info:");
-    LOG_INFO("  Vendor: {0}", (char *)glGetString(GL_VENDOR));
-    LOG_INFO("  Renderer: {0}", (char *)glGetString(GL_RENDERER));
-    LOG_INFO("  Version: {0}", (char *)glGetString(GL_VERSION));
+    LOG_INFO("OpenGL info:")
+    LOG_INFO("  Vendor: {0}", (char *)glGetString(GL_VENDOR))
+    LOG_INFO("  Renderer: {0}", (char *)glGetString(GL_RENDERER))
+    LOG_INFO("  Version: {0}", (char *)glGetString(GL_VERSION))
 
     glfwSetWindowUserPointer(m_Window, &m_Data);
     // SetVSync(true);

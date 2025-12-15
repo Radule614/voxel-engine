@@ -383,20 +383,20 @@ void VoxelLayer::SetupRenderData(const Chunk& chunk) const
                            1,
                            GL_UNSIGNED_INT,
                            sizeof(VoxelVertex),
-                           reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::RadianceBaseIndex)));
+                           reinterpret_cast<void*>(offsetof(VoxelVertex, RadianceBaseIndex)));
     glEnableVertexAttribArray(2);
     glVertexAttribIPointer(2,
                            1,
                            GL_UNSIGNED_BYTE,
                            sizeof(VoxelVertex),
-                           reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::Face)));
+                           reinterpret_cast<void*>(offsetof(VoxelVertex, Face)));
     glEnableVertexAttribArray(3);
     glVertexAttribPointer(3,
                           2,
                           GL_FLOAT,
                           GL_FALSE,
                           sizeof(VoxelVertex),
-                          reinterpret_cast<void*>(offsetof(VoxelVertex, VoxelVertex::TexCoords)));
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, TexCoords)));
 
     glCreateBuffers(1, &data.RadianceStorageBuffer);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, data.RadianceStorageBuffer);

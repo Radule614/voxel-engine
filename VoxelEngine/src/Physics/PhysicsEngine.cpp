@@ -18,7 +18,7 @@ static void TraceImpl(const char* inFMT, ...)
     vsnprintf(buffer, sizeof(buffer), inFMT, list);
     va_end(list);
 
-    LOG_WARN(buffer);
+    LOG_WARN("{0}", buffer);
 }
 
 #ifdef JPH_ENABLE_ASSERTS

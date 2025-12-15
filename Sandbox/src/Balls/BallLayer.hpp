@@ -1,7 +1,7 @@
 #pragma once
 
 #include "EngineState.hpp"
-#include "Assets/Model.hpp"
+#include "Assets/Gltf/Model.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Physics/Utils/ShapeFactory.hpp"
 
@@ -14,13 +14,13 @@ public:
     explicit BallLayer(VoxelEngine::EngineState& state);
     ~BallLayer() override;
 
-    virtual void OnAttach() override;
-    virtual void OnEvent(GLCore::Event& event) override;
-    virtual void OnUpdate(GLCore::Timestep ts) override;
+    void OnAttach() override;
+    void OnEvent(GLCore::Event& event) override;
+    void OnUpdate(GLCore::Timestep ts) override;
 
 private:
     VoxelEngine::EngineState& m_State;
-    VoxelEngine::Model* m_Model;
+    std::unique_ptr<VoxelEngine::Model> m_Model;
     std::vector<std::pair<entt::entity, float_t> > m_SphereEntities{};
     VoxelEngine::ShapeFactory m_PhysicsFactory;
 };

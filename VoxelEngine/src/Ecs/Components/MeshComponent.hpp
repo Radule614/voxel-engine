@@ -1,20 +1,17 @@
 #pragma once
 
-#include <GLCoreUtils.hpp>
-#include "../../Assets/Mesh.hpp"
+#include "../../Assets/Gltf/Model.hpp"
 
 namespace VoxelEngine
 {
 
 struct MeshComponent
 {
-    explicit MeshComponent(const std::vector<Mesh>& meshes)
-        : Meshes(meshes)
+    explicit MeshComponent(const Model& model) : Model(model)
     {
     }
 
-    std::shared_ptr<GLCore::Utils::Shader> Shader;
-    std::vector<Mesh> Meshes;
+    const Model& Model;
 };
 
 }

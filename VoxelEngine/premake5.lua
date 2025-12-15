@@ -31,16 +31,15 @@ project "VoxelEngine"
 		"../OpenGLCore/%{IncludeDir.Glad}",
 		"../OpenGLCore/%{IncludeDir.ImGui}",
 		"%{IncludeDir.JoltPhysics}",
-		"%{IncludeDir.Assimp}",
 		"%{IncludeDir.PerlinNoise}",
-		"%{IncludeDir.Entt}"
+		"%{IncludeDir.Entt}",
+		"%{IncludeDir.AssetUtils}"
 	}
 
 	links
 	{
 		"OpenGLCore",
-		"JoltPhysics",
-		"Assimp"
+		"JoltPhysics"
 	}
 
 	filter "system:windows"

@@ -18,7 +18,7 @@ namespace Sandbox
 
 Enemy::Enemy(const glm::vec3 position)
 {
-    static Model* capsuleModel = AssetManager::Instance().LoadModel("assets/models/capsule/capsule.obj");
+    static Model* capsuleModel = AssetManager::Instance().LoadModel("assets/models/capsule/Capsule.glb");
 
     Character* character = CharacterBuilder()
             .SetHeight(2.0f)
@@ -28,13 +28,10 @@ Enemy::Enemy(const glm::vec3 position)
 
     m_Character = std::unique_ptr<Character>(character);
 
-    TransformComponent transform{};
-    transform.Scale = glm::vec3(0.5);
-
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     m_Entity = registry.create();
-    registry.emplace<MeshComponent>(m_Entity, capsuleModel->Meshes);
-    registry.emplace<TransformComponent>(m_Entity, transform);
+    registry.emplace<MeshComponent>(m_Entity, *capsuleModel);
+    registry.emplace<TransformComponent>(m_Entity, TransformComponent{});
     registry.emplace<ColliderComponent>(m_Entity, ColliderComponent(character->GetBodyID()));
 }
 

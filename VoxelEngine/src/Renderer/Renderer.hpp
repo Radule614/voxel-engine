@@ -6,20 +6,13 @@
 #include "../Terrain/Utils/Position2D.hpp"
 #include "../Ecs/Components/TerrainComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
+#include "../Assets/Texture.hpp"
 
 #define SHADOW_WIDTH 4096
 #define SHADOW_HEIGHT 4096
 
 namespace VoxelEngine
 {
-
-struct Material
-{
-    glm::vec3 Ambient;
-    glm::vec3 Diffuse;
-    glm::vec3 Specular;
-    float_t Shininess;
-};
 
 struct PointLight
 {

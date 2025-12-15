@@ -1,5 +1,7 @@
 #include "VoxelEngine.hpp"
 
+#define FMT_COMPILE
+
 #include "GLCore.hpp"
 #include "Terrain/VoxelLayer.hpp"
 #include "UserInterface.hpp"
