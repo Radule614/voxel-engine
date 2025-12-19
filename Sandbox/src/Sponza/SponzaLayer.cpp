@@ -30,7 +30,7 @@ void SponzaLayer::OnAttach()
     const auto cameraPosition = cameraController->GetCamera().GetPosition();
 
     TransformComponent transform{};
-    transform.Position = cameraPosition + glm::vec3(0.0f, 0.0f, -10.0f);
+    transform.Position = cameraPosition + glm::vec3(0.0f, 0.0f, 0.0f);
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();

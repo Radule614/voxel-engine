@@ -20,7 +20,6 @@ namespace Sandbox
 
 BallLayer::BallLayer(EngineState& state) : m_State(state)
 {
-    m_Model = std::unique_ptr<Model>(AssetManager::Instance().LoadModel("assets/models/sphere/Sphere.glb"));
 }
 
 BallLayer::~BallLayer() = default;
@@ -30,7 +29,6 @@ void BallLayer::OnAttach()
     EnableGLDebugging();
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-    glCullFace(GL_FRONT);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -82,7 +80,7 @@ void BallLayer::OnEvent(Event& event)
 
                 auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
                 const auto entity = registry.create();
-                registry.emplace<MeshComponent>(entity, *m_Model);
+                registry.emplace<MeshComponent>(entity, AssetManager::Instance().GetSphereModel());
                 registry.emplace<TransformComponent>(entity, transform);
                 registry.emplace<ColliderComponent>(entity, ColliderComponent(bodyId));
                 m_SphereEntities.emplace_back(entity, 0);

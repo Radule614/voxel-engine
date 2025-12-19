@@ -15,7 +15,7 @@ struct PointLight
     vec3 LightColor;
 };
 
-uniform PointLight[] u_PointLights;
+uniform PointLight[4] u_PointLights;
 
 uniform vec3 u_CameraPosition;
 
@@ -71,6 +71,8 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 void main()
 {
+    vec3 albedo = vec3(texture(u_Albedo, i_Fragment.FragTexCoords));
+
     vec3 N = normalize(i_Fragment.FragNormal);
     vec3 V = normalize(u_CameraPosition - i_Fragment.FragPosition);
 
@@ -85,7 +87,7 @@ void main()
         vec3 radiance = u_PointLights[i].LightColor * attenuation;
 
         vec3 F0 = vec3(0.04);
-        F0 = mix(F0, u_Albedo, u_Metallic);
+        F0 = mix(F0, albedo, u_Metallic);
         vec3 F = FreshnelSchlick(max(dot(H, V), 0.0), F0);
 
         float NDF = DistributionGGX(N, H, u_Roughness);
@@ -101,12 +103,14 @@ void main()
         kD *= 1.0 - u_Metallic;
 
         float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * u_Albedo / PI + specular) * radiance * NdotL;
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
-        vec3 ambient = vec3(0.03) * u_Albedo * u_AmbientOcclusion;
+        vec3 ambient = vec3(0.03) * albedo * u_AmbientOcclusion;
         vec3 color = ambient + Lo;
 
         color = color / (color + vec3(1.0));
         color = pow(color, vec3(1.0 / 2.2));
+
+        o_Color = vec4(color, 1.0f);
     }
 }

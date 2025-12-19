@@ -14,16 +14,23 @@ namespace VoxelEngine
 class AssetManager
 {
 public:
+    AssetManager();
+    ~AssetManager();
+
     static void Init();
     static void Shutdown();
     static AssetManager& Instance();
 
+    Model* LoadModel(std::string filename);
+
     Texture& LoadTexture(const std::string& path, const std::string& type);
 
-    Model* LoadModel(std::string filename);
+    const Model& GetSphereModel() const;
 
 private:
     uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);
+
+    std::unique_ptr<Model> m_SphereModel;
 
     static AssetManager* g_AssetManager;
     static std::vector<Texture> m_LoadedTextures;

@@ -13,6 +13,12 @@ namespace VoxelEngine
 AssetManager* AssetManager::g_AssetManager = nullptr;
 std::vector<Texture> AssetManager::m_LoadedTextures = {};
 
+AssetManager::AssetManager() : m_SphereModel(std::unique_ptr<Model>(LoadModel("assets/models/sphere/Sphere.glb")))
+{
+}
+
+AssetManager::~AssetManager() = default;
+
 void AssetManager::Init() { g_AssetManager = new AssetManager(); }
 
 void AssetManager::Shutdown()
@@ -72,16 +78,13 @@ uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, const in
 
 Model* AssetManager::LoadModel(std::string filename)
 {
-    tinygltf::Model* gltfModel = new tinygltf::Model();
+    auto* gltfModel = new tinygltf::Model();
     tinygltf::TinyGLTF loader;
     std::string err;
     std::string warn;
 
     bool res = loader.LoadBinaryFromFile(gltfModel, &err, &warn, filename);
-    if (!warn.empty())
-    {
-        LOG_INFO("WARN: {0}", warn)
-    }
+    if (!warn.empty()) { LOG_INFO("WARN: {0}", warn) }
 
     if (!err.empty())
         LOG_WARN("ERR: {0}", err)
@@ -95,5 +98,7 @@ Model* AssetManager::LoadModel(std::string filename)
 
     return new Model(gltfModel);
 }
+
+const Model& AssetManager::GetSphereModel() const { return *m_SphereModel; }
 
 }
