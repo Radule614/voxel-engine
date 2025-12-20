@@ -49,13 +49,11 @@ void main()
         discard;
     }
 
-    vec3 albedoVec3 = vec3(albedo);
-
     vec3 N = normalize(i_Fragment.FragNormal);
     vec3 V = normalize(u_CameraPosition - i_Fragment.FragPosition);
 
     vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedoVec3, u_Metallic);
+    F0 = mix(F0, albedo, u_Metallic);
 
     vec3 Lo = vec3(0.0);
     for (int i = 0; i < u_PointLightCount; ++i)
@@ -80,10 +78,10 @@ void main()
         vec3 specular = numerator / denominator;
 
         float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * albedoVec3 / PI + specular) * radiance * NdotL;
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedoVec3 * u_AmbientOcclusion;
+    vec3 ambient = vec3(0.03) * albedo * u_AmbientOcclusion;
     vec3 color = ambient + Lo;
 
     color = color / (color + vec3(1.0));
