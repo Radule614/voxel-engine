@@ -70,18 +70,19 @@ void Model::DrawMesh(const Shader& shader,
 
 static void SetShaderMaterial(const Shader& shader, const Material& material)
 {
-    shader.SetVec4("u_BaseColorFactor", material.BaseColorFactor);
-
     if (material.TextureId > 0)
     {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, material.TextureId);
 
-        shader.SetBool("u_HasBaseTexture", true);
-        shader.SetInt("u_BaseTexture", 0);
+        shader.SetBool("u_HasAlbedoTexture", true);
+        shader.SetInt("u_Albedo", 0);
     }
     else
-        shader.SetBool("u_HasBaseTexture", false);
+    {
+        shader.SetBool("u_HasAlbedoTexture", false);
+        shader.SetVec4("u_AlbedoColor", material.BaseColorFactor);
+    }
 }
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node)

@@ -27,4 +27,37 @@ void RendererLayer::OnAttach()
 
 void RendererLayer::OnUpdate(Timestep ts) { m_Renderer.RenderScene(m_State.CameraController->GetCamera()); }
 
+void RendererLayer::OnImGuiRender()
+{
+    constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                                             ImGuiWindowFlags_NoMove;
+    const auto& io = ImGui::GetIO();
+
+    ImGui::SetNextWindowSize(ImVec2(500.0, 300.0));
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+
+    ImGui::Begin("Renderer", nullptr, windowFlags);
+    ImGui::Text("Renderer");
+
+    ImGui::Text("Material");
+
+    ImGui::SliderFloat("Metallic", &m_Renderer.Metallic, 0.0f, 1.0f);
+    ImGui::SliderFloat("Roughness", &m_Renderer.Roughness, 0.0, 1.0f);
+    ImGui::SliderFloat("Ambient Occlusion", &m_Renderer.AmbientOcclusion, 0.0f, 1.0f);
+
+    auto& pointLights = m_Renderer.GetPointLights();
+
+    ImGui::Text("Point Lights");
+    for (int32_t i = 0; i < pointLights.size(); ++i)
+    {
+        std::string label = std::format("Position {}", i + 1);
+
+        ImGui::SetNextItemWidth(400.0f);
+        ImGui::SliderFloat3(label.c_str(), glm::value_ptr(pointLights[i].Position), -15.0f, 15.0f);
+    }
+
+    ImGui::End();
+}
+
 }

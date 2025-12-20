@@ -13,7 +13,6 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-static void SetDirectionalLightUniform(const Shader& shader, const std::string& uniform, const DirectionalLight& light);
 static void SetPointLightUniformAtIndex(const Shader& shader,
                                         const std::string& uniform,
                                         const PointLight& light,
@@ -28,28 +27,20 @@ Renderer::Renderer(Window& window) : m_Window(window)
     m_MeshShader = Shader::FromGLSLTextFiles("assets/shaders/pbr.vert.glsl", "assets/shaders/pbr.frag.glsl");
     m_SimpleShader = Shader::FromGLSLTextFiles("assets/shaders/simple.vert.glsl", "assets/shaders/simple.frag.glsl");
 
-    const DirectionalLight light = {
-        glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)),
-        glm::vec3(0.5f),
-        glm::vec3(1.0f),
-        glm::vec3(0.1f)
-    };
-
-    m_DirectionalLight = light;
-
     m_PointLights = {
         {{8.5f, 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
         {{-8.5f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
         {{4.0f, 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
         {{-4.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
+        {{0.0f, 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}}
     };
 }
 
 Renderer::~Renderer() = default;
 
-void Renderer::SetDirectionalLight(const DirectionalLight& light) { m_DirectionalLight = light; }
-
 void Renderer::RenderScene(const PerspectiveCamera& camera) const { RenderPass(camera); }
+
+std::vector<PointLight>& Renderer::GetPointLights() { return m_PointLights; }
 
 void Renderer::Render(const PerspectiveCamera& camera) const
 {
@@ -65,10 +56,7 @@ void Renderer::Render(const PerspectiveCamera& camera) const
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
-    {
-        auto& renderDataMap = terrainView.get<TerrainComponent>(entity).RenderData;
-        RenderTerrain(renderDataMap);
-    }
+        RenderTerrain(terrainView.get<TerrainComponent>(entity).RenderData);
 
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
     {
@@ -108,8 +96,11 @@ void Renderer::RenderMesh(const MeshComponent& meshComponent,
 {
     glUseProgram(shader.GetRendererID());
 
-    SetDirectionalLightUniform(shader, "u_DirectionalLight", m_DirectionalLight);
     shader.SetVec3("u_CameraPosition", camera.GetPosition());
+    shader.SetInt("u_PointLightCount", m_PointLights.size());
+    shader.SetFloat("u_Metallic", Metallic);
+    shader.SetFloat("u_Roughness", Roughness);
+    shader.SetFloat("u_AmbientOcclusion", AmbientOcclusion);
 
     for (int32_t i = 0; i < m_PointLights.size(); ++i)
         SetPointLightUniformAtIndex(shader, "u_PointLights", m_PointLights[i], i);
@@ -174,16 +165,6 @@ static void SetPointLightUniformAtIndex(const Shader& shader,
 {
     shader.SetVec3(std::format("{}[{}].LightPosition", uniform, index), light.Position);
     shader.SetVec3(std::format("{}[{}].LightColor", uniform, index), light.LightColor);
-}
-
-static void SetDirectionalLightUniform(const Shader& shader,
-                                       const std::string& uniform,
-                                       const DirectionalLight& light)
-{
-    shader.SetVec3(uniform + ".Direction", light.Direction);
-    shader.SetVec3(uniform + ".Ambient", light.Ambient);
-    shader.SetVec3(uniform + ".Diffuse", light.Diffuse);
-    shader.SetVec3(uniform + ".Specular", light.Specular);
 }
 
 }

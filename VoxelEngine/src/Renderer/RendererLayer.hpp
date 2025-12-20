@@ -17,6 +17,7 @@ public:
 
     void OnAttach() override;
     void OnUpdate(GLCore::Timestep ts) override;
+    void OnImGuiRender() override;
 
 private:
     EngineState& m_State;

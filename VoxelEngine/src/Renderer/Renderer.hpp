@@ -21,22 +21,18 @@ struct PointLight
     }
 };
 
-struct DirectionalLight
-{
-    glm::vec3 Direction;
-    glm::vec3 Ambient;
-    glm::vec3 Diffuse;
-    glm::vec3 Specular;
-};
-
 class Renderer
 {
 public:
     explicit Renderer(GLCore::Window& window);
     ~Renderer();
 
-    void SetDirectionalLight(const DirectionalLight& light);
     void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
+    std::vector<PointLight>& GetPointLights();
+
+    float_t Metallic = 0.5f;
+    float_t Roughness = 0.15f;
+    float_t AmbientOcclusion = 0.04f;
 
 private:
     void Render(const GLCore::Utils::PerspectiveCamera& camera) const;
@@ -54,13 +50,12 @@ private:
 private:
     GLCore::Window& m_Window;
     Texture m_TextureAtlas;
-    DirectionalLight m_DirectionalLight{};
+
+    std::vector<PointLight> m_PointLights;
 
     GLCore::Utils::Shader* m_TerrainShader;
     GLCore::Utils::Shader* m_MeshShader;
     GLCore::Utils::Shader* m_SimpleShader;
-
-    std::vector<PointLight> m_PointLights;
 };
 
 }
