@@ -76,13 +76,39 @@ static void SetShaderMaterial(const Shader& shader, const Material& material)
         glBindTexture(GL_TEXTURE_2D, material.AlbedoTextureId);
 
         shader.SetBool("u_HasAlbedoTexture", true);
-        shader.SetInt("u_Albedo", 0);
+        shader.SetInt("u_AlbedoTexture", 0);
     }
     else
     {
         shader.SetBool("u_HasAlbedoTexture", false);
-        shader.SetVec4("u_AlbedoColor", material.AlbedoColor);
+        shader.SetVec4("u_AlbedoFactor", material.AlbedoFactor);
     }
+
+    if (material.MetallicRoughnessTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, material.MetallicRoughnessTextureId);
+
+        shader.SetBool("u_HasMetallicRoughnessTexture", true);
+        shader.SetInt("u_MetallicRoughnessTexture", 1);
+    }
+    else
+    {
+        shader.SetBool("u_HasMetallicRoughnessTexture", false);
+        shader.SetFloat("u_MetallicFactor", material.MetallicFactor);
+        shader.SetFloat("u_RoughnessFactor", material.RoughnessFactor);
+    }
+
+    if (material.AmbientOcclusionTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, material.AmbientOcclusionTextureId);
+
+        shader.SetBool("u_HasAmbientOcclusionTexture", true);
+        shader.SetInt("u_AmbientOcclusionTexture", 2);
+    }
+    else
+        shader.SetBool("u_HasAmbientOcclusionTexture", false);
 }
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node)

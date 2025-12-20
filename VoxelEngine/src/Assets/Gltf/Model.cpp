@@ -132,8 +132,17 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
         {
             const tinygltf::Material& material = model.materials[primitive.material];
 
-            renderPrimitive.Material.AlbedoColor = Vec4FromVector(material.pbrMetallicRoughness.baseColorFactor);
-            renderPrimitive.Material.AlbedoTextureId = LoadTexture(material.pbrMetallicRoughness.baseColorTexture.index);
+            renderPrimitive.Material.AlbedoFactor = Vec4FromVector(material.pbrMetallicRoughness.baseColorFactor);
+            renderPrimitive.Material.AlbedoTextureId =
+                    LoadTexture(material.pbrMetallicRoughness.baseColorTexture.index);
+
+            renderPrimitive.Material.MetallicFactor = material.pbrMetallicRoughness.metallicFactor;
+            renderPrimitive.Material.RoughnessFactor = material.pbrMetallicRoughness.roughnessFactor;
+            renderPrimitive.Material.MetallicRoughnessTextureId =
+                    LoadTexture(material.pbrMetallicRoughness.metallicRoughnessTexture.index);
+
+            renderPrimitive.Material.AmbientOcclusionTextureId = LoadTexture(material.occlusionTexture.index);
+            renderPrimitive.Material.AmbientOcclusionStrength = material.occlusionTexture.strength;
         }
 
         glBindVertexArray(0);

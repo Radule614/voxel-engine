@@ -18,7 +18,6 @@ static void SetPointLightUniformAtIndex(const Shader& shader,
                                         const PointLight& light,
                                         int32_t index);
 
-
 Renderer::Renderer(Window& window) : m_Window(window)
 {
     m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
@@ -98,9 +97,6 @@ void Renderer::RenderMesh(const MeshComponent& meshComponent,
 
     shader.SetVec3("u_CameraPosition", camera.GetPosition());
     shader.SetInt("u_PointLightCount", m_PointLights.size());
-    shader.SetFloat("u_Metallic", Metallic);
-    shader.SetFloat("u_Roughness", Roughness);
-    shader.SetFloat("u_AmbientOcclusion", AmbientOcclusion);
 
     for (int32_t i = 0; i < m_PointLights.size(); ++i)
         SetPointLightUniformAtIndex(shader, "u_PointLights", m_PointLights[i], i);

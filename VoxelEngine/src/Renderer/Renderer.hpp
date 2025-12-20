@@ -30,10 +30,6 @@ public:
     void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
     std::vector<PointLight>& GetPointLights();
 
-    float_t Metallic = 0.5f;
-    float_t Roughness = 0.15f;
-    float_t AmbientOcclusion = 0.04f;
-
 private:
     void Render(const GLCore::Utils::PerspectiveCamera& camera) const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;

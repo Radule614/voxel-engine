@@ -40,12 +40,6 @@ void RendererLayer::OnImGuiRender()
     ImGui::Begin("Renderer", nullptr, windowFlags);
     ImGui::Text("Renderer");
 
-    ImGui::Text("Material");
-
-    ImGui::SliderFloat("Metallic", &m_Renderer.Metallic, 0.0f, 1.0f);
-    ImGui::SliderFloat("Roughness", &m_Renderer.Roughness, 0.0, 1.0f);
-    ImGui::SliderFloat("Ambient Occlusion", &m_Renderer.AmbientOcclusion, 0.0f, 1.0f);
-
     auto& pointLights = m_Renderer.GetPointLights();
 
     ImGui::Text("Point Lights");

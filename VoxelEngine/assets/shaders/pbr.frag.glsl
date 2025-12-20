@@ -19,16 +19,32 @@ struct PointLight
     vec3 LightColor;
 };
 
+struct Material
+{
+    vec3 Albedo;
+    float Alpha;
+    float Metallic;
+    float Rougness;
+    float AmbientOcclusion;
+};
+
 uniform vec3 u_CameraPosition;
 
-// Material stuff
+// Materials
 uniform bool u_HasAlbedoTexture;
-uniform vec4 u_AlbedoColor;
-uniform sampler2D u_Albedo;
-uniform float u_Metallic;
-uniform float u_Roughness;
-uniform float u_AmbientOcclusion;
+uniform vec4 u_AlbedoFactor;
+uniform sampler2D u_AlbedoTexture;
 
+uniform bool u_HasMetallicRoughnessTexture;
+uniform sampler2D u_MetallicRoughnessTexture;
+uniform float u_MetallicFactor;
+uniform float u_RoughnessFactor;
+
+uniform bool u_HasAmbientOcclusionTexture;
+uniform sampler2D u_AmbientOcclusionTexture;
+uniform float u_AmbientOcclusionStrength;
+
+// Lights
 uniform PointLight u_PointLights[MAX_POINT_LIGHTS];
 uniform int u_PointLightCount;
 
@@ -38,22 +54,37 @@ float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 
 vec4 GetAlbedo();
+vec2 GetMatallicRougness();
+float GetAmbientOcclusion();
+vec4 CalculateColor(Material material);
 
 void main()
 {
-    vec4 albedoVec4 = GetAlbedo();
-    vec3 albedo = vec3(albedoVec4);
-    float alpha = albedoVec4.a;
+    vec4 albedo = GetAlbedo();
+    vec2 metallicRougness = GetMatallicRougness();
+    float ambientOcclusion = GetAmbientOcclusion();
 
-    if (alpha < 0.99) {
+    if (albedo.a < 0.99) {
         discard;
     }
 
+    Material material;
+    material.Albedo = vec3(albedo);
+    material.Alpha = albedo.a;
+    material.Metallic = metallicRougness.x;
+    material.Rougness = metallicRougness.y;
+    material.AmbientOcclusion = ambientOcclusion;
+
+    o_Color = CalculateColor(material);
+}
+
+vec4 CalculateColor(Material material)
+{
     vec3 N = normalize(i_Fragment.FragNormal);
     vec3 V = normalize(u_CameraPosition - i_Fragment.FragPosition);
 
     vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, u_Metallic);
+    F0 = mix(F0, material.Albedo, material.Metallic);
 
     vec3 Lo = vec3(0.0);
     for (int i = 0; i < u_PointLightCount; ++i)
@@ -65,29 +96,29 @@ void main()
         float attenuation = 1.0 / (distance * distance);
         vec3 radiance = u_PointLights[i].LightColor * attenuation;
 
-        float NDF = DistributionGGX(N, H, u_Roughness);
-        float G = GeometrySmith(N, V, L, u_Roughness);
+        float NDF = DistributionGGX(N, H, material.Rougness);
+        float G = GeometrySmith(N, V, L, material.Rougness);
         vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
         vec3 kS = F;
         vec3 kD = vec3(1.0) - kS;
-        kD *= 1.0 - u_Metallic;
+        kD *= 1.0 - material.Metallic;
 
         vec3 numerator = NDF * G * F;
         float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
         vec3 specular = numerator / denominator;
 
         float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+        Lo += (kD * material.Albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * u_AmbientOcclusion;
+    vec3 ambient = vec3(0.03) * material.Albedo * material.AmbientOcclusion;
     vec3 color = ambient + Lo;
 
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
 
-    o_Color = vec4(color, alpha);
+    return vec4(color, material.Alpha);
 }
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
@@ -132,16 +163,41 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 
 vec4 GetAlbedo()
 {
-    vec4 albedo;
+    vec4 albedo = u_AlbedoFactor;
 
     if (u_HasAlbedoTexture)
     {
-        albedo = texture(u_Albedo, i_Fragment.FragTexCoords);
-    }
-    else
-    {
-        albedo = u_AlbedoColor;
+        albedo = texture(u_AlbedoTexture, i_Fragment.FragTexCoords);
     }
 
     return albedo;
+}
+
+vec2 GetMatallicRougness()
+{
+    float metallic = u_MetallicFactor;
+    float rougness = u_RoughnessFactor;
+
+    if (u_HasMetallicRoughnessTexture)
+    {
+        vec4 metallicRougnessTexture = texture(u_MetallicRoughnessTexture, i_Fragment.FragTexCoords);
+
+        metallic = metallicRougnessTexture.b;
+        rougness = metallicRougnessTexture.g;
+    }
+
+    return vec2(metallic, rougness);
+}
+
+float GetAmbientOcclusion()
+{
+    float ambientOcclusion = 0.0f;
+
+    if (u_HasAmbientOcclusionTexture)
+    {
+        ambientOcclusion = texture(u_AmbientOcclusionTexture, i_Fragment.FragTexCoords).r;
+        ambientOcclusion *= u_AmbientOcclusionStrength;
+    }
+
+    return ambientOcclusion;
 }
