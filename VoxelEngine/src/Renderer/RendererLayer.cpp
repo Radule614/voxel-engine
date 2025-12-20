@@ -32,8 +32,6 @@ void RendererLayer::OnImGuiRender()
     constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
                                              ImGuiWindowFlags_NoMove;
-    const auto& io = ImGui::GetIO();
-
     ImGui::SetNextWindowSize(ImVec2(500.0, 300.0));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
 
