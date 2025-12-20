@@ -9,8 +9,9 @@ layout (location = 0) out vec4 o_Color;
 in o_Vertex
 {
     vec3 FragNormal;
-    vec3 FragPosition;
     vec2 FragTexCoords;
+    vec3 FragPosition;
+    mat3 TBN;
 } i_Fragment;
 
 struct PointLight
@@ -26,6 +27,7 @@ struct Material
     float Metallic;
     float Rougness;
     float AmbientOcclusion;
+    vec3 Normal;
 };
 
 uniform vec3 u_CameraPosition;
@@ -44,6 +46,10 @@ uniform bool u_HasAmbientOcclusionTexture;
 uniform sampler2D u_AmbientOcclusionTexture;
 uniform float u_AmbientOcclusionStrength;
 
+uniform bool u_HasNormalTexture;
+uniform sampler2D u_NormalTexture;
+uniform float u_NormalScale;
+
 // Lights
 uniform PointLight u_PointLights[MAX_POINT_LIGHTS];
 uniform int u_PointLightCount;
@@ -56,6 +62,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 vec4 GetAlbedo();
 vec2 GetMatallicRougness();
 float GetAmbientOcclusion();
+vec3 GetNormal();
 vec4 CalculateColor(Material material);
 
 void main()
@@ -63,6 +70,7 @@ void main()
     vec4 albedo = GetAlbedo();
     vec2 metallicRougness = GetMatallicRougness();
     float ambientOcclusion = GetAmbientOcclusion();
+    vec3 normal = GetNormal();
 
     if (albedo.a < 0.99) {
         discard;
@@ -74,13 +82,14 @@ void main()
     material.Metallic = metallicRougness.x;
     material.Rougness = metallicRougness.y;
     material.AmbientOcclusion = ambientOcclusion;
+    material.Normal = normal;
 
     o_Color = CalculateColor(material);
 }
 
 vec4 CalculateColor(Material material)
 {
-    vec3 N = normalize(i_Fragment.FragNormal);
+    vec3 N = normalize(material.Normal);
     vec3 V = normalize(u_CameraPosition - i_Fragment.FragPosition);
 
     vec3 F0 = vec3(0.04);
@@ -167,7 +176,7 @@ vec4 GetAlbedo()
 
     if (u_HasAlbedoTexture)
     {
-        albedo = texture(u_AlbedoTexture, i_Fragment.FragTexCoords);
+        albedo *= texture(u_AlbedoTexture, i_Fragment.FragTexCoords);
     }
 
     return albedo;
@@ -182,16 +191,18 @@ vec2 GetMatallicRougness()
     {
         vec4 metallicRougnessTexture = texture(u_MetallicRoughnessTexture, i_Fragment.FragTexCoords);
 
-        metallic = metallicRougnessTexture.b;
-        rougness = metallicRougnessTexture.g;
+        metallic *= metallicRougnessTexture.b;
+        rougness *= metallicRougnessTexture.g;
     }
+
+    rougness = clamp(rougness, 0.04, 1.0);
 
     return vec2(metallic, rougness);
 }
 
 float GetAmbientOcclusion()
 {
-    float ambientOcclusion = 0.0f;
+    float ambientOcclusion = 1.0f;
 
     if (u_HasAmbientOcclusionTexture)
     {
@@ -200,4 +211,17 @@ float GetAmbientOcclusion()
     }
 
     return ambientOcclusion;
+}
+
+vec3 GetNormal()
+{
+    if (!u_HasNormalTexture) {
+        return i_Fragment.FragNormal;
+    }
+
+    vec3 normalTS = texture(u_NormalTexture, i_Fragment.FragTexCoords).xyz * 2.0 - 1.0;
+    normalTS.xy *= u_NormalScale;
+    normalTS = normalize(normalTS);
+
+    return normalize(i_Fragment.TBN * normalTS);
 }

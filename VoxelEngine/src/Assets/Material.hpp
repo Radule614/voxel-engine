@@ -21,6 +21,9 @@ struct Material
 
     GLenum AmbientOcclusionTextureId;
     float_t AmbientOcclusionStrength;
+
+    GLenum NormalTextureId;
+    float_t NormalScale;
 };
 
 }

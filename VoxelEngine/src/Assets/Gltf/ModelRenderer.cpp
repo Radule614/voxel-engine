@@ -70,6 +70,7 @@ void Model::DrawMesh(const Shader& shader,
 
 static void SetShaderMaterial(const Shader& shader, const Material& material)
 {
+    shader.SetVec4("u_AlbedoFactor", material.AlbedoFactor);
     if (material.AlbedoTextureId > 0)
     {
         glActiveTexture(GL_TEXTURE0);
@@ -78,12 +79,10 @@ static void SetShaderMaterial(const Shader& shader, const Material& material)
         shader.SetBool("u_HasAlbedoTexture", true);
         shader.SetInt("u_AlbedoTexture", 0);
     }
-    else
-    {
-        shader.SetBool("u_HasAlbedoTexture", false);
-        shader.SetVec4("u_AlbedoFactor", material.AlbedoFactor);
-    }
+    else shader.SetBool("u_HasAlbedoTexture", false);
 
+    shader.SetFloat("u_MetallicFactor", material.MetallicFactor);
+    shader.SetFloat("u_RoughnessFactor", material.RoughnessFactor);
     if (material.MetallicRoughnessTextureId > 0)
     {
         glActiveTexture(GL_TEXTURE1);
@@ -92,12 +91,7 @@ static void SetShaderMaterial(const Shader& shader, const Material& material)
         shader.SetBool("u_HasMetallicRoughnessTexture", true);
         shader.SetInt("u_MetallicRoughnessTexture", 1);
     }
-    else
-    {
-        shader.SetBool("u_HasMetallicRoughnessTexture", false);
-        shader.SetFloat("u_MetallicFactor", material.MetallicFactor);
-        shader.SetFloat("u_RoughnessFactor", material.RoughnessFactor);
-    }
+    else shader.SetBool("u_HasMetallicRoughnessTexture", false);
 
     if (material.AmbientOcclusionTextureId > 0)
     {
@@ -107,8 +101,17 @@ static void SetShaderMaterial(const Shader& shader, const Material& material)
         shader.SetBool("u_HasAmbientOcclusionTexture", true);
         shader.SetInt("u_AmbientOcclusionTexture", 2);
     }
-    else
-        shader.SetBool("u_HasAmbientOcclusionTexture", false);
+    else shader.SetBool("u_HasAmbientOcclusionTexture", false);
+
+    if (material.NormalTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, material.NormalTextureId);
+
+        shader.SetBool("u_HasNormalTexture", true);
+        shader.SetInt("u_NormalTexture", 3);
+    }
+    else shader.SetBool("u_HasNormalTexture", false);
 }
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node)

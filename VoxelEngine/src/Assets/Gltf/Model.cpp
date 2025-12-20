@@ -20,6 +20,7 @@ static std::map<std::string, GLuint> VertexAttributeIndexMap = {
     {"POSITION", 0},
     {"NORMAL", 1},
     {"TEXCOORD_0", 2},
+    {"TANGENT", 3}
 };
 
 static glm::vec4 Vec4FromVector(std::vector<double_t> vector);
@@ -143,6 +144,9 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
 
             renderPrimitive.Material.AmbientOcclusionTextureId = LoadTexture(material.occlusionTexture.index);
             renderPrimitive.Material.AmbientOcclusionStrength = material.occlusionTexture.strength;
+
+            renderPrimitive.Material.NormalTextureId = LoadTexture(material.normalTexture.index);
+            renderPrimitive.Material.NormalScale = material.normalTexture.scale;
         }
 
         glBindVertexArray(0);
