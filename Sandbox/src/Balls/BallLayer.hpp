@@ -20,7 +20,6 @@ public:
 
 private:
     VoxelEngine::EngineState& m_State;
-    std::unique_ptr<VoxelEngine::Model> m_Model;
     std::vector<std::pair<entt::entity, float_t> > m_SphereEntities{};
     VoxelEngine::ShapeFactory m_PhysicsFactory;
 };

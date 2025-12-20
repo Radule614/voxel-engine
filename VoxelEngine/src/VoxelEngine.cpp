@@ -9,7 +9,7 @@
 #include "Physics/PhysicsLayer.hpp"
 #include "Physics/PhysicsEngine.hpp"
 #include "Ecs/Ecs.hpp"
-#include "Ecs/EcsLayer.hpp"
+#include "Renderer/RendererLayer.hpp"
 
 using namespace GLCore;
 
@@ -35,16 +35,14 @@ void VoxelEngineApp::Init()
     AssetManager::Init();
     PhysicsEngine::Init();
     EntityComponentSystem::Init();
-    Renderer::Init(GetWindow());
 
     PushLayer(new PhysicsLayer(m_State));
-    PushLayer(new EcsLayer(m_State));
+    PushLayer(new RendererLayer(m_State));
     PushOverlay(new UserInterface(m_State));
 }
 
 void VoxelEngineApp::Shutdown()
 {
-    Renderer::Shutdown();
     EntityComponentSystem::Shutdown();
     PhysicsEngine::Shutdown();
     AssetManager::Shutdown();

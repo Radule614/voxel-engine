@@ -12,8 +12,18 @@ namespace VoxelEngine
 
 struct Material
 {
-    glm::vec4 BaseColorFactor;
-    GLenum TextureId;
+    glm::vec4 AlbedoFactor;
+    GLenum AlbedoTextureId;
+
+    float_t MetallicFactor;
+    float_t RoughnessFactor;
+    GLenum MetallicRoughnessTextureId;
+
+    GLenum AmbientOcclusionTextureId;
+    float_t AmbientOcclusionStrength;
+
+    GLenum NormalTextureId;
+    float_t NormalScale;
 };
 
 }

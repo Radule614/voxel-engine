@@ -13,37 +13,35 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-void Renderer::Init(Window& window) { g_Renderer = new Renderer(window); }
-
-void Renderer::Shutdown()
-{
-    delete g_Renderer;
-    g_Renderer = nullptr;
-}
-
-Renderer& Renderer::Instance() { return *g_Renderer; }
+static void SetPointLightUniformAtIndex(const Shader& shader,
+                                        const std::string& uniform,
+                                        const PointLight& light,
+                                        int32_t index);
 
 Renderer::Renderer(Window& window) : m_Window(window)
 {
     m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
+
     m_TerrainShader = Shader::FromGLSLTextFiles("assets/shaders/voxel.vert.glsl", "assets/shaders/voxel.frag.glsl");
     m_MeshShader = Shader::FromGLSLTextFiles("assets/shaders/pbr.vert.glsl", "assets/shaders/pbr.frag.glsl");
+    m_SimpleShader = Shader::FromGLSLTextFiles("assets/shaders/simple.vert.glsl", "assets/shaders/simple.frag.glsl");
 
-    const DirectionalLight light = {
-        glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)),
-        glm::vec3(0.5f),
-        glm::vec3(1.0f),
-        glm::vec3(0.1f)
+    m_PointLights = {
+        {{8.5f, 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
+        {{-8.5f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
+        {{4.0f, 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-4.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
+        {{0.0f, 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}}
     };
-
-    m_DirectionalLight = light;
 }
 
-void Renderer::SetDirectionalLight(const DirectionalLight& light) { m_DirectionalLight = light; }
+Renderer::~Renderer() = default;
 
 void Renderer::RenderScene(const PerspectiveCamera& camera) const { RenderPass(camera); }
 
-void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShader, const Shader* meshShader) const
+std::vector<PointLight>& Renderer::GetPointLights() { return m_PointLights; }
+
+void Renderer::Render(const PerspectiveCamera& camera) const
 {
     constexpr glm::vec3 nightColor(0.1f);
     constexpr glm::vec3 dayColor(0.14f, 0.59f, 0.74f);
@@ -57,12 +55,8 @@ void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShad
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
-    {
-        auto& renderDataMap = terrainView.get<TerrainComponent>(entity).RenderData;
-        RenderTerrain(renderDataMap, terrainShader);
-    }
+        RenderTerrain(terrainView.get<TerrainComponent>(entity).RenderData);
 
-    glCullFace(GL_BACK);
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
     {
         auto& mesh = view.get<MeshComponent>(entity);
@@ -73,9 +67,10 @@ void Renderer::Render(const PerspectiveCamera& camera, const Shader* terrainShad
         model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
         model = glm::scale(model, transform.Scale);
 
-        RenderMesh(mesh, camera, model, meshShader);
+        RenderMesh(mesh, camera, model, *m_MeshShader);
     }
-    glCullFace(GL_FRONT);
+
+    RenderLights();
 }
 
 void Renderer::RenderPass(const PerspectiveCamera& camera) const
@@ -87,39 +82,45 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     m_TerrainShader->SetViewProjection(camera.GetViewProjectionMatrix());
     glUseProgram(m_MeshShader->GetRendererID());
     m_MeshShader->SetViewProjection(camera.GetViewProjectionMatrix());
+    glUseProgram(m_SimpleShader->GetRendererID());
+    m_SimpleShader->SetViewProjection(camera.GetViewProjectionMatrix());
 
-    glActiveTexture(GL_TEXTURE0);
-    Render(camera, m_TerrainShader, m_MeshShader);
+    Render(camera);
 }
 
 void Renderer::RenderMesh(const MeshComponent& meshComponent,
                           const PerspectiveCamera& camera,
                           const glm::mat4& model,
-                          const Shader* shader) const
+                          const Shader& shader) const
 {
-    glUseProgram(shader->GetRendererID());
+    glUseProgram(shader.GetRendererID());
 
-    SetDirectionalLightUniform(*shader, "u_DirectionalLight", m_DirectionalLight);
-    shader->SetVec3("u_CameraPos", camera.GetPosition());
+    shader.SetVec3("u_CameraPosition", camera.GetPosition());
+    shader.SetInt("u_PointLightCount", m_PointLights.size());
 
-    meshComponent.Model.Draw(*shader, model);
+    for (int32_t i = 0; i < m_PointLights.size(); ++i)
+        SetPointLightUniformAtIndex(shader, "u_PointLights", m_PointLights[i], i);
+
+    meshComponent.Model.Draw(shader, model);
 
     glUseProgram(0);
 }
 
-void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap,
-                             const Shader* shader) const
+void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const
 {
-    glUseProgram(shader->GetRendererID());
+    const Shader& shader = *m_TerrainShader;
+
+    glUseProgram(shader.GetRendererID());
+    glCullFace(GL_FRONT);
 
     for (const auto& metadata: renderDataMap | std::views::values)
     {
-        shader->SetModel(metadata.ModelMatrix);
+        shader.SetModel(metadata.ModelMatrix);
 
-        shader->SetInt("u_MaxRadiance", TerrainConfig::MaxRadiance);
-        shader->SetInt("u_RadianceGridWidth", RADIANCE_WIDTH);
-        shader->SetInt("u_RadianceGridHeight", RADIANCE_HEIGHT);
-        shader->SetInt("u_Atlas", 0);
+        shader.SetInt("u_MaxRadiance", TerrainConfig::MaxRadiance);
+        shader.SetInt("u_RadianceGridWidth", RADIANCE_WIDTH);
+        shader.SetInt("u_RadianceGridHeight", RADIANCE_HEIGHT);
+        shader.SetInt("u_Atlas", 0);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
@@ -130,41 +131,36 @@ void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderDat
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
         glBindVertexArray(0);
     }
+
+    glCullFace(GL_BACK);
 }
 
-void Renderer::SetPointLightUniform(const Shader& shader, const std::string& uniform, const PointLight& light)
+void Renderer::RenderLights() const
 {
-    shader.SetVec3(uniform + ".Position", light.Position);
-    shader.SetVec3(uniform + ".Ambient", light.Ambient);
-    shader.SetVec3(uniform + ".Diffuse", light.Diffuse);
-    shader.SetVec3(uniform + ".Specular", light.Specular);
-    shader.SetFloat(uniform + ".Constant", light.Constant);
-    shader.SetFloat(uniform + ".Linear", light.Linear);
-    shader.SetFloat(uniform + ".Quadratic", light.Quadratic);
+    const Shader& shader = *m_SimpleShader;
+
+    glUseProgram(shader.GetRendererID());
+
+    for (auto pointLight: m_PointLights)
+    {
+        shader.SetVec3("u_Color", pointLight.LightColor);
+
+        auto model = glm::mat4(1.0);
+        model = glm::translate(model, pointLight.Position);
+        model = glm::scale(model, glm::vec3(0.07f));
+
+        AssetManager::Instance().GetSphereModel().Draw(shader, model);
+    }
+    glUseProgram(0);
 }
 
-void Renderer::SetDirectionalLightUniform(const Shader& shader,
-                                          const std::string& uniform,
-                                          const DirectionalLight& light)
+static void SetPointLightUniformAtIndex(const Shader& shader,
+                                        const std::string& uniform,
+                                        const PointLight& light,
+                                        const int32_t index)
 {
-    shader.SetVec3(uniform + ".Direction", light.Direction);
-    shader.SetVec3(uniform + ".Ambient", light.Ambient);
-    shader.SetVec3(uniform + ".Diffuse", light.Diffuse);
-    shader.SetVec3(uniform + ".Specular", light.Specular);
-}
-
-void Renderer::SetSpotLightUniform(const Shader& shader, const std::string& uniform, const SpotLight& light)
-{
-    shader.SetVec3(uniform + ".Direction", light.Direction);
-    shader.SetVec3(uniform + ".Position", light.Position);
-    shader.SetVec3(uniform + ".Ambient", light.Ambient);
-    shader.SetVec3(uniform + ".Diffuse", light.Diffuse);
-    shader.SetVec3(uniform + ".Specular", light.Specular);
-    shader.SetFloat(uniform + ".CutOff", light.CutOff);
-    shader.SetFloat(uniform + ".OuterCutOff", light.OuterCutOff);
-    shader.SetFloat(uniform + ".Constant", light.Constant);
-    shader.SetFloat(uniform + ".Linear", light.Linear);
-    shader.SetFloat(uniform + ".Quadratic", light.Quadratic);
+    shader.SetVec3(std::format("{}[{}].LightPosition", uniform, index), light.Position);
+    shader.SetVec3(std::format("{}[{}].LightColor", uniform, index), light.LightColor);
 }
 
 }

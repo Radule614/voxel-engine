@@ -7,12 +7,10 @@
 #include "GLCore/Core/Application.hpp"
 #include "EngineState.hpp"
 
-using namespace GLCore;
-
 namespace VoxelEngine
 {
 
-class VoxelEngineApp : public Application
+class VoxelEngineApp : public GLCore::Application
 {
 public:
     VoxelEngineApp();

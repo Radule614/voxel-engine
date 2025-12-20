@@ -1,0 +1,55 @@
+//
+// Created by RadU on 12/20/2025.
+//
+
+#include "RendererLayer.hpp"
+
+#include "Renderer.hpp"
+
+using namespace GLCore;
+using namespace GLCore::Utils;
+
+namespace VoxelEngine
+{
+
+RendererLayer::RendererLayer(EngineState& state) : m_State(state), m_Renderer(state.Application->GetWindow())
+{
+}
+
+void RendererLayer::OnAttach()
+{
+    EnableGLDebugging();
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void RendererLayer::OnUpdate(Timestep ts) { m_Renderer.RenderScene(m_State.CameraController->GetCamera()); }
+
+void RendererLayer::OnImGuiRender()
+{
+    constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
+                                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
+                                             ImGuiWindowFlags_NoMove;
+    ImGui::SetNextWindowSize(ImVec2(500.0, 300.0));
+    ImGui::SetNextWindowPos(ImVec2(0, 0));
+
+    ImGui::Begin("Renderer", nullptr, windowFlags);
+    ImGui::Text("Renderer");
+
+    auto& pointLights = m_Renderer.GetPointLights();
+
+    ImGui::Text("Point Lights");
+    for (int32_t i = 0; i < pointLights.size(); ++i)
+    {
+        std::string label = std::format("Position {}", i + 1);
+
+        ImGui::SetNextItemWidth(400.0f);
+        ImGui::SliderFloat3(label.c_str(), glm::value_ptr(pointLights[i].Position), -15.0f, 15.0f);
+    }
+
+    ImGui::End();
+}
+
+}

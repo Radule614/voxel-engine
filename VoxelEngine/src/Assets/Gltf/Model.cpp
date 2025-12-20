@@ -20,6 +20,7 @@ static std::map<std::string, GLuint> VertexAttributeIndexMap = {
     {"POSITION", 0},
     {"NORMAL", 1},
     {"TEXCOORD_0", 2},
+    {"TANGENT", 3}
 };
 
 static glm::vec4 Vec4FromVector(std::vector<double_t> vector);
@@ -132,8 +133,20 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
         {
             const tinygltf::Material& material = model.materials[primitive.material];
 
-            renderPrimitive.Material.BaseColorFactor = Vec4FromVector(material.pbrMetallicRoughness.baseColorFactor);
-            renderPrimitive.Material.TextureId = LoadTexture(material.pbrMetallicRoughness.baseColorTexture.index);
+            renderPrimitive.Material.AlbedoFactor = Vec4FromVector(material.pbrMetallicRoughness.baseColorFactor);
+            renderPrimitive.Material.AlbedoTextureId =
+                    LoadTexture(material.pbrMetallicRoughness.baseColorTexture.index);
+
+            renderPrimitive.Material.MetallicFactor = material.pbrMetallicRoughness.metallicFactor;
+            renderPrimitive.Material.RoughnessFactor = material.pbrMetallicRoughness.roughnessFactor;
+            renderPrimitive.Material.MetallicRoughnessTextureId =
+                    LoadTexture(material.pbrMetallicRoughness.metallicRoughnessTexture.index);
+
+            renderPrimitive.Material.AmbientOcclusionTextureId = LoadTexture(material.occlusionTexture.index);
+            renderPrimitive.Material.AmbientOcclusionStrength = material.occlusionTexture.strength;
+
+            renderPrimitive.Material.NormalTextureId = LoadTexture(material.normalTexture.index);
+            renderPrimitive.Material.NormalScale = material.normalTexture.scale;
         }
 
         glBindVertexArray(0);
@@ -172,7 +185,7 @@ GLuint Model::LoadTexture(const int32_t textureIndex)
     else if (image.component == 3) format = GL_RGB;
     else if (image.component == 4) format = GL_RGBA;
     else
-        assert(false);
+        GLCORE_ASSERT(false);
 
     glTexImage2D(GL_TEXTURE_2D,
                  0,
