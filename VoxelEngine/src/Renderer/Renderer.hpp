@@ -32,11 +32,8 @@ struct DirectionalLight
 class Renderer
 {
 public:
-    static void Init(GLCore::Window& window);
-    static void Shutdown();
-    static Renderer& Instance();
-
     explicit Renderer(GLCore::Window& window);
+    ~Renderer();
 
     void SetDirectionalLight(const DirectionalLight& light);
     void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
@@ -65,7 +62,5 @@ private:
 
     std::vector<PointLight> m_PointLights;
 };
-
-inline Renderer* g_Renderer = nullptr;
 
 }

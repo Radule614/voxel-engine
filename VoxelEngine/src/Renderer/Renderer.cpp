@@ -13,24 +13,12 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-static void SetDirectionalLightUniform(const Shader& shader,
-                                       const std::string& uniform,
-                                       const DirectionalLight& light);
-
+static void SetDirectionalLightUniform(const Shader& shader, const std::string& uniform, const DirectionalLight& light);
 static void SetPointLightUniformAtIndex(const Shader& shader,
                                         const std::string& uniform,
                                         const PointLight& light,
                                         int32_t index);
 
-void Renderer::Init(Window& window) { g_Renderer = new Renderer(window); }
-
-void Renderer::Shutdown()
-{
-    delete g_Renderer;
-    g_Renderer = nullptr;
-}
-
-Renderer& Renderer::Instance() { return *g_Renderer; }
 
 Renderer::Renderer(Window& window) : m_Window(window)
 {
@@ -56,6 +44,8 @@ Renderer::Renderer(Window& window) : m_Window(window)
         {{-4.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
     };
 }
+
+Renderer::~Renderer() = default;
 
 void Renderer::SetDirectionalLight(const DirectionalLight& light) { m_DirectionalLight = light; }
 
