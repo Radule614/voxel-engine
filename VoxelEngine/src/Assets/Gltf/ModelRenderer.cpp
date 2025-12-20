@@ -70,10 +70,10 @@ void Model::DrawMesh(const Shader& shader,
 
 static void SetShaderMaterial(const Shader& shader, const Material& material)
 {
-    if (material.TextureId > 0)
+    if (material.AlbedoTextureId > 0)
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, material.TextureId);
+        glBindTexture(GL_TEXTURE_2D, material.AlbedoTextureId);
 
         shader.SetBool("u_HasAlbedoTexture", true);
         shader.SetInt("u_Albedo", 0);
@@ -81,7 +81,7 @@ static void SetShaderMaterial(const Shader& shader, const Material& material)
     else
     {
         shader.SetBool("u_HasAlbedoTexture", false);
-        shader.SetVec4("u_AlbedoColor", material.BaseColorFactor);
+        shader.SetVec4("u_AlbedoColor", material.AlbedoColor);
     }
 }
 

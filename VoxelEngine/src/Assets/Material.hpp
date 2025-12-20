@@ -12,8 +12,8 @@ namespace VoxelEngine
 
 struct Material
 {
-    glm::vec4 BaseColorFactor;
-    GLenum TextureId;
+    glm::vec4 AlbedoColor;
+    GLenum AlbedoTextureId;
 };
 
 }

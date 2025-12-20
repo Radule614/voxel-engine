@@ -132,8 +132,8 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
         {
             const tinygltf::Material& material = model.materials[primitive.material];
 
-            renderPrimitive.Material.BaseColorFactor = Vec4FromVector(material.pbrMetallicRoughness.baseColorFactor);
-            renderPrimitive.Material.TextureId = LoadTexture(material.pbrMetallicRoughness.baseColorTexture.index);
+            renderPrimitive.Material.AlbedoColor = Vec4FromVector(material.pbrMetallicRoughness.baseColorFactor);
+            renderPrimitive.Material.AlbedoTextureId = LoadTexture(material.pbrMetallicRoughness.baseColorTexture.index);
         }
 
         glBindVertexArray(0);
@@ -172,7 +172,7 @@ GLuint Model::LoadTexture(const int32_t textureIndex)
     else if (image.component == 3) format = GL_RGB;
     else if (image.component == 4) format = GL_RGBA;
     else
-        assert(false);
+        GLCORE_ASSERT(false);
 
     glTexImage2D(GL_TEXTURE_2D,
                  0,
