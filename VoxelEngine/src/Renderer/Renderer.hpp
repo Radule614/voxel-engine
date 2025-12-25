@@ -32,15 +32,13 @@ public:
 
 private:
     void Render(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void DepthPass();
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-
     void RenderMesh(const MeshComponent& meshComponent,
                     const GLCore::Utils::PerspectiveCamera& camera,
                     const glm::mat4& model,
                     const GLCore::Utils::Shader& shader) const;
-
     void RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const;
-
     void RenderLights() const;
 
 private:

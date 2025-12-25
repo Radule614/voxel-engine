@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include "../../Terrain/Utils/Position2D.hpp"
+#include "glad/glad.h"
 
 namespace VoxelEngine
 {

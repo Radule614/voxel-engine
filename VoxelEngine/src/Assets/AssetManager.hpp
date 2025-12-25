@@ -26,6 +26,7 @@ public:
     Texture& LoadTexture(const std::string& path, const std::string& type);
 
     const Model& GetSphereModel() const;
+    static std::string GetShaderPath(const std::string& shaderName);
 
 private:
     uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);

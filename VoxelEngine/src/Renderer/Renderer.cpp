@@ -6,6 +6,7 @@
 #include "../Terrain/TerrainConfig.hpp"
 #include "../Ecs/Ecs.hpp"
 #include "../Ecs/Components/TransformComponent.hpp"
+#include "GLCore/Utils/ShaderBuilder.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -22,16 +23,27 @@ Renderer::Renderer(Window& window) : m_Window(window)
 {
     m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
 
-    m_TerrainShader = Shader::FromGLSLTextFiles("assets/shaders/voxel.vert.glsl", "assets/shaders/voxel.frag.glsl");
-    m_MeshShader = Shader::FromGLSLTextFiles("assets/shaders/pbr.vert.glsl", "assets/shaders/pbr.frag.glsl");
-    m_SimpleShader = Shader::FromGLSLTextFiles("assets/shaders/simple.vert.glsl", "assets/shaders/simple.frag.glsl");
+    m_TerrainShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("voxel.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("voxel.frag.glsl"))
+            .Build();
+
+    m_MeshShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("pbr.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("pbr.frag.glsl"))
+            .Build();
+
+    m_SimpleShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("simple.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("simple.frag.glsl"))
+            .Build();
 
     m_PointLights = {
-        {{8.5f, 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
-        {{-8.5f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-        {{4.0f, 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-4.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-        {{0.0f, 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}}
+        {{0.0f, 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}},
+        // {{8.5f, 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
+        // {{-8.5f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
+        // {{4.0f, 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
+        // {{-4.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
     };
 }
 
@@ -71,6 +83,34 @@ void Renderer::Render(const PerspectiveCamera& camera) const
     }
 
     RenderLights();
+}
+
+void Renderer::DepthPass()
+{
+    GLenum depthCubemap;
+    glGenTextures(1, &depthCubemap);
+
+    const uint32_t shadowWidth = 1024;
+    const uint32_t shadowHeight = 1024;
+    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+    for (uint32_t i = 0; i < 6; ++i)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     shadowWidth,
+                     shadowHeight,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     GL_FLOAT,
+                     nullptr);
+
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    }
 }
 
 void Renderer::RenderPass(const PerspectiveCamera& camera) const
