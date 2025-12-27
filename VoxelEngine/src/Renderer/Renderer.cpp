@@ -14,6 +14,7 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
+static void CreateDepthFrameBuffer(GLuint* depthMapFbo, GLuint* depthCubeMap);
 static void SetPointLightUniformAtIndex(const Shader& shader,
                                         const std::string& uniform,
                                         const PointLight& light,
@@ -23,14 +24,20 @@ Renderer::Renderer(Window& window) : m_Window(window)
 {
     m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
 
+    m_DepthShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("point_shadows_depth.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("point_shadows_depth.frag.glsl"))
+            .AddShader(GL_GEOMETRY_SHADER, AssetManager::GetShaderPath("point_shadows_depth.geo.glsl"))
+            .Build();
+
+    m_PbrShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("pbr.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("pbr.frag.glsl"))
+            .Build();
+
     m_TerrainShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("voxel.vert.glsl"))
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("voxel.frag.glsl"))
-            .Build();
-
-    m_MeshShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("pbr.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("pbr.frag.glsl"))
             .Build();
 
     m_SimpleShader = ShaderBuilder()
@@ -45,6 +52,8 @@ Renderer::Renderer(Window& window) : m_Window(window)
         // {{4.0f, 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
         // {{-4.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
     };
+
+    CreateDepthFrameBuffer(&m_DepthMapFbo, &m_DepthCubeMap);
 }
 
 Renderer::~Renderer() = default;
@@ -79,7 +88,7 @@ void Renderer::Render(const PerspectiveCamera& camera) const
         model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
         model = glm::scale(model, transform.Scale);
 
-        RenderMesh(mesh, camera, model, *m_MeshShader);
+        RenderMesh(mesh, camera, model, *m_PbrShader);
     }
 
     RenderLights();
@@ -87,30 +96,6 @@ void Renderer::Render(const PerspectiveCamera& camera) const
 
 void Renderer::DepthPass()
 {
-    GLenum depthCubemap;
-    glGenTextures(1, &depthCubemap);
-
-    const uint32_t shadowWidth = 1024;
-    const uint32_t shadowHeight = 1024;
-    glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-    for (uint32_t i = 0; i < 6; ++i)
-    {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                     0,
-                     GL_DEPTH_COMPONENT,
-                     shadowWidth,
-                     shadowHeight,
-                     0,
-                     GL_DEPTH_COMPONENT,
-                     GL_FLOAT,
-                     nullptr);
-
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    }
 }
 
 void Renderer::RenderPass(const PerspectiveCamera& camera) const
@@ -120,8 +105,8 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
 
     glUseProgram(m_TerrainShader->GetRendererID());
     m_TerrainShader->SetViewProjection(camera.GetViewProjectionMatrix());
-    glUseProgram(m_MeshShader->GetRendererID());
-    m_MeshShader->SetViewProjection(camera.GetViewProjectionMatrix());
+    glUseProgram(m_PbrShader->GetRendererID());
+    m_PbrShader->SetViewProjection(camera.GetViewProjectionMatrix());
     glUseProgram(m_SimpleShader->GetRendererID());
     m_SimpleShader->SetViewProjection(camera.GetViewProjectionMatrix());
 
@@ -192,6 +177,35 @@ void Renderer::RenderLights() const
         AssetManager::Instance().GetSphereModel().Draw(shader, model);
     }
     glUseProgram(0);
+}
+
+static void CreateDepthFrameBuffer(GLuint* depthMapFbo, GLuint* depthCubeMap)
+{
+    glGenFramebuffers(1, depthMapFbo);
+    glGenTextures(1, depthCubeMap);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, *depthCubeMap);
+    for (uint32_t i = 0; i < 6; ++i)
+    {
+        constexpr uint32_t shadowHeight = 1024;
+        constexpr uint32_t shadowWidth = 1024;
+
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     shadowWidth,
+                     shadowHeight,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     GL_FLOAT,
+                     nullptr);
+
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    }
 }
 
 static void SetPointLightUniformAtIndex(const Shader& shader,

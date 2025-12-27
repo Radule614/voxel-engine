@@ -32,6 +32,7 @@ public:
 
 private:
     void Render(const GLCore::Utils::PerspectiveCamera& camera) const;
+
     void DepthPass();
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void RenderMesh(const MeshComponent& meshComponent,
@@ -47,8 +48,13 @@ private:
 
     std::vector<PointLight> m_PointLights;
 
+    GLuint m_DepthMapFbo;
+    GLuint m_DepthCubeMap;
+
+    GLCore::Utils::Shader* m_PbrShader;
+    GLCore::Utils::Shader* m_DepthShader;
+
     GLCore::Utils::Shader* m_TerrainShader;
-    GLCore::Utils::Shader* m_MeshShader;
     GLCore::Utils::Shader* m_SimpleShader;
 };
 
