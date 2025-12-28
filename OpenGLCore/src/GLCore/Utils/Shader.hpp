@@ -6,31 +6,32 @@
 
 namespace GLCore::Utils
 {
+
 class Shader
 {
 public:
-	~Shader();
-	GLuint GetRendererID() const
-	{
-		return m_RendererID;
-	}
-	static Shader* FromGLSLTextFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+    explicit Shader(GLenum program);
+    ~Shader();
 
-	void SetVec3(const std::string&, const glm::vec3&) const;
-	void SetVec3(const std::string&, float_t, float_t, float_t) const;
-	void SetVec4(const std::string&, const glm::vec4&) const;
-	void SetViewProjection(const glm::mat4&) const;
-	void SetModel(const glm::mat4&) const;
-	void SetFloat(const std::string&, float_t) const;
-	void SetInt(const std::string&, int32_t) const;
-	void SetBool(const std::string&, bool) const;
+    GLuint GetRendererID() const { return m_RendererID; }
+
+    void SetVec3(const std::string& uniform, const glm::vec3& value) const;
+    void SetVec3(const std::string& uniform, float_t x, float_t y, float_t z) const;
+    void SetVec4(const std::string& uniform, const glm::vec4& value) const;
+    void SetViewProjection(const glm::mat4& value) const;
+    void SetModel(const glm::mat4& value) const;
+    void SetFloat(const std::string& uniform, float_t value) const;
+    void SetInt(const std::string& uniform, int32_t value) const;
+    void SetInt(const std::string& uniform, int32_t value, int32_t index) const;
+    void SetBool(const std::string& uniform, bool value) const;
+
+    void SetMat4(const std::string& uniform, const glm::mat4& value, int32_t index) const;
+    void SetMat4(const std::string& uniform, const glm::mat4& value) const;
+
+    void SetIntArray(const std::string& uniform, const std::vector<int32_t>& vector);
 
 private:
-	Shader() = default;
-	void LoadFromGLSLTextFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-	GLuint CompileShader(GLenum type, const std::string& source);
-
-private:
-	GLuint m_RendererID;
+    GLuint m_RendererID;
 };
+
 }

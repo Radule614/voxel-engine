@@ -1,4 +1,6 @@
 #include "VoxelLayer.hpp"
+
+#include <ranges>
 #include <vector>
 #include "World/World.hpp"
 #include "../Ecs/Components/CharacterComponent.hpp"
@@ -41,7 +43,7 @@ void VoxelLayer::OnDetach()
 {
     m_World->StopGeneration();
     auto& renderDataMap = *m_RenderData;
-    for (auto& [_, chunkRenderData]: renderDataMap)
+    for (auto& chunkRenderData: renderDataMap | std::views::values)
     {
         ChunkRenderData& data = chunkRenderData;
         glDeleteBuffers(1, &data.VertexBuffer);

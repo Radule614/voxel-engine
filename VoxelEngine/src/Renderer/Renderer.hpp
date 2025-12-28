@@ -15,6 +15,7 @@ struct PointLight
 {
     glm::vec3 Position;
     glm::vec3 LightColor;
+    GLuint DepthCubeMap = 0;
 
     PointLight(const glm::vec3 position, const glm::vec3 color) : Position(position), LightColor(color)
     {
@@ -31,16 +32,14 @@ public:
     std::vector<PointLight>& GetPointLights();
 
 private:
-    void Render(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void Render(const GLCore::Utils::Shader& shader) const;
 
+    void DepthPass() const;
+    void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void RenderMesh(const MeshComponent& meshComponent,
-                    const GLCore::Utils::PerspectiveCamera& camera,
                     const glm::mat4& model,
                     const GLCore::Utils::Shader& shader) const;
-
     void RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const;
-
     void RenderLights() const;
 
 private:
@@ -49,8 +48,12 @@ private:
 
     std::vector<PointLight> m_PointLights;
 
+    GLuint m_DepthMapFbo;
+
+    GLCore::Utils::Shader* m_PbrShader;
+    GLCore::Utils::Shader* m_DepthShader;
+
     GLCore::Utils::Shader* m_TerrainShader;
-    GLCore::Utils::Shader* m_MeshShader;
     GLCore::Utils::Shader* m_SimpleShader;
 };
 

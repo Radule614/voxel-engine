@@ -101,4 +101,6 @@ Model* AssetManager::LoadModel(std::string filename)
 
 const Model& AssetManager::GetSphereModel() const { return *m_SphereModel; }
 
+std::string AssetManager::GetShaderPath(const std::string& shaderName) { return "assets/shaders/" + shaderName; }
+
 }

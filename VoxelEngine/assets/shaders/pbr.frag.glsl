@@ -1,6 +1,6 @@
 #version 450 core
 
-#define MAX_POINT_LIGHTS 32
+#define MAX_POINT_LIGHTS 16
 
 const float PI = 3.14159265359;
 
@@ -53,6 +53,17 @@ uniform float u_NormalScale;
 // Lights
 uniform PointLight u_PointLights[MAX_POINT_LIGHTS];
 uniform int u_PointLightCount;
+uniform float u_ShadowFarPlane;
+uniform samplerCube u_DepthMaps[MAX_POINT_LIGHTS];
+
+vec3 GridSamplingDisk[20] = vec3[]
+(
+vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
+vec3(1, 1, -1), vec3(1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+vec3(1, 1, 0), vec3(1, -1, 0), vec3(-1, -1, 0), vec3(-1, 1, 0),
+vec3(1, 0, 1), vec3(-1, 0, 1), vec3(1, 0, -1), vec3(-1, 0, -1),
+vec3(0, 1, 1), vec3(0, -1, 1), vec3(0, -1, -1), vec3(0, 1, -1)
+);
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0);
 float DistributionGGX(vec3 N, vec3 H, float roughness);
@@ -64,6 +75,8 @@ vec2 GetMatallicRougness();
 float GetAmbientOcclusion();
 vec3 GetNormal();
 vec4 CalculateColor(Material material);
+
+float CalculateShadow(vec3 fragPos, int lightIndex);
 
 void main()
 {
@@ -77,14 +90,22 @@ void main()
     }
 
     Material material;
-    material.Albedo = vec3(albedo);
+    material.Albedo = albedo.xyz;
     material.Alpha = albedo.a;
     material.Metallic = metallicRougness.x;
     material.Rougness = metallicRougness.y;
     material.AmbientOcclusion = ambientOcclusion;
     material.Normal = normal;
 
-    o_Color = CalculateColor(material);
+    vec4 color = CalculateColor(material);
+
+    float shadow = 0.6;
+    for (int i = 0; i < u_PointLightCount; ++i)
+    {
+        shadow = min(shadow, CalculateShadow(i_Fragment.FragPosition, i));
+    }
+
+    o_Color = vec4((1.0 - shadow) * color.xyz, color.a);
 }
 
 vec4 CalculateColor(Material material)
@@ -128,6 +149,28 @@ vec4 CalculateColor(Material material)
     color = pow(color, vec3(1.0 / 2.2));
 
     return vec4(color, material.Alpha);
+}
+
+float CalculateShadow(vec3 fragPos, int lightIndex)
+{
+    vec3 fragToLight = fragPos - u_PointLights[lightIndex].LightPosition;
+    float currentDepth = length(fragToLight);
+
+    float shadow = 0.0;
+    float bias = 0.2;
+    int samples = 20;
+    float viewDistance = length(u_CameraPosition - fragPos);
+    float diskRadius = (1.0 + (viewDistance / u_ShadowFarPlane)) / 25.0;
+    for (int i = 0; i < samples; ++i)
+    {
+        float closestDepth = texture(u_DepthMaps[lightIndex], fragToLight + GridSamplingDisk[i] * diskRadius).r;
+        closestDepth *= u_ShadowFarPlane;
+        if (currentDepth - bias > closestDepth)
+        shadow += 1.0;
+    }
+    shadow /= float(samples);
+
+    return shadow;
 }
 
 vec3 FresnelSchlick(float cosTheta, vec3 F0)
