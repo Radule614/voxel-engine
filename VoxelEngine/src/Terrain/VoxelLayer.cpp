@@ -392,13 +392,6 @@ void VoxelLayer::SetupRenderData(const Chunk& chunk) const
                           GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, TexCoords)));
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3,
-                           4,
-                           GL_FLOAT,
-                           GL_FALSE,
-                           sizeof(VoxelVertex),
-                           reinterpret_cast<void*>(offsetof(VoxelVertex, Tangent)));
 
     const uint32_t faceCount = vertices.size() / 4;
     for (uint32_t i = 0; i < faceCount; ++i)

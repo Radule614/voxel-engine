@@ -29,7 +29,7 @@ static void SetPointLightUniformAtIndex(const Shader& shader,
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 {
-    m_TextureAtlas = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
+    m_TerrainAlbedo = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
 
     m_DepthShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("point_shadows_depth.vert.glsl"))
@@ -159,7 +159,7 @@ void Renderer::Render(const Shader& shader) const
         SetPointLightUniformAtIndex(shader, "u_PointLights", m_PointLights[i], i);
 
     for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
-        RenderTerrain(shader, terrainView.get<TerrainComponent>(entity).RenderData);
+        RenderTerrain(shader, terrainView.get<TerrainComponent>(entity));
 
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
     {
@@ -175,13 +175,13 @@ void Renderer::Render(const Shader& shader) const
     }
 }
 
-void Renderer::RenderTerrain(const Shader& shader, const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const
+void Renderer::RenderTerrain(const Shader& shader, const TerrainComponent& terrainComponent) const
 {
     glCullFace(GL_FRONT);
 
-    for (const auto& metadata: renderDataMap | std::views::values)
+    for (const auto& renderData: terrainComponent.RenderData | std::views::values)
     {
-        shader.SetModel(metadata.ModelMatrix);
+        shader.SetModel(renderData.ModelMatrix);
 
         shader.Set("u_HasAlbedoTexture", true);
         shader.Set("u_HasMetallicRoughnessTexture", false);
@@ -190,14 +190,14 @@ void Renderer::RenderTerrain(const Shader& shader, const std::unordered_map<Posi
 
         shader.Set("u_AlbedoFactor", glm::vec4(1.0f));
         shader.Set("u_AlbedoTexture", 0);
-        shader.Set("u_MetallicFactor", 0.2f);
-        shader.Set("u_RoughnessFactor", 0.2f);
+        shader.Set("u_MetallicFactor", 0.0f);
+        shader.Set("u_RoughnessFactor", 0.85f);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
+        glBindTexture(GL_TEXTURE_2D, m_TerrainAlbedo.id);
 
-        glBindVertexArray(metadata.VertexArray);
-        glDrawElements(GL_TRIANGLES, metadata.Indices.size(), GL_UNSIGNED_INT, nullptr);
+        glBindVertexArray(renderData.VertexArray);
+        glDrawElements(GL_TRIANGLES, renderData.Indices.size(), GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
     }
 

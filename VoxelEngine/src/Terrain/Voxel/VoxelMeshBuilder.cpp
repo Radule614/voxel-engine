@@ -174,7 +174,6 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             v.Position = pos + static_cast<glm::vec3>(voxelPosition);
             v.Normal = s_NormalMap.at(face);
             v.TexCoords = atlasTexCoord;
-            v.Tangent = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
 
             data.push_back(v);
         }

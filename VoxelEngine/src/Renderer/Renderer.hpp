@@ -3,24 +3,13 @@
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
 
-#include "../Terrain/Utils/Position2D.hpp"
+#include "PointLight.hpp"
 #include "../Ecs/Components/TerrainComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
 #include "../Assets/Texture.hpp"
 
 namespace VoxelEngine
 {
-
-struct PointLight
-{
-    glm::vec3 Position;
-    glm::vec3 LightColor;
-    GLuint DepthCubeMap = 0;
-
-    PointLight(const glm::vec3 position, const glm::vec3 color) : Position(position), LightColor(color)
-    {
-    }
-};
 
 class Renderer
 {
@@ -36,13 +25,12 @@ private:
 
     void DepthPass() const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void RenderTerrain(const GLCore::Utils::Shader& shader,
-                       const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const;
+    void RenderTerrain(const GLCore::Utils::Shader& shader,const TerrainComponent& terrainComponent) const;
     void RenderLights() const;
 
 private:
     GLCore::Window& m_Window;
-    Texture m_TextureAtlas;
+    Texture m_TerrainAlbedo;
 
     std::vector<PointLight> m_PointLights;
 
