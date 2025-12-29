@@ -8,8 +8,9 @@
 namespace VoxelEngine
 {
 
-World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController,
-             WorldSettings&& settings)
+World::World(
+    const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController,
+    WorldSettings&& settings)
     : m_CameraController(cameraController),
       m_ShouldGenerationRun(false),
       m_Lock(std::mutex()),
@@ -119,14 +120,14 @@ void World::GenerateChunk(Position2D position)
     chunk.GenerateMesh();
 
     for (const auto& neighbour: neighbours | std::views::values)
-        m_RenderQueue.insert({neighbour->GetPosition(), neighbour});
-
-    for (const auto& neighbour: neighbours | std::views::values)
         neighbour->GetLock().unlock();
 
     chunk.GetLock().unlock();
 
     m_RenderQueue.insert({chunk.GetPosition(), &chunk});
+
+    for (const auto& neighbour: neighbours | std::views::values)
+        m_RenderQueue.insert({neighbour->GetPosition(), neighbour});
 }
 
 void World::SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk*>& neighbours)

@@ -52,10 +52,10 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 
     m_PointLights = {
         {{0.0f, baseHeight + 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}},
-        // {{8.5f, baseHeight + 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
-        // {{-8.5f, baseHeight + 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-        // {{4.0f, baseHeight + 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
-        // {{-4.0f, baseHeight + 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
+        {{8.5f, baseHeight + 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
+        {{-8.5f, baseHeight + 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
+        {{4.0f, baseHeight + 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-4.0f, baseHeight + 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
     };
 
     glGenFramebuffers(1, &m_DepthMapFbo);
@@ -83,11 +83,10 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
 
         m_PbrShader->Set<std::vector<int32_t> >("u_DepthMaps", vector);
 
-        DepthPass();
-
         baked = true;
     }
 
+    DepthPass();
     RenderPass(camera);
 
     // Debug
@@ -100,14 +99,14 @@ std::vector<PointLight>& Renderer::GetPointLights() { return m_PointLights; }
 
 void Renderer::DepthPass() const
 {
-    const Shader& depthShader = *m_DepthShader;
+    const Shader& shader = *m_DepthShader;
 
     glViewport(0, 0, ShadowWidth, ShadowHeight);
     glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFbo);
 
     for (const auto& light: m_PointLights)
     {
-        depthShader.Use();
+        shader.Use();
 
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.DepthCubeMap, 0);
         glDrawBuffer(GL_NONE);
@@ -115,15 +114,15 @@ void Renderer::DepthPass() const
 
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        depthShader.Set<glm::vec3>("u_LightPosition", light.Position);
-        depthShader.Set<float_t>("u_FarPlane", ShadowFarPlane);
+        shader.Set("u_LightPosition", light.Position);
+        shader.Set("u_FarPlane", ShadowFarPlane);
 
         std::vector<glm::mat4> shadowTransforms = CalculateShadowTransforms(light.Position);
 
         for (uint32_t i = 0; i < shadowTransforms.size(); ++i)
-            depthShader.Set<glm::mat4>("u_ShadowMatrices", shadowTransforms[i], i);
+            shader.Set("u_ShadowMatrices", shadowTransforms[i], i);
 
-        Render(depthShader);
+        Render(shader);
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -131,13 +130,15 @@ void Renderer::DepthPass() const
 
 void Renderer::RenderPass(const PerspectiveCamera& camera) const
 {
+    const Shader& shader = *m_PbrShader;
+
     glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_PbrShader->Use();
-    m_PbrShader->SetViewProjection(camera.GetViewProjectionMatrix());
-    m_PbrShader->Set<glm::vec3>("u_CameraPosition", camera.GetPosition());
-    m_PbrShader->Set<float_t>("u_ShadowFarPlane", ShadowFarPlane);
+    shader.Use();
+    shader.SetViewProjection(camera.GetViewProjectionMatrix());
+    shader.Set("u_CameraPosition", camera.GetPosition());
+    shader.Set("u_ShadowFarPlane", ShadowFarPlane);
 
     for (int32_t i = 0; i < m_PointLights.size(); ++i)
     {
@@ -145,7 +146,7 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_PointLights[i].DepthCubeMap);
     }
 
-    Render(*m_PbrShader);
+    Render(shader);
 }
 
 void Renderer::Render(const Shader& shader) const
@@ -158,7 +159,7 @@ void Renderer::Render(const Shader& shader) const
         SetPointLightUniformAtIndex(shader, "u_PointLights", m_PointLights[i], i);
 
     for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
-        RenderTerrain(terrainView.get<TerrainComponent>(entity).RenderData);
+        RenderTerrain(shader, terrainView.get<TerrainComponent>(entity).RenderData);
 
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
     {
@@ -170,18 +171,12 @@ void Renderer::Render(const Shader& shader) const
         model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
         model = glm::scale(model, transform.Scale);
 
-        RenderMesh(mesh, model, shader);
+        mesh.Model.Draw(shader, model);
     }
 }
 
-void Renderer::RenderMesh(const MeshComponent& meshComponent,
-                          const glm::mat4& model,
-                          const Shader& shader) const { meshComponent.Model.Draw(shader, model); }
-
-void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const
+void Renderer::RenderTerrain(const Shader& shader, const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const
 {
-    const Shader& shader = *m_PbrShader;
-
     glCullFace(GL_FRONT);
 
     for (const auto& metadata: renderDataMap | std::views::values)
@@ -193,6 +188,7 @@ void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderDat
         shader.Set("u_HasAmbientOcclusionTexture", false);
         shader.Set("u_HasNormalTexture", false);
 
+        shader.Set("u_AlbedoFactor", glm::vec4(1.0f));
         shader.Set("u_AlbedoTexture", 0);
         shader.Set("u_MetallicFactor", 0.2f);
         shader.Set("u_RoughnessFactor", 0.2f);
@@ -215,7 +211,7 @@ void Renderer::RenderLights() const
     shader.Use();
     for (auto pointLight: m_PointLights)
     {
-        shader.Set<glm::vec3>("u_Color", pointLight.LightColor);
+        shader.Set("u_Color", pointLight.LightColor);
 
         auto model = glm::mat4(1.0);
         model = glm::translate(model, pointLight.Position);
@@ -286,8 +282,8 @@ static void SetPointLightUniformAtIndex(const Shader& shader,
                                         const PointLight& light,
                                         const int32_t index)
 {
-    shader.Set<glm::vec3>(std::format("{}[{}].LightPosition", uniform, index), light.Position);
-    shader.Set<glm::vec3>(std::format("{}[{}].LightColor", uniform, index), light.LightColor);
+    shader.Set(std::format("{}[{}].LightPosition", uniform, index), light.Position);
+    shader.Set(std::format("{}[{}].LightColor", uniform, index), light.LightColor);
 }
 
 }

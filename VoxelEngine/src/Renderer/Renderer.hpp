@@ -36,10 +36,8 @@ private:
 
     void DepthPass() const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void RenderMesh(const MeshComponent& meshComponent,
-                    const glm::mat4& model,
-                    const GLCore::Utils::Shader& shader) const;
-    void RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const;
+    void RenderTerrain(const GLCore::Utils::Shader& shader,
+                       const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const;
     void RenderLights() const;
 
 private:

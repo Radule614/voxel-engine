@@ -70,48 +70,48 @@ void Model::DrawMesh(const Shader& shader,
 
 static void SetShaderMaterial(const Shader& shader, const Material& material)
 {
-    shader.Set<glm::vec4>("u_AlbedoFactor", material.AlbedoFactor);
+    shader.Set("u_AlbedoFactor", material.AlbedoFactor);
     if (material.AlbedoTextureId > 0)
     {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, material.AlbedoTextureId);
 
-        shader.Set<bool>("u_HasAlbedoTexture", true);
-        shader.Set<int32_t>("u_AlbedoTexture", 0);
+        shader.Set("u_HasAlbedoTexture", true);
+        shader.Set("u_AlbedoTexture", 0);
     }
-    else shader.Set<bool>("u_HasAlbedoTexture", false);
+    else shader.Set("u_HasAlbedoTexture", false);
 
-    shader.Set<float_t>("u_MetallicFactor", material.MetallicFactor);
-    shader.Set<float_t>("u_RoughnessFactor", material.RoughnessFactor);
+    shader.Set("u_MetallicFactor", material.MetallicFactor);
+    shader.Set("u_RoughnessFactor", material.RoughnessFactor);
     if (material.MetallicRoughnessTextureId > 0)
     {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, material.MetallicRoughnessTextureId);
 
-        shader.Set<bool>("u_HasMetallicRoughnessTexture", true);
-        shader.Set<int32_t>("u_MetallicRoughnessTexture", 1);
+        shader.Set("u_HasMetallicRoughnessTexture", true);
+        shader.Set("u_MetallicRoughnessTexture", 1);
     }
-    else shader.Set<bool>("u_HasMetallicRoughnessTexture", false);
+    else shader.Set("u_HasMetallicRoughnessTexture", false);
 
     if (material.AmbientOcclusionTextureId > 0)
     {
         glActiveTexture(GL_TEXTURE2);
         glBindTexture(GL_TEXTURE_2D, material.AmbientOcclusionTextureId);
 
-        shader.Set<bool>("u_HasAmbientOcclusionTexture", true);
-        shader.Set<int32_t>("u_AmbientOcclusionTexture", 2);
+        shader.Set("u_HasAmbientOcclusionTexture", true);
+        shader.Set("u_AmbientOcclusionTexture", 2);
     }
-    else shader.Set<bool>("u_HasAmbientOcclusionTexture", false);
+    else shader.Set("u_HasAmbientOcclusionTexture", false);
 
     if (material.NormalTextureId > 0)
     {
         glActiveTexture(GL_TEXTURE3);
         glBindTexture(GL_TEXTURE_2D, material.NormalTextureId);
 
-        shader.Set<bool>("u_HasNormalTexture", true);
-        shader.Set<int32_t>("u_NormalTexture", 3);
+        shader.Set("u_HasNormalTexture", true);
+        shader.Set("u_NormalTexture", 3);
     }
-    else shader.Set<bool>("u_HasNormalTexture", false);
+    else shader.Set("u_HasNormalTexture", false);
 }
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node)
