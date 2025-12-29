@@ -135,6 +135,7 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
     std::vector<VoxelVertex> data = {};
     std::vector<int32_t>& texMap = s_FaceTextureMap.at(voxel.GetVoxelType());
     float_t textureUnit = 1.0f / 16.0f;
+
     for (size_t i = 0; i < 6; ++i)
     {
         auto face = static_cast<VoxelFace>(i);
@@ -144,6 +145,7 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
         std::vector<glm::vec3>& positions = s_PositionMap.at(face);
         int32_t texMapX = texMap[4];
         int32_t texMapY = texMap[5];
+
         if (i == 0)
         {
             texMapX = texMap[0];
@@ -154,6 +156,7 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             texMapX = texMap[2];
             texMapY = texMap[3];
         }
+
         for (size_t p = 0; p < positions.size(); ++p)
         {
             glm::vec3 pos = positions[p];
@@ -169,12 +172,8 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
 
             VoxelVertex v{};
             v.Position = pos + static_cast<glm::vec3>(voxelPosition);
+            v.Normal = s_NormalMap.at(face);
             v.TexCoords = atlasTexCoord;
-            v.Face = static_cast<uint8_t>(face);
-            v.RadianceBaseIndex =
-                    (voxelPosition.GetX() + 1) * RADIANCE_WIDTH * RADIANCE_HEIGHT +
-                    (voxelPosition.GetZ() + 1) * RADIANCE_HEIGHT +
-                    (voxelPosition.GetY() + 1);
 
             data.push_back(v);
         }

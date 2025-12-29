@@ -42,9 +42,6 @@ private:
     static void SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk* >& neighbours);
     static void SyncMeshWithNeighbour(Voxel& v1, Voxel& v2, VoxelFace face);
 
-    static void SyncRadianceWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk* >& neighbours);
-    static void SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face);
-
     std::vector<Position2D> GetNextChunkPositionBatch(Position2D center, int32_t batchSize) const;
     bool IsChunkPositionValidInBatch(const std::vector<Position2D>& batchPositions, Position2D newPosition) const;
 

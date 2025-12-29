@@ -3,7 +3,6 @@
 #include <vector>
 #include <unordered_map>
 #include <mutex>
-#include <queue>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "PerlinNoise.hpp"
@@ -21,7 +20,6 @@ namespace VoxelEngine
 class World;
 
 using VoxelGrid = Voxel[CHUNK_WIDTH][CHUNK_WIDTH][CHUNK_HEIGHT];
-using RadianceArray = int32_t[RADIANCE_WIDTH * RADIANCE_WIDTH * RADIANCE_HEIGHT];
 
 class Chunk
 {
@@ -38,7 +36,6 @@ public:
     std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::ivec3 pos) const;
 
     VoxelGrid& GetVoxelGrid();
-    const RadianceArray& GetRadianceGrid() const;
     Voxel& GetVoxelFromGrid(Position3D positionInGrid);
 
     const std::vector<VoxelVertex>& GetMesh() const;
@@ -47,19 +44,12 @@ public:
     std::mutex& GetLock();
     glm::mat4 GetModelMatrix() const;
 
-    void InitRadiance();
-    int32_t GetRadiance(size_t x, size_t z, size_t y) const;
-    void UpdateRadiance(size_t x, size_t z, size_t y, int32_t radiance);
-    void CommitRadianceChanges();
-
 private:
     void DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& v, size_t x, size_t z);
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f);
     void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2);
     void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h);
     void AddStructures(const std::vector<Structure>& structures);
-
-    void SetRadiance(size_t x, size_t z, size_t y, int32_t radiance);
 
 private:
     World& m_World;
@@ -70,9 +60,6 @@ private:
     std::mutex m_Lock;
 
     const Biome& m_Biome;
-
-    RadianceArray m_RadianceGrid;
-    std::queue<glm::ivec3> m_RadianceUpdateQueue;
 
     std::unordered_set<BiomeType> m_BiomeTypes;
     std::mutex m_BiomeLock;

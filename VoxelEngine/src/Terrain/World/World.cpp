@@ -1,14 +1,16 @@
 #include "World.hpp"
 
 #include <GLCore.hpp>
+#include <ranges>
 #include <utility>
 #include <vector>
 
 namespace VoxelEngine
 {
 
-World::World(const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController,
-             WorldSettings&& settings)
+World::World(
+    const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& cameraController,
+    WorldSettings&& settings)
     : m_CameraController(cameraController),
       m_ShouldGenerationRun(false),
       m_Lock(std::mutex()),
@@ -107,53 +109,25 @@ void World::GenerateChunk(Position2D position)
         m_Lock.unlock();
     }
 
-    std::map<Position2D, Chunk*> neighboursLevel1{};
-    GetNeighbours(chunk, neighboursLevel1);
+    std::map<Position2D, Chunk*> neighbours{};
+    GetNeighbours(chunk, neighbours);
 
-    for (const auto& [_, neighbour]: neighboursLevel1)
+    for (const auto& neighbour: neighbours | std::views::values)
         neighbour->GetLock().lock();
 
-    SyncMeshWithNeighbour(chunk, neighboursLevel1);
+    SyncMeshWithNeighbour(chunk, neighbours);
 
     chunk.GenerateMesh();
 
-    m_Lock.lock();
+    for (const auto& neighbour: neighbours | std::views::values)
+        neighbour->GetLock().unlock();
 
-    if (neighboursLevel1.size() == 8)
-    {
-        chunk.InitRadiance();
-        SyncRadianceWithNeighbour(chunk, neighboursLevel1);
-        m_RenderQueue.insert({chunk.GetPosition(), &chunk});
-    }
-
-    for (const auto& [_, level1]: neighboursLevel1)
-    {
-        std::map<Position2D, Chunk*> neighboursLevel2{};
-        GetNeighbours(*level1, neighboursLevel2);
-
-        if (neighboursLevel2.size() == 8)
-        {
-            level1->InitRadiance();
-
-            SyncRadianceWithNeighbour(*level1, neighboursLevel2);
-
-            for (const auto& [_, level2]: neighboursLevel2)
-            {
-                std::map<Position2D, Chunk*> neighboursLayer3{};
-                GetNeighbours(*level2, neighboursLayer3);
-
-                if (neighboursLayer3.size() == 8)
-                    m_RenderQueue.insert({level2->GetPosition(), level2});
-            }
-
-            m_RenderQueue.insert({level1->GetPosition(), level1});
-        }
-
-        level1->GetLock().unlock();
-    }
-
-    m_Lock.unlock();
     chunk.GetLock().unlock();
+
+    m_RenderQueue.insert({chunk.GetPosition(), &chunk});
+
+    for (const auto& neighbour: neighbours | std::views::values)
+        m_RenderQueue.insert({neighbour->GetPosition(), neighbour});
 }
 
 void World::SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk*>& neighbours)
@@ -217,63 +191,6 @@ void World::SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk*>& ne
         left->second->GenerateEdgeMesh(RIGHT);
 }
 
-void World::SyncRadianceWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk*>& neighbours)
-{
-    auto& voxelGrid = chunk.GetVoxelGrid();
-
-    const auto front = neighbours.find(Position2D(0, 1));
-    const auto back = neighbours.find(Position2D(0, -1));
-    const auto right = neighbours.find(Position2D(1, 0));
-    const auto left = neighbours.find(Position2D(-1, 0));
-
-    for (size_t x = 0; x < CHUNK_WIDTH; x++)
-    {
-        for (size_t y = 0; y < CHUNK_HEIGHT; y++)
-        {
-            if (front != neighbours.end())
-            {
-                Chunk& neighbour = *front->second;
-                Voxel& v = voxelGrid[x][CHUNK_WIDTH - 1][y];
-                Voxel& n = neighbour.GetVoxelGrid()[x][0][y];
-
-                SyncRadianceWithNeighbour(v, n, chunk, neighbour, FRONT);
-            }
-
-            if (back != neighbours.end())
-            {
-                Chunk& neighbour = *back->second;
-                Voxel& v = voxelGrid[x][0][y];
-                Voxel& n = neighbour.GetVoxelGrid()[x][CHUNK_WIDTH - 1][y];
-
-                SyncRadianceWithNeighbour(v, n, chunk, neighbour, BACK);
-            }
-
-            if (right != neighbours.end())
-            {
-                Chunk& neighbour = *right->second;
-                Voxel& v = voxelGrid[CHUNK_WIDTH - 1][x][y];
-                Voxel& n = neighbour.GetVoxelGrid()[0][x][y];
-
-                SyncRadianceWithNeighbour(v, n, chunk, neighbour, RIGHT);
-            }
-
-            if (left != neighbours.end())
-            {
-                Chunk& neighbour = *left->second;
-                Voxel& v = voxelGrid[0][x][y];
-                Voxel& n = neighbour.GetVoxelGrid()[CHUNK_WIDTH - 1][x][y];
-
-                SyncRadianceWithNeighbour(v, n, chunk, neighbour, LEFT);
-            }
-        }
-    }
-
-    chunk.CommitRadianceChanges();
-
-    for (const auto& [_, neighbour]: neighbours)
-        neighbour->CommitRadianceChanges();
-}
-
 void World::SyncMeshWithNeighbour(Voxel& v1, Voxel& v2, const VoxelFace face)
 {
     if (!v1.IsAir() && v2.IsAir())
@@ -293,39 +210,6 @@ void World::GetNeighbours(const Chunk& chunk, std::map<Position2D, Chunk*>& neig
 
         if (neighbour != m_ChunkMap.end())
             neighbours.emplace(Position2D(dx, dy), neighbour->second.get());
-    }
-}
-
-void World::SyncRadianceWithNeighbour(Voxel& v1, Voxel& v2, Chunk& c1, Chunk& c2, VoxelFace face)
-{
-    const glm::ivec3 p = static_cast<glm::ivec3>(v1.GetPosition()) + glm::ivec3(1);
-    const glm::ivec3 np = static_cast<glm::ivec3>(v2.GetPosition()) + glm::ivec3(1);
-
-    const int32_t radiance = c1.GetRadiance(p.x, p.z, p.y);
-    const int32_t neighbourRadiance = c2.GetRadiance(np.x, np.z, np.y);
-
-    if (face == FRONT)
-    {
-        c1.UpdateRadiance(p.x, p.z + 1, p.y, neighbourRadiance);
-        c2.UpdateRadiance(np.x, np.z - 1, np.y, radiance);
-    }
-
-    if (face == BACK)
-    {
-        c1.UpdateRadiance(p.x, p.z - 1, p.y, neighbourRadiance);
-        c2.UpdateRadiance(np.x, np.z + 1, np.y, radiance);
-    }
-
-    if (face == RIGHT)
-    {
-        c1.UpdateRadiance(p.x + 1, p.z, p.y, neighbourRadiance);
-        c2.UpdateRadiance(np.x - 1, np.z, np.y, radiance);
-    }
-
-    if (face == LEFT)
-    {
-        c1.UpdateRadiance(p.x - 1, p.z, p.y, neighbourRadiance);
-        c2.UpdateRadiance(np.x + 1, np.z, np.y, radiance);
     }
 }
 

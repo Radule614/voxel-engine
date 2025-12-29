@@ -25,7 +25,17 @@ void RendererLayer::OnAttach()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void RendererLayer::OnUpdate(Timestep ts) { m_Renderer.RenderScene(m_State.CameraController->GetCamera()); }
+void RendererLayer::OnUpdate(Timestep ts)
+{
+    if (m_AccumulatedTime > 0.5f)
+    {
+        m_Fps = 1.0 / ts;
+        m_AccumulatedTime = 0.0f;
+    }
+    m_AccumulatedTime += ts;
+
+    m_Renderer.RenderScene(m_State.CameraController->GetCamera());
+}
 
 void RendererLayer::OnImGuiRender()
 {
@@ -37,6 +47,8 @@ void RendererLayer::OnImGuiRender()
 
     ImGui::Begin("Renderer", nullptr, windowFlags);
     ImGui::Text("Renderer");
+
+    ImGui::Text("Fps: %.1f", m_Fps);
 
     auto& pointLights = m_Renderer.GetPointLights();
 

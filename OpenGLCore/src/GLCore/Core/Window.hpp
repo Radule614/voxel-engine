@@ -7,6 +7,7 @@
 
 namespace GLCore
 {
+
 struct WindowProps
 {
 	std::string Title;
@@ -39,6 +40,6 @@ public:
 	virtual void* GetNativeWindow() const = 0;
 
 	static Window* Create(const WindowProps& props = WindowProps());
-	;
 };
+
 } 

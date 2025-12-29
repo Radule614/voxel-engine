@@ -20,9 +20,9 @@ void Shader::Use() const
     glUseProgram(m_RendererID);
 }
 
-void Shader::SetViewProjection(const glm::mat4& value) const { Set<glm::mat4>("u_ViewProjection", value); }
+void Shader::SetViewProjection(const glm::mat4& value) const { Set("u_ViewProjection", value); }
 
-void Shader::SetModel(const glm::mat4& value) const { Set<glm::mat4>("u_Model", value); }
+void Shader::SetModel(const glm::mat4& value) const { Set("u_Model", value); }
 
 GLint Shader::GetLocation(const std::string& uniform) const
 {
@@ -80,7 +80,8 @@ void Shader::Set<glm::vec4>(const std::string& uniform, const glm::vec4& value) 
 template<>
 void Shader::Set<glm::mat4>(const std::string& uniform, const glm::mat4& value) const
 {
-    glUniformMatrix4fv(GetLocation(uniform), 1, GL_FALSE, glm::value_ptr(value));
+    const glm::mat4 model = value;
+    glUniformMatrix4fv(GetLocation(uniform), 1, GL_FALSE, glm::value_ptr(model));
 }
 
 template<>
