@@ -11,10 +11,10 @@
 using namespace GLCore;
 using namespace GLCore::Utils;
 
-static constexpr uint32_t ShadowHeight = 1024;
-static constexpr uint32_t ShadowWidth = 1024;
+static constexpr uint32_t ShadowHeight = 2048;
+static constexpr uint32_t ShadowWidth = 2048;
 static constexpr float_t ShadowNearPlane = 1.0f;
-static constexpr float_t ShadowFarPlane = 25.0f;
+static constexpr float_t ShadowFarPlane = 30.0f;
 static constexpr uint32_t MaxPointLights = 16;
 
 namespace VoxelEngine
@@ -47,15 +47,14 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("simple.frag.glsl"))
             .Build();
 
-
     constexpr float_t baseHeight = 66.0f;
 
     m_PointLights = {
         {{0.0f, baseHeight + 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}},
-        {{8.5f, baseHeight + 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
-        {{-8.5f, baseHeight + 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-        {{4.0f, baseHeight + 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-4.0f, baseHeight + 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
+        // {{8.5f, baseHeight + 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
+        // {{-8.5f, baseHeight + 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
+        // {{4.0f, baseHeight + 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
+        // {{-4.0f, baseHeight + 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
     };
 
     glGenFramebuffers(1, &m_DepthMapFbo);
@@ -67,7 +66,7 @@ Renderer::~Renderer() = default;
 
 void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
-    constexpr glm::vec3 skyColor(0.14f, 0.59f, 0.74f);
+    constexpr glm::vec3 skyColor(0.03f, 0.03f, 0.06f);
 
     glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -22,6 +22,9 @@ public:
 private:
     EngineState& m_State;
     Renderer m_Renderer;
+
+    float_t m_Fps = 0.0f;
+    float_t m_AccumulatedTime = 0.0f;
 };
 
 }

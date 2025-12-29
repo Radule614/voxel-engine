@@ -103,29 +103,13 @@ void VoxelLayer::OnImGuiRender()
                                              ImGuiWindowFlags_NoMove;
     const auto& io = ImGui::GetIO();
 
-    ImGui::SetNextWindowSize(ImVec2(300.0, 200.0));
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-
-    ImGui::Begin("DEBUG", nullptr, windowFlags);
-
-    auto worldPosition = World::GlobalToWorldSpace(m_EngineState.CameraController->GetCamera().GetPosition());
-
-    ImGui::Text("Generated Chunk Count: %zu", m_World->GetChunkMap().size());
-    ImGui::Text("Current Chunk: %s", VecToString(glm::vec2(worldPosition.first)).c_str());
-    ImGui::Text("Current Voxel: %s", VecToString(glm::vec3(worldPosition.second)).c_str());
-
-    if (ImGui::Button("Reset"))
-        ResetWorld();
-
-    ImGui::End();
-
     if (!m_EngineState.MenuActive)
         return;
 
     ImGui::SetNextWindowSize(ImVec2(400.0, 600.0));
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 400.0, 0));
 
-    ImGui::Begin("Terrain Settings", nullptr, windowFlags);
+    ImGui::Begin("Terrain", nullptr, windowFlags);
     ImGui::Text("Terrain Settings");
 
     const char* polygonModes[] = {"Fill", "Line"};
@@ -133,8 +117,20 @@ void VoxelLayer::OnImGuiRender()
     const char* threadCounts[] = {"1", "2", "3", "4", "5", "6", "7", "8"};
     ImGui::Combo("Thread Count", &m_UIState.ThreadCount, threadCounts, IM_ARRAYSIZE(threadCounts));
 
-    if (ImGui::Button("Apply"))
+    if (ImGui::Button("Apply Settings"))
         ApplyState();
+
+    if (ImGui::Button("Regenerate World"))
+        ResetWorld();
+
+    ImGui::Text("Debug");
+
+    auto [chunkPosition, positionWithinChunk] = World::GlobalToWorldSpace(
+        m_EngineState.CameraController->GetCamera().GetPosition());
+
+    ImGui::Text("Generated Chunk Count: %zu", m_World->GetChunkMap().size());
+    ImGui::Text("Current Chunk: %s", VecToString(glm::vec2(chunkPosition)).c_str());
+    ImGui::Text("Current Voxel: %s", VecToString(glm::vec3(positionWithinChunk)).c_str());
 
     ImGui::End();
 }
@@ -380,11 +376,11 @@ void VoxelLayer::SetupRenderData(const Chunk& chunk) const
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1,
-                           3,
-                           GL_FLOAT,
-                           GL_FALSE,
-                           sizeof(VoxelVertex),
-                           reinterpret_cast<void*>(offsetof(VoxelVertex, Normal)));
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(VoxelVertex),
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, Normal)));
     glEnableVertexAttribArray(2);
     glVertexAttribPointer(2,
                           2,
