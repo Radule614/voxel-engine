@@ -81,13 +81,13 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
     static bool baked = false;
     if (!baked)
     {
-        glUseProgram(m_PbrShader->GetRendererID());
+        m_PbrShader->Use();
 
         std::vector<int32_t> vector{};
         for (int32_t i = 0; i < MaxPointLights; ++i)
             vector.push_back(8 + i);
 
-        m_PbrShader->SetIntArray("u_DepthMaps", vector);
+        m_PbrShader->Set<std::vector<int32_t>>("u_DepthMaps", vector);
 
         DepthPass();
 
@@ -97,7 +97,7 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
     RenderPass(camera);
 
     // Debug
-    glUseProgram(m_SimpleShader->GetRendererID());
+    m_SimpleShader->Use();
     m_SimpleShader->SetViewProjection(camera.GetViewProjectionMatrix());
     RenderLights();
 }
@@ -134,7 +134,7 @@ void Renderer::DepthPass() const
 
     for (const auto& light: m_PointLights)
     {
-        glUseProgram(depthShader.GetRendererID());
+        depthShader.Use();
 
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.DepthCubeMap, 0);
         glDrawBuffer(GL_NONE);
@@ -142,13 +142,13 @@ void Renderer::DepthPass() const
 
         glClear(GL_DEPTH_BUFFER_BIT);
 
-        depthShader.SetVec3("u_LightPosition", light.Position);
-        depthShader.SetFloat("u_FarPlane", ShadowFarPlane);
+        depthShader.Set<glm::vec3>("u_LightPosition", light.Position);
+        depthShader.Set<float_t>("u_FarPlane", ShadowFarPlane);
 
         std::vector<glm::mat4> shadowTransforms = CalculateShadowTransforms(light.Position);
 
         for (uint32_t i = 0; i < shadowTransforms.size(); ++i)
-            depthShader.SetMat4("u_ShadowMatrices", shadowTransforms[i], i);
+            depthShader.Set<glm::mat4>("u_ShadowMatrices", shadowTransforms[i], i);
 
         Render(depthShader);
     }
@@ -161,13 +161,13 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(m_TerrainShader->GetRendererID());
+    m_TerrainShader->Use();
     m_TerrainShader->SetViewProjection(camera.GetViewProjectionMatrix());
 
-    glUseProgram(m_PbrShader->GetRendererID());
+    m_PbrShader->Use();
     m_PbrShader->SetViewProjection(camera.GetViewProjectionMatrix());
-    m_PbrShader->SetVec3("u_CameraPosition", camera.GetPosition());
-    m_PbrShader->SetFloat("u_ShadowFarPlane", ShadowFarPlane);
+    m_PbrShader->Set<glm::vec3>("u_CameraPosition", camera.GetPosition());
+    m_PbrShader->Set<float_t>("u_ShadowFarPlane", ShadowFarPlane);
 
     for (int32_t i = 0; i < m_PointLights.size(); ++i)
     {
@@ -182,35 +182,30 @@ void Renderer::RenderMesh(const MeshComponent& meshComponent,
                           const glm::mat4& model,
                           const Shader& shader) const
 {
-    glUseProgram(shader.GetRendererID());
-
-    shader.SetInt("u_PointLightCount", m_PointLights.size());
+    shader.Use();
+    shader.Set<int32_t>("u_PointLightCount", m_PointLights.size());
 
     for (int32_t i = 0; i < m_PointLights.size(); ++i)
-    {
         SetPointLightUniformAtIndex(shader, "u_PointLights", m_PointLights[i], i);
-    }
 
     meshComponent.Model.Draw(shader, model);
-
-    glUseProgram(0);
 }
 
 void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const
 {
     const Shader& shader = *m_TerrainShader;
+    shader.Use();
 
-    glUseProgram(shader.GetRendererID());
     glCullFace(GL_FRONT);
 
     for (const auto& metadata: renderDataMap | std::views::values)
     {
         shader.SetModel(metadata.ModelMatrix);
 
-        shader.SetInt("u_MaxRadiance", TerrainConfig::MaxRadiance);
-        shader.SetInt("u_RadianceGridWidth", RADIANCE_WIDTH);
-        shader.SetInt("u_RadianceGridHeight", RADIANCE_HEIGHT);
-        shader.SetInt("u_Atlas", 0);
+        shader.Set<int32_t>("u_MaxRadiance", TerrainConfig::MaxRadiance);
+        shader.Set<int32_t>("u_RadianceGridWidth", RADIANCE_WIDTH);
+        shader.Set<int32_t>("u_RadianceGridHeight", RADIANCE_HEIGHT);
+        shader.Set<int32_t>("u_Atlas", 0);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
@@ -229,11 +224,10 @@ void Renderer::RenderLights() const
 {
     const Shader& shader = *m_SimpleShader;
 
-    glUseProgram(shader.GetRendererID());
-
+    shader.Use();
     for (auto pointLight: m_PointLights)
     {
-        shader.SetVec3("u_Color", pointLight.LightColor);
+        shader.Set<glm::vec3>("u_Color", pointLight.LightColor);
 
         auto model = glm::mat4(1.0);
         model = glm::translate(model, pointLight.Position);
@@ -241,7 +235,6 @@ void Renderer::RenderLights() const
 
         AssetManager::Instance().GetSphereModel().Draw(shader, model);
     }
-    glUseProgram(0);
 }
 
 static std::vector<glm::mat4> CalculateShadowTransforms(const glm::vec3 lightPosition)
@@ -305,8 +298,8 @@ static void SetPointLightUniformAtIndex(const Shader& shader,
                                         const PointLight& light,
                                         const int32_t index)
 {
-    shader.SetVec3(std::format("{}[{}].LightPosition", uniform, index), light.Position);
-    shader.SetVec3(std::format("{}[{}].LightColor", uniform, index), light.LightColor);
+    shader.Set<glm::vec3>(std::format("{}[{}].LightPosition", uniform, index), light.Position);
+    shader.Set<glm::vec3>(std::format("{}[{}].LightColor", uniform, index), light.LightColor);
 }
 
 }

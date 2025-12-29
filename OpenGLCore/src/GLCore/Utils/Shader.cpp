@@ -15,58 +15,78 @@ Shader::~Shader()
     glDeleteProgram(m_RendererID);
 }
 
-void Shader::SetVec3(const std::string& uniform, const glm::vec3& value) const
+void Shader::Use() const
 {
-    glUniform3fv(glGetUniformLocation(m_RendererID, uniform.c_str()), 1, &value[0]);
+    glUseProgram(m_RendererID);
 }
 
-void Shader::SetVec3(const std::string& uniform, const float_t x, const float_t y, const float_t z) const
+void Shader::SetViewProjection(const glm::mat4& value) const { Set<glm::mat4>("u_ViewProjection", value); }
+
+void Shader::SetModel(const glm::mat4& value) const { Set<glm::mat4>("u_Model", value); }
+
+GLint Shader::GetLocation(const std::string& uniform) const
 {
-    SetVec3(uniform, glm::vec3(x, y, z));
+    return glGetUniformLocation(m_RendererID, uniform.c_str());
 }
 
-void Shader::SetVec4(const std::string& uniform, const glm::vec4& value) const
+GLint Shader::GetLocationAtIndex(const std::string& uniform, int32_t index) const
 {
-    glUniform4fv(glGetUniformLocation(m_RendererID, uniform.c_str()), 1, &value[0]);
+    return glGetUniformLocation(m_RendererID, std::format("{}[{}]", uniform, index).c_str());
 }
 
-void Shader::SetFloat(const std::string& uniform, const float_t value) const
+// Common types
+
+template<>
+void Shader::Set<bool>(const std::string& uniform, const bool& value) const { Set<int32_t>(uniform, value); }
+
+template<>
+void Shader::Set<float_t>(const std::string& uniform, const float_t& value) const
 {
-    glUniform1f(glGetUniformLocation(m_RendererID, uniform.c_str()), value);
+    glUniform1f(GetLocation(uniform), value);
 }
 
-void Shader::SetInt(const std::string& uniform, const int32_t value) const
+template<>
+void Shader::Set<int32_t>(const std::string& uniform, const int32_t& value) const
 {
-    glUniform1i(glGetUniformLocation(m_RendererID, uniform.c_str()), value);
+    glUniform1i(GetLocation(uniform), value);
 }
 
-void Shader::SetInt(const std::string& uniform, const int32_t value, int32_t index) const
+template<>
+void Shader::Set<int32_t>(const std::string& uniform, const int32_t& value, const int32_t index) const
 {
-    SetInt(std::format("{}[{}]", uniform, index), value);
+    glUniform1i(GetLocationAtIndex(uniform, index), value);
 }
 
-void Shader::SetBool(const std::string& uniform, const bool b) const
+template<>
+void Shader::Set<std::vector<int32_t> >(const std::string& uniform, const std::vector<int32_t>& value) const
 {
-    glUniform1i(glGetUniformLocation(m_RendererID, uniform.c_str()), b);
+    glUniform1iv(GetLocation(uniform), value.size(), value.data());
 }
 
-void Shader::SetMat4(const std::string& uniform, const glm::mat4& value) const
+// Glm
+
+template<>
+void Shader::Set<glm::vec3>(const std::string& uniform, const glm::vec3& value) const
 {
-    glUniformMatrix4fv(glGetUniformLocation(m_RendererID, uniform.c_str()), 1, GL_FALSE, glm::value_ptr(value));
+    glUniform3fv(GetLocation(uniform), 1, &value[0]);
 }
 
-void Shader::SetIntArray(const std::string& uniform, const std::vector<int32_t>& vector)
+template<>
+void Shader::Set<glm::vec4>(const std::string& uniform, const glm::vec4& value) const
 {
-    glUniform1iv(glGetUniformLocation(m_RendererID, uniform.c_str()), vector.size(), vector.data());
+    glUniform4fv(GetLocation(uniform), 1, &value[0]);
 }
 
-void Shader::SetMat4(const std::string& uniform, const glm::mat4& value, int32_t index) const
+template<>
+void Shader::Set<glm::mat4>(const std::string& uniform, const glm::mat4& value) const
 {
-    SetMat4(std::format("{}[{}]", uniform, index), value);
+    glUniformMatrix4fv(GetLocation(uniform), 1, GL_FALSE, glm::value_ptr(value));
 }
 
-void Shader::SetViewProjection(const glm::mat4& value) const { SetMat4("u_ViewProjection", value); }
-
-void Shader::SetModel(const glm::mat4& value) const { SetMat4("u_Model", value); }
+template<>
+void Shader::Set<glm::mat4>(const std::string& uniform, const glm::mat4& value, const int32_t index) const
+{
+    glUniformMatrix4fv(GetLocationAtIndex(uniform, index), 1, GL_FALSE, glm::value_ptr(value));
+}
 
 }
