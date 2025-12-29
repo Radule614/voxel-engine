@@ -105,7 +105,8 @@ void main()
         shadow = min(shadow, CalculateShadow(i_Fragment.FragPosition, i));
     }
 
-    o_Color = vec4((1.0 - shadow) * color.xyz, color.a);
+//    o_Color = vec4((1.0 - shadow) * color.xyz, color.a);
+    o_Color = 2 * color;
 }
 
 vec4 CalculateColor(Material material)

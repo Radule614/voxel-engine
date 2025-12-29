@@ -12,9 +12,9 @@ namespace VoxelEngine
 struct VoxelVertex
 {
     glm::vec3 Position;
-    uint32_t RadianceBaseIndex;
-    uint8_t Face;
+    glm::vec3 Normal;
     glm::vec2 TexCoords;
+    glm::vec4 Tangent;
 };
 
 }

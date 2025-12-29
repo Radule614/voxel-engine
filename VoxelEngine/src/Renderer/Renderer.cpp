@@ -42,22 +42,20 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("pbr.frag.glsl"))
             .Build();
 
-    m_TerrainShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("voxel.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("voxel.frag.glsl"))
-            .Build();
-
     m_SimpleShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("simple.vert.glsl"))
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("simple.frag.glsl"))
             .Build();
 
+
+    constexpr float_t baseHeight = 66.0f;
+
     m_PointLights = {
-        {{0.0f, 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}},
-        {{8.5f, 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
-        {{-8.5f, 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-        {{4.0f, 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-4.0f, 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
+        {{0.0f, baseHeight + 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}},
+        // {{8.5f, baseHeight + 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
+        // {{-8.5f, baseHeight + 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
+        // {{4.0f, baseHeight + 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
+        // {{-4.0f, baseHeight + 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
     };
 
     glGenFramebuffers(1, &m_DepthMapFbo);
@@ -69,11 +67,7 @@ Renderer::~Renderer() = default;
 
 void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
-    constexpr glm::vec3 nightColor(0.1f);
-    constexpr glm::vec3 dayColor(0.14f, 0.59f, 0.74f);
-
-    const float_t ratio = (TerrainConfig::SunRadiance - 1.0f) / TerrainConfig::MaxRadiance;
-    const auto skyColor = glm::mix(nightColor, dayColor, ratio);
+    constexpr glm::vec3 skyColor(0.14f, 0.59f, 0.74f);
 
     glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -87,7 +81,7 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
         for (int32_t i = 0; i < MaxPointLights; ++i)
             vector.push_back(8 + i);
 
-        m_PbrShader->Set<std::vector<int32_t>>("u_DepthMaps", vector);
+        m_PbrShader->Set<std::vector<int32_t> >("u_DepthMaps", vector);
 
         DepthPass();
 
@@ -103,27 +97,6 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
 }
 
 std::vector<PointLight>& Renderer::GetPointLights() { return m_PointLights; }
-
-void Renderer::Render(const Shader& shader) const
-{
-    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-
-    for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
-        RenderTerrain(terrainView.get<TerrainComponent>(entity).RenderData);
-
-    for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
-    {
-        auto& mesh = view.get<MeshComponent>(entity);
-        auto& transform = view.get<TransformComponent>(entity);
-
-        auto model = glm::mat4(1.0);
-        model = glm::translate(model, transform.Position);
-        model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
-        model = glm::scale(model, transform.Scale);
-
-        RenderMesh(mesh, model, shader);
-    }
-}
 
 void Renderer::DepthPass() const
 {
@@ -161,9 +134,6 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_TerrainShader->Use();
-    m_TerrainShader->SetViewProjection(camera.GetViewProjectionMatrix());
-
     m_PbrShader->Use();
     m_PbrShader->SetViewProjection(camera.GetViewProjectionMatrix());
     m_PbrShader->Set<glm::vec3>("u_CameraPosition", camera.GetPosition());
@@ -178,23 +148,39 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     Render(*m_PbrShader);
 }
 
-void Renderer::RenderMesh(const MeshComponent& meshComponent,
-                          const glm::mat4& model,
-                          const Shader& shader) const
+void Renderer::Render(const Shader& shader) const
 {
-    shader.Use();
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
     shader.Set<int32_t>("u_PointLightCount", m_PointLights.size());
 
     for (int32_t i = 0; i < m_PointLights.size(); ++i)
         SetPointLightUniformAtIndex(shader, "u_PointLights", m_PointLights[i], i);
 
-    meshComponent.Model.Draw(shader, model);
+    for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
+        RenderTerrain(terrainView.get<TerrainComponent>(entity).RenderData);
+
+    for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
+    {
+        auto& mesh = view.get<MeshComponent>(entity);
+        auto& transform = view.get<TransformComponent>(entity);
+
+        auto model = glm::mat4(1.0);
+        model = glm::translate(model, transform.Position);
+        model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
+        model = glm::scale(model, transform.Scale);
+
+        RenderMesh(mesh, model, shader);
+    }
 }
+
+void Renderer::RenderMesh(const MeshComponent& meshComponent,
+                          const glm::mat4& model,
+                          const Shader& shader) const { meshComponent.Model.Draw(shader, model); }
 
 void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderData>& renderDataMap) const
 {
-    const Shader& shader = *m_TerrainShader;
-    shader.Use();
+    const Shader& shader = *m_PbrShader;
 
     glCullFace(GL_FRONT);
 
@@ -202,18 +188,20 @@ void Renderer::RenderTerrain(const std::unordered_map<Position2D, ChunkRenderDat
     {
         shader.SetModel(metadata.ModelMatrix);
 
-        shader.Set<int32_t>("u_MaxRadiance", TerrainConfig::MaxRadiance);
-        shader.Set<int32_t>("u_RadianceGridWidth", RADIANCE_WIDTH);
-        shader.Set<int32_t>("u_RadianceGridHeight", RADIANCE_HEIGHT);
-        shader.Set<int32_t>("u_Atlas", 0);
+        shader.Set("u_HasAlbedoTexture", true);
+        shader.Set("u_HasMetallicRoughnessTexture", false);
+        shader.Set("u_HasAmbientOcclusionTexture", false);
+        shader.Set("u_HasNormalTexture", false);
+
+        shader.Set("u_AlbedoTexture", 0);
+        shader.Set("u_MetallicFactor", 0.2f);
+        shader.Set("u_RoughnessFactor", 0.2f);
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, m_TextureAtlas.id);
 
         glBindVertexArray(metadata.VertexArray);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, metadata.RadianceStorageBuffer);
         glDrawElements(GL_TRIANGLES, metadata.Indices.size(), GL_UNSIGNED_INT, nullptr);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
         glBindVertexArray(0);
     }
 

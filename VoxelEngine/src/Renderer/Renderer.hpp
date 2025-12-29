@@ -52,8 +52,6 @@ private:
 
     GLCore::Utils::Shader* m_PbrShader;
     GLCore::Utils::Shader* m_DepthShader;
-
-    GLCore::Utils::Shader* m_TerrainShader;
     GLCore::Utils::Shader* m_SimpleShader;
 };
 

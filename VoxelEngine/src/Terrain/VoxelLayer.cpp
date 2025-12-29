@@ -48,7 +48,6 @@ void VoxelLayer::OnDetach()
         ChunkRenderData& data = chunkRenderData;
         glDeleteBuffers(1, &data.VertexBuffer);
         glDeleteBuffers(1, &data.IndexBuffer);
-        glDeleteBuffers(1, &data.RadianceStorageBuffer);
         glDeleteVertexArrays(1, &data.VertexArray);
         data.Indices.clear();
     }
@@ -199,7 +198,6 @@ void VoxelLayer::DeleteChunkRenderData(const Chunk& chunk) const
         glBindVertexArray(0);
         glDeleteBuffers(1, &renderData.VertexBuffer);
         glDeleteBuffers(1, &renderData.IndexBuffer);
-        glDeleteBuffers(1, &renderData.RadianceStorageBuffer);
         glDeleteVertexArrays(1, &renderData.VertexArray);
 
         m_RenderData->erase(chunk.GetPosition());
@@ -381,29 +379,26 @@ void VoxelLayer::SetupRenderData(const Chunk& chunk) const
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
     glEnableVertexAttribArray(1);
-    glVertexAttribIPointer(1,
-                           1,
-                           GL_UNSIGNED_INT,
+    glVertexAttribPointer(1,
+                           3,
+                           GL_FLOAT,
+                           GL_FALSE,
                            sizeof(VoxelVertex),
-                           reinterpret_cast<void*>(offsetof(VoxelVertex, RadianceBaseIndex)));
+                           reinterpret_cast<void*>(offsetof(VoxelVertex, Normal)));
     glEnableVertexAttribArray(2);
-    glVertexAttribIPointer(2,
-                           1,
-                           GL_UNSIGNED_BYTE,
-                           sizeof(VoxelVertex),
-                           reinterpret_cast<void*>(offsetof(VoxelVertex, Face)));
-    glEnableVertexAttribArray(3);
-    glVertexAttribPointer(3,
+    glVertexAttribPointer(2,
                           2,
                           GL_FLOAT,
                           GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, TexCoords)));
-
-    glCreateBuffers(1, &data.RadianceStorageBuffer);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, data.RadianceStorageBuffer);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(RadianceArray), chunk.GetRadianceGrid(), GL_STATIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, data.RadianceStorageBuffer);
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3,
+                           4,
+                           GL_FLOAT,
+                           GL_FALSE,
+                           sizeof(VoxelVertex),
+                           reinterpret_cast<void*>(offsetof(VoxelVertex, Tangent)));
 
     const uint32_t faceCount = vertices.size() / 4;
     for (uint32_t i = 0; i < faceCount; ++i)
