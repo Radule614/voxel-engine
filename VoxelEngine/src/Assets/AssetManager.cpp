@@ -72,7 +72,7 @@ uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, const in
     else { LOG_INFO("Failed to load texture"); }
     stbi_set_flip_vertically_on_load(false);
     stbi_image_free(data);
-    LOG_INFO("Loaded: {0}", fullpath);
+    LOG_INFO("Loaded texture: {0}", fullpath);
     return id;
 }
 

@@ -31,8 +31,8 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 {
     m_DepthShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("point_shadows_depth.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("point_shadows_depth.frag.glsl"))
             .AddShader(GL_GEOMETRY_SHADER, AssetManager::GetShaderPath("point_shadows_depth.geo.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("point_shadows_depth.frag.glsl"))
             .Build();
 
     m_PbrShader = ShaderBuilder()
