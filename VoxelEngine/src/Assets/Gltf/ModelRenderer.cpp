@@ -18,7 +18,6 @@ namespace VoxelEngine
 {
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node);
-static void SetShaderMaterial(const Shader& shader, const Material& material);
 
 void Model::DrawNodes(const Shader& shader,
                       glm::mat4 modelMatrix,
@@ -35,7 +34,7 @@ void Model::DrawNodes(const Shader& shader,
         DrawNodes(shader, modelMatrix, model.nodes[childNode]);
 }
 
-void Model::Draw(const Shader& shader, glm::mat4 modelMatrix) const
+void Model::Draw(const Shader& shader, const glm::mat4& modelMatrix) const
 {
     const tinygltf::Model& model = *m_GltfModel;
     const tinygltf::Scene& scene = model.scenes[model.defaultScene];
@@ -45,7 +44,7 @@ void Model::Draw(const Shader& shader, glm::mat4 modelMatrix) const
 }
 
 void Model::DrawMesh(const Shader& shader,
-                     glm::mat4 modelMatrix,
+                     const glm::mat4& modelMatrix,
                      const tinygltf::Mesh& mesh,
                      const int32_t meshIndex) const
 {
@@ -59,59 +58,12 @@ void Model::DrawMesh(const Shader& shader,
         glBindVertexArray(Vao);
 
         shader.SetModel(modelMatrix);
-
-        SetShaderMaterial(shader, Material);
+        shader.Set("", Material);
 
         glDrawElements(Mode, IndexCount, IndexType, nullptr);
     }
 
     glBindVertexArray(0);
-}
-
-static void SetShaderMaterial(const Shader& shader, const Material& material)
-{
-    shader.Set("u_AlbedoFactor", material.AlbedoFactor);
-    if (material.AlbedoTextureId > 0)
-    {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, material.AlbedoTextureId);
-
-        shader.Set("u_HasAlbedoTexture", true);
-        shader.Set("u_AlbedoTexture", 0);
-    }
-    else shader.Set("u_HasAlbedoTexture", false);
-
-    shader.Set("u_MetallicFactor", material.MetallicFactor);
-    shader.Set("u_RoughnessFactor", material.RoughnessFactor);
-    if (material.MetallicRoughnessTextureId > 0)
-    {
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, material.MetallicRoughnessTextureId);
-
-        shader.Set("u_HasMetallicRoughnessTexture", true);
-        shader.Set("u_MetallicRoughnessTexture", 1);
-    }
-    else shader.Set("u_HasMetallicRoughnessTexture", false);
-
-    if (material.AmbientOcclusionTextureId > 0)
-    {
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, material.AmbientOcclusionTextureId);
-
-        shader.Set("u_HasAmbientOcclusionTexture", true);
-        shader.Set("u_AmbientOcclusionTexture", 2);
-    }
-    else shader.Set("u_HasAmbientOcclusionTexture", false);
-
-    if (material.NormalTextureId > 0)
-    {
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, material.NormalTextureId);
-
-        shader.Set("u_HasNormalTexture", true);
-        shader.Set("u_NormalTexture", 3);
-    }
-    else shader.Set("u_HasNormalTexture", false);
 }
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node)

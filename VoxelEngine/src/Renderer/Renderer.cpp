@@ -29,8 +29,6 @@ static void SetPointLightUniformAtIndex(const Shader& shader,
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 {
-    m_TerrainAlbedo = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
-
     m_DepthShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("point_shadows_depth.vert.glsl"))
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("point_shadows_depth.frag.glsl"))
@@ -80,7 +78,7 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
         for (int32_t i = 0; i < MaxPointLights; ++i)
             vector.push_back(8 + i);
 
-        m_PbrShader->Set<std::vector<int32_t> >("u_DepthMaps", vector);
+        m_PbrShader->Set("u_DepthMaps", vector);
 
         baked = true;
     }
@@ -178,22 +176,11 @@ void Renderer::RenderTerrain(const Shader& shader, const TerrainComponent& terra
 {
     glCullFace(GL_FRONT);
 
+    shader.Set("", terrainComponent.TerrainMaterial);
+
     for (const auto& renderData: terrainComponent.RenderData | std::views::values)
     {
         shader.SetModel(renderData.ModelMatrix);
-
-        shader.Set("u_HasAlbedoTexture", true);
-        shader.Set("u_HasMetallicRoughnessTexture", false);
-        shader.Set("u_HasAmbientOcclusionTexture", false);
-        shader.Set("u_HasNormalTexture", false);
-
-        shader.Set("u_AlbedoFactor", glm::vec4(1.0f));
-        shader.Set("u_AlbedoTexture", 0);
-        shader.Set("u_MetallicFactor", 0.0f);
-        shader.Set("u_RoughnessFactor", 0.85f);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, m_TerrainAlbedo.id);
 
         glBindVertexArray(renderData.VertexArray);
         glDrawElements(GL_TRIANGLES, renderData.Indices.size(), GL_UNSIGNED_INT, nullptr);
@@ -283,6 +270,58 @@ static void SetPointLightUniformAtIndex(const Shader& shader,
 {
     shader.Set(std::format("{}[{}].LightPosition", uniform, index), light.Position);
     shader.Set(std::format("{}[{}].LightColor", uniform, index), light.LightColor);
+}
+
+}
+
+namespace GLCore::Utils
+{
+
+template<>
+void Shader::Set<VoxelEngine::Material>(const std::string&, const VoxelEngine::Material& value) const
+{
+    Set("u_AlbedoFactor", value.AlbedoFactor);
+    if (value.AlbedoTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, value.AlbedoTextureId);
+
+        Set("u_HasAlbedoTexture", true);
+        Set("u_AlbedoTexture", 0);
+    }
+    else Set("u_HasAlbedoTexture", false);
+
+    Set("u_MetallicFactor", value.MetallicFactor);
+    Set("u_RoughnessFactor", value.RoughnessFactor);
+    if (value.MetallicRoughnessTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, value.MetallicRoughnessTextureId);
+
+        Set("u_HasMetallicRoughnessTexture", true);
+        Set("u_MetallicRoughnessTexture", 1);
+    }
+    else Set("u_HasMetallicRoughnessTexture", false);
+
+    if (value.AmbientOcclusionTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, value.AmbientOcclusionTextureId);
+
+        Set("u_HasAmbientOcclusionTexture", true);
+        Set("u_AmbientOcclusionTexture", 2);
+    }
+    else Set("u_HasAmbientOcclusionTexture", false);
+
+    if (value.NormalTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, value.NormalTextureId);
+
+        Set("u_HasNormalTexture", true);
+        Set("u_NormalTexture", 3);
+    }
+    else Set("u_HasNormalTexture", false);
 }
 
 }

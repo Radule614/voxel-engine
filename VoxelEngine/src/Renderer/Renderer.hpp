@@ -6,7 +6,6 @@
 #include "PointLight.hpp"
 #include "../Ecs/Components/TerrainComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
-#include "../Assets/Texture.hpp"
 
 namespace VoxelEngine
 {
@@ -25,12 +24,11 @@ private:
 
     void DepthPass() const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void RenderTerrain(const GLCore::Utils::Shader& shader,const TerrainComponent& terrainComponent) const;
+    void RenderTerrain(const GLCore::Utils::Shader& shader, const TerrainComponent& terrainComponent) const;
     void RenderLights() const;
 
 private:
     GLCore::Window& m_Window;
-    Texture m_TerrainAlbedo;
 
     std::vector<PointLight> m_PointLights;
 
@@ -40,5 +38,13 @@ private:
     GLCore::Utils::Shader* m_DepthShader;
     GLCore::Utils::Shader* m_SimpleShader;
 };
+
+}
+
+namespace GLCore::Utils
+{
+
+template<>
+void Shader::Set<VoxelEngine::Material>(const std::string& uniform, const VoxelEngine::Material& value) const;
 
 }

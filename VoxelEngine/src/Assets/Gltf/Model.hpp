@@ -21,7 +21,7 @@ public:
     ~Model();
 
     void Load();
-    void Draw(const GLCore::Utils::Shader& shader, glm::mat4 modelMatrix) const;
+    void Draw(const GLCore::Utils::Shader& shader, const glm::mat4& modelMatrix) const;
 
 private:
     void LoadNodes(const tinygltf::Node& node);
@@ -29,7 +29,7 @@ private:
 
     void DrawNodes(const GLCore::Utils::Shader& shader, glm::mat4 modelMatrix, const tinygltf::Node& node) const;
     void DrawMesh(const GLCore::Utils::Shader& shader,
-                  glm::mat4 modelMatrix,
+                  const glm::mat4& modelMatrix,
                   const tinygltf::Mesh& mesh,
                   int32_t meshIndex) const;
 

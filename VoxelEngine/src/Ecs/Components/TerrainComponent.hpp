@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include "../../Terrain/Utils/Position2D.hpp"
 #include "glad/glad.h"
+#include "../Assets/Material.hpp"
 
 namespace VoxelEngine
 {
@@ -18,7 +19,12 @@ struct ChunkRenderData
 
 struct TerrainComponent
 {
+    Material TerrainMaterial;
     std::unordered_map<Position2D, ChunkRenderData> RenderData;
+
+    explicit TerrainComponent(const Material& material) : TerrainMaterial(material)
+    {
+    }
 };
 
 }

@@ -16,7 +16,7 @@ struct RenderPrimitive
     GLsizei IndexCount;
     GLenum IndexType;
 
-    Material Material{};
+    Material Material;
 };
 
 }

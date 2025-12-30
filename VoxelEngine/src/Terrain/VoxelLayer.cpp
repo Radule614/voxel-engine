@@ -10,6 +10,7 @@
 #include "../Physics/Utils/ShapeFactory.hpp"
 #include "../Physics/PhysicsEngineLayers.hpp"
 #include "../Ecs/Ecs.hpp"
+#include "../Assets/AssetManager.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -25,9 +26,17 @@ VoxelLayer::VoxelLayer(EngineState& state)
 {
     m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
 
+    Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
+
+    Material terrainMaterial{};
+    terrainMaterial.AlbedoFactor = glm::vec4(1.0f);
+    terrainMaterial.AlbedoTextureId = albedoTexture.id;
+    terrainMaterial.MetallicFactor = 0.0f;
+    terrainMaterial.RoughnessFactor = 0.85f;
+
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     m_TerrainEntityId = registry.create();
-    registry.emplace<TerrainComponent>(m_TerrainEntityId);
+    registry.emplace<TerrainComponent>(m_TerrainEntityId, terrainMaterial);
     m_RenderData = &registry.get<TerrainComponent>(m_TerrainEntityId).RenderData;
 }
 
