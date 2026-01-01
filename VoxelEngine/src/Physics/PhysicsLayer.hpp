@@ -1,7 +1,5 @@
 #pragma once
 
-#include "GLCore.hpp"
-#include "GLCoreUtils.hpp"
 #include "../EngineState.hpp"
 
 namespace VoxelEngine
@@ -10,11 +8,13 @@ namespace VoxelEngine
 class PhysicsLayer : public GLCore::Layer
 {
 public:
-	PhysicsLayer(EngineState& state);
+    explicit PhysicsLayer(EngineState& state);
 
-	virtual void OnUpdate(GLCore::Timestep ts) override;
+    void OnAttach() override;
+    void OnUpdate(GLCore::Timestep ts) override;
+
 private:
-	EngineState& m_State;
+    EngineState& m_State;
 };
 
 }

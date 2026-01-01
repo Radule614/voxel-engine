@@ -1,97 +1,362 @@
 #include "Renderer.hpp"
-#include "../Utils/Utils.hpp"
+
+#include "../Config.hpp"
+#include "../Assets/AssetManager.hpp"
+#include "../Ecs/Ecs.hpp"
+#include "../Ecs/Components/TransformComponent.hpp"
+#include "GLCore/Utils/ShaderBuilder.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
 
+static constexpr uint32_t MaxPointLights = 16;
+
 namespace VoxelEngine
 {
 
-void Renderer::Init()
+static glm::mat4 CalculateModelMatrix(const TransformComponent& transform);
+static void CreateDepthCubeMap(GLuint* depthCubeMap);
+static std::vector<PointLight> GetCloseLights(glm::vec3 position,
+                                              ViewType<LightComponent> lightView,
+                                              bool shouldOffsetChunk = false);
+
+Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 {
-	g_Renderer = new Renderer();
+    m_DepthShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("point_shadows_depth.vert.glsl"))
+            .AddShader(GL_GEOMETRY_SHADER, AssetManager::GetShaderPath("point_shadows_depth.geo.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("point_shadows_depth.frag.glsl"))
+            .Build();
+
+    m_PbrShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("pbr.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("pbr.frag.glsl"))
+            .Build();
+
+    m_SimpleShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("simple.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("simple.frag.glsl"))
+            .Build();
+
+    glGenFramebuffers(1, &m_DepthMapFbo);
+
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
+    registry.emplace<LightComponent>(registry.create(), std::move(pointLight));
 }
 
-void Renderer::Shutdown()
+Renderer::~Renderer() = default;
+
+void Renderer::Init() const
 {
-	delete g_Renderer;
-	g_Renderer = nullptr;
+    m_PbrShader->Use();
+
+    std::vector<int32_t> vector{};
+    for (int32_t i = 0; i < MaxPointLights; ++i)
+        vector.push_back(8 + i);
+
+    m_PbrShader->Set("u_DepthMaps", vector);
 }
 
-Renderer& Renderer::Instance()
+void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
-	return *g_Renderer;
+    Clear();
+    DepthPass(camera);
+    RenderPass(camera);
+    DrawLights(camera);
 }
 
-void Renderer::Render(MeshComponent& meshComponent, PerspectiveCamera& camera, glm::mat4& model) const
+void Renderer::DepthPass(const PerspectiveCamera& camera) const
 {
-	DirectionalLight light = { glm::normalize(glm::vec3(1.0f, -2.0f, 1.0f)), glm::vec3(0.1f), glm::vec3(0.7f), glm::vec3(0.3f) };
-	auto shader = meshComponent.GetShader();
-	glUseProgram(shader->GetRendererID());
-	shader->SetVec3("u_CameraPos", camera.GetPosition());
-	shader->SetViewProjection(camera.GetViewProjectionMatrix());
-	shader->SetModel(model);
-	SetDirectionalLight(*shader, "u_DirectionalLight", light);
-	for (Mesh& mesh : meshComponent.GetMeshes())
-	{
-		uint32_t diffuseNr = 1;
-		uint32_t specularNr = 1;
-		uint32_t normalNr = 1;
-		auto& textures = mesh.GetTextures();
-		for (size_t i = 0; i < textures.size(); i++)
-		{
-			glActiveTexture(GL_TEXTURE0 + i);
-			std::string number;
-			std::string name = textures[i].type;
-			if (name == "Diffuse")
-				number = std::to_string(diffuseNr++);
-			else if (name == "Specular")
-				number = std::to_string(specularNr++);
-			else if (name == "Normal")
-				number = std::to_string(normalNr++);
-			const std::string uniform = "u_Texture" + name + "_" + number;
-			glUniform1i(glGetUniformLocation(shader->GetRendererID(), uniform.c_str()), i);
-			glBindTexture(GL_TEXTURE_2D, textures[i].id);
-		}
-		glActiveTexture(GL_TEXTURE0);
-		glBindVertexArray(mesh.GetVAO());
-		glDrawElements(GL_TRIANGLES, mesh.GetIndexCount(), GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-	}
-	glUseProgram(0);
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    static size_t lightIndex = 0;
+
+    const ViewType<LightComponent>& view = registry.view<LightComponent>();
+    if (view.empty())
+        return;
+
+    const Shader& shader = *m_DepthShader;
+
+    glViewport(0, 0, Config::ShadowWidth, Config::ShadowHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFbo);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    shader.Use();
+
+    const auto entity = view.begin()[lightIndex % view.size()];
+    auto& light = view.get<LightComponent>(entity).PointLight;
+
+    if (light.DepthCubeMap == 0)
+        CreateDepthCubeMap(&light.DepthCubeMap);
+
+    if (glm::length(light.Position - camera.GetPosition()) < 100.0f)
+    {
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.DepthCubeMap, 0);
+        glClear(GL_DEPTH_BUFFER_BIT);
+
+        shader.Set("u_LightPosition", light.Position);
+        shader.Set("u_FarPlane", Config::ShadowFarPlane);
+
+        const std::vector<glm::mat4> shadowTransforms = light.CalculateShadowTransforms();
+
+        for (uint32_t i = 0; i < shadowTransforms.size(); ++i)
+            shader.Set("u_ShadowMatrices", shadowTransforms[i], i);
+
+        Render(shader);
+    }
+
+    ++lightIndex;
+    if (lightIndex > 500000)
+        lightIndex = 0;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::SetPointLight(Shader& shader, const std::string& uniform, PointLight& light) const
+void Renderer::RenderPass(const PerspectiveCamera& camera) const
 {
-	shader.SetVec3(uniform + ".Position", light.Position);
-	shader.SetVec3(uniform + ".Ambient", light.Ambient);
-	shader.SetVec3(uniform + ".Diffuse", light.Diffuse);
-	shader.SetVec3(uniform + ".Specular", light.Specular);
-	shader.SetFloat(uniform + ".Constant", light.Constant);
-	shader.SetFloat(uniform + ".Linear", light.Linear);
-	shader.SetFloat(uniform + ".Quadratic", light.Quadratic);
+    const Shader& shader = *m_PbrShader;
+
+    glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    shader.Use();
+    shader.SetViewProjection(camera.GetViewProjectionMatrix());
+    shader.Set("u_CameraPosition", camera.GetPosition());
+    shader.Set("u_ShadowFarPlane", Config::ShadowFarPlane);
+
+    Render(shader);
 }
 
-void Renderer::SetDirectionalLight(Shader& shader, const std::string& uniform, DirectionalLight& light) const
+void Renderer::Render(const Shader& shader)
 {
-	shader.SetVec3(uniform + ".Direction", light.Direction);
-	shader.SetVec3(uniform + ".Ambient", light.Ambient);
-	shader.SetVec3(uniform + ".Diffuse", light.Diffuse);
-	shader.SetVec3(uniform + ".Specular", light.Specular);
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    const auto lightView = registry.view<LightComponent>();
+
+    for (const auto& view = registry.view<TerrainMeshComponent, TransformComponent>(); const auto& entity: view)
+    {
+        auto& mesh = view.get<TerrainMeshComponent>(entity);
+        auto& transform = view.get<TransformComponent>(entity);
+
+        shader.Set("", GetCloseLights(transform.Position, lightView, true));
+
+        DrawTerrain(mesh, shader, CalculateModelMatrix(transform));
+    }
+
+    for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
+    {
+        auto& mesh = view.get<MeshComponent>(entity);
+        auto& transform = view.get<TransformComponent>(entity);
+
+        shader.Set("", GetCloseLights(transform.Position, lightView));
+
+        mesh.Model.Draw(shader, CalculateModelMatrix(transform));
+    }
 }
 
-void Renderer::SetSpotLight(Shader& shader, const std::string& uniform, SpotLight& light) const
+void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shader, const glm::mat4& modelMatrix)
 {
-	shader.SetVec3(uniform + ".Direction", light.Direction);
-	shader.SetVec3(uniform + ".Position", light.Position);
-	shader.SetVec3(uniform + ".Ambient", light.Ambient);
-	shader.SetVec3(uniform + ".Diffuse", light.Diffuse);
-	shader.SetVec3(uniform + ".Specular", light.Specular);
-	shader.SetFloat(uniform + ".CutOff", light.CutOff);
-	shader.SetFloat(uniform + ".OuterCutOff", light.OuterCutOff);
-	shader.SetFloat(uniform + ".Constant", light.Constant);
-	shader.SetFloat(uniform + ".Linear", light.Linear);
-	shader.SetFloat(uniform + ".Quadratic", light.Quadratic);
+    glCullFace(GL_FRONT);
+
+    shader.Set("", mesh.Material);
+    shader.SetModel(modelMatrix);
+
+    glBindVertexArray(mesh.VertexArray);
+    glDrawElements(GL_TRIANGLES, mesh.Indices.size(), GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(0);
+
+    glCullFace(GL_BACK);
+}
+
+void Renderer::DrawLights(const PerspectiveCamera& camera) const
+{
+    const Shader& shader = *m_SimpleShader;
+
+    shader.Use();
+    shader.SetViewProjection(camera.GetViewProjectionMatrix());
+
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    const ViewType<LightComponent>& lightView = registry.view<LightComponent>();
+
+    for (const auto& entity: lightView)
+    {
+        auto light = lightView.get<LightComponent>(entity).PointLight;
+        if (!lightView.contains(entity))
+            continue;
+
+        shader.Set("u_Color", light.LightColor);
+
+        auto model = glm::mat4(1.0);
+        model = glm::translate(model, light.Position);
+        model = glm::scale(model, glm::vec3(0.07f));
+
+        AssetManager::Instance().GetSphereModel().Draw(shader, model);
+    }
+}
+
+void Renderer::Clear()
+{
+    constexpr glm::vec3 skyColor(0.03f, 0.03f, 0.06f);
+
+    glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+static glm::mat4 CalculateModelMatrix(const TransformComponent& transform)
+{
+    auto model = glm::mat4(1.0);
+
+    model = glm::translate(model, transform.Position);
+    model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
+    model = glm::scale(model, transform.Scale);
+
+    return model;
+}
+
+static void CreateDepthCubeMap(GLuint* depthCubeMap)
+{
+    glGenTextures(1, depthCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, *depthCubeMap);
+
+    for (uint32_t i = 0; i < 6; ++i)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     Config::ShadowWidth,
+                     Config::ShadowHeight,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     GL_FLOAT,
+                     nullptr);
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
+
+static std::vector<PointLight> GetCloseLights(const glm::vec3 position,
+                                              const ViewType<LightComponent> lightView,
+                                              const bool shouldOffsetChunk)
+{
+    std::vector<PointLight> closeLights{};
+
+    for (const auto lightEntity: lightView)
+    {
+        if (!lightView.contains(lightEntity))
+            continue;
+
+        auto& light = lightView.get<LightComponent>(lightEntity).PointLight;
+        glm::vec3 lightPosition = light.Position;
+        glm::vec3 temp = position;
+
+        if (shouldOffsetChunk)
+        {
+            lightPosition.y = 0.0f;
+            temp.x += CHUNK_WIDTH / 2;
+            temp.y = 0.0f;
+            temp.z += CHUNK_WIDTH / 2;
+        }
+
+        if (glm::length(lightPosition - temp) <= Config::ShadowFarPlane + 7.0f)
+            closeLights.push_back(light);
+    }
+
+    return closeLights;
+}
+
+}
+
+namespace GLCore::Utils
+{
+
+template<>
+void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
+                                                        const std::vector<VoxelEngine::PointLight>& value) const
+{
+    Set<int32_t>("u_PointLightCount", value.size());
+
+    for (int32_t i = 0; i < value.size(); ++i)
+    {
+        const auto& light = value[i];
+
+        Set(std::format("u_PointLights[{}].LightPosition", i), light.Position);
+        Set(std::format("u_PointLights[{}].LightColor", i), light.LightColor);
+
+        glActiveTexture(GL_TEXTURE8 + i);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, light.DepthCubeMap);
+    }
+}
+
+template<>
+void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string&,
+                                                         const ViewType<VoxelEngine::LightComponent>& value) const
+{
+    Set<int32_t>("u_PointLightCount", value.size());
+
+    int32_t index = 0;
+    for (const auto& lightEntity: value)
+    {
+        const auto& light = value.get<VoxelEngine::LightComponent>(lightEntity).PointLight;
+
+        Set(std::format("u_PointLights[{}].LightPosition", index), light.Position);
+        Set(std::format("u_PointLights[{}].LightColor", index), light.LightColor);
+
+        glActiveTexture(GL_TEXTURE8 + index);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, light.DepthCubeMap);
+
+        index++;
+    }
+}
+
+template<>
+void Shader::Set<VoxelEngine::Material>(const std::string&, const VoxelEngine::Material& value) const
+{
+    Set("u_AlbedoFactor", value.AlbedoFactor);
+    if (value.AlbedoTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, value.AlbedoTextureId);
+
+        Set("u_HasAlbedoTexture", true);
+        Set("u_AlbedoTexture", 0);
+    }
+    else Set("u_HasAlbedoTexture", false);
+
+    Set("u_MetallicFactor", value.MetallicFactor);
+    Set("u_RoughnessFactor", value.RoughnessFactor);
+    if (value.MetallicRoughnessTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, value.MetallicRoughnessTextureId);
+
+        Set("u_HasMetallicRoughnessTexture", true);
+        Set("u_MetallicRoughnessTexture", 1);
+    }
+    else Set("u_HasMetallicRoughnessTexture", false);
+
+    if (value.AmbientOcclusionTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, value.AmbientOcclusionTextureId);
+
+        Set("u_HasAmbientOcclusionTexture", true);
+        Set("u_AmbientOcclusionTexture", 2);
+    }
+    else Set("u_HasAmbientOcclusionTexture", false);
+
+    if (value.NormalTextureId > 0)
+    {
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, value.NormalTextureId);
+
+        Set("u_HasNormalTexture", true);
+        Set("u_NormalTexture", 3);
+    }
+    else Set("u_HasNormalTexture", false);
 }
 
 }

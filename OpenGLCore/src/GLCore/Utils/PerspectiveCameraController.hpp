@@ -16,44 +16,28 @@ public:
     PerspectiveCameraController(float_t fov, float_t aspectRatio, float_t speed);
 
     void OnUpdate(Timestep ts);
-    void OnEvent(Event &e);
+    void OnEvent(Event& e);
 
-    PerspectiveCamera &GetCamera()
-    {
-        return m_Camera;
-    }
-    const PerspectiveCamera &GetCamera() const
-    {
-        return m_Camera;
-    }
-
-    float_t GetZoomLevel() const
-    {
-        return m_ZoomLevel;
-    }
-    void SetZoomLevel(float_t level)
-    {
-        m_ZoomLevel = level;
-    }
-
-    float_t GetFov() const
-    {
-        return m_Fov;
-    }
+    PerspectiveCamera& GetCamera();
+    const PerspectiveCamera& GetCamera() const;
+    float_t GetZoomLevel() const;
+    void SetZoomLevel(float_t level);
+    float_t GetFov() const;
+    glm::vec3 CalculateMovementDirection() const;
+    void SetFreeFly(bool value);
+    bool IsFreeFly() const;
 
 private:
-    bool OnMouseScrolled(MouseScrolledEvent &e);
-    bool OnWindowResized(WindowResizeEvent &e);
-    bool OnMouseMoved(MouseMovedEvent &e);
+    bool OnMouseScrolled(MouseScrolledEvent& e);
+    bool OnWindowResized(const WindowResizeEvent& e);
+    bool OnMouseMoved(const MouseMovedEvent& e);
 
 private:
     float_t m_AspectRatio;
     float_t m_ZoomLevel = 1.0f;
     PerspectiveCamera m_Camera;
     float_t m_Fov = 1.0f;
-
     float_t m_CameraTranslationSpeed = 20.0f;
-
     float_t m_Sensitivity = 0.05f;
     float_t m_LastX = 0.0f;
     float_t m_LastY = 0.0f;
@@ -61,5 +45,6 @@ private:
     float_t m_Pitch = 0.0f;
 
     bool m_First = true;
+    bool m_FreeFly = true;
 };
 }

@@ -6,29 +6,63 @@
 
 namespace GLCore::Utils
 {
+
 class Shader
 {
 public:
-	~Shader();
-	GLuint GetRendererID() const
-	{
-		return m_RendererID;
-	}
-	static Shader* FromGLSLTextFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+    explicit Shader(GLenum program);
+    ~Shader();
 
-	void SetVec3(const std::string&, const glm::vec3&) const;
-	void SetVec3(const std::string&, float, float, float) const;
-	void SetFloat(const std::string&, float) const;
-	void SetInt(const std::string&, int) const;
-	void SetViewProjection(const glm::mat4) const;
-	void SetModel(const glm::mat4) const;
+    GLuint GetRendererID() const { return m_RendererID; }
 
-private:
-	Shader() = default;
-	void LoadFromGLSLTextFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-	GLuint CompileShader(GLenum type, const std::string& source);
+    void Use() const;
+
+    void SetModel(const glm::mat4& value) const;
+    void SetViewProjection(const glm::mat4& value) const;
+
+    template<typename T>
+    void Set(const std::string& uniform, const T& value) const;
+
+    template<typename T>
+    void Set(const std::string& uniform, const T& value, int32_t index) const;
 
 private:
-	GLuint m_RendererID;
+    GLint GetLocation(const std::string& uniform) const;
+    GLint GetLocationAtIndex(const std::string& uniform, int32_t index) const;
+
+private:
+    GLuint m_RendererID;
 };
+
+// Common types
+
+template<>
+void Shader::Set<bool>(const std::string& uniform, const bool& value) const;
+
+template<>
+void Shader::Set<float_t>(const std::string& uniform, const float_t& value) const;
+
+template<>
+void Shader::Set<int32_t>(const std::string& uniform, const int32_t& value) const;
+
+template<>
+void Shader::Set<int32_t>(const std::string& uniform, const int32_t& value, int32_t index) const;
+
+template<>
+void Shader::Set<std::vector<int32_t> >(const std::string& uniform, const std::vector<int32_t>& value) const;
+
+// Glm
+
+template<>
+void Shader::Set<glm::vec3>(const std::string& uniform, const glm::vec3& value) const;
+
+template<>
+void Shader::Set<glm::vec4>(const std::string& uniform, const glm::vec4& value) const;
+
+template<>
+void Shader::Set<glm::mat4>(const std::string& uniform, const glm::mat4& value) const;
+
+template<>
+void Shader::Set<glm::mat4>(const std::string& uniform, const glm::mat4& value, int32_t index) const;
+
 }

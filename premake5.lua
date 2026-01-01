@@ -1,6 +1,6 @@
 workspace "VoxelEngine"
     architecture "x64"
-    startproject "VoxelEngine"
+    startproject "Sandbox"
 
     configurations
     {
@@ -24,9 +24,9 @@ IncludeDir["glm"] = "vendor/glm"
 IncludeDir["stb_image"] = "vendor/stb_image"
 -- Include directories relative to VoxelEngine
 IncludeDir["JoltPhysics"] = "vendor/JoltPhysics"
-IncludeDir["Assimp"] = "vendor/Assimp/include"
 IncludeDir["PerlinNoise"] = "vendor/PerlinNoise"
 IncludeDir["Entt"] = "vendor/Entt"
+IncludeDir["AssetUtils"] = "vendor/AssetUtils"
 
 -- Projects
 group "Dependencies"
@@ -34,8 +34,8 @@ group "Dependencies"
     include "OpenGLCore/vendor/Glad"
     include "OpenGLCore/vendor/imgui"
     include "VoxelEngine/vendor/JoltPhysics"
-    include "VoxelEngine/vendor/Assimp"
 group ""
 
 include "OpenGLCore"
 include "VoxelEngine"
+include "Sandbox"

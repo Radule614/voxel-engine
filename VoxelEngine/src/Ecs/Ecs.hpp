@@ -1,10 +1,7 @@
 #pragma once
 
 #include <entt.hpp>
-
-#include "Components/TransformComponent.hpp"
-#include "Components/MeshComponent.hpp"
-#include "Components/ColliderComponent.hpp"
+#include <mutex>
 
 namespace VoxelEngine
 {
@@ -12,17 +9,20 @@ namespace VoxelEngine
 class EntityComponentSystem
 {
 public:
-	static void Init();
-	static void Shutdown();
-	static EntityComponentSystem& Instance();
+    static void Init();
+    static void Shutdown();
+    static EntityComponentSystem& Instance();
+    static bool HasShutdown();
 
-	entt::registry& GetEntityRegistry();
+    entt::registry& GetEntityRegistry() const;
+    entt::entity SafeCreateEntity();
 
 private:
-	EntityComponentSystem();
+    EntityComponentSystem();
 
 private:
-	std::unique_ptr<entt::registry> m_EntityRegistry;
+    std::unique_ptr<entt::registry> m_EntityRegistry;
+    std::mutex m_Mutex;
 };
 
 inline EntityComponentSystem* g_EntityComponentSystem = nullptr;

@@ -1,19 +1,17 @@
 #pragma once
-#include "Assets/AssetManager.hpp"
+
 #include "GLCore/Core/Application.hpp"
+#include "GLCoreUtils.hpp"
 
 namespace VoxelEngine
 {
 
 struct EngineState
 {
-	bool MenuActive = false;
-	GLCore::Utils::PerspectiveCameraController CameraController;
+    GLCore::Application* Application;
 
-
-	//TEMP
-	VoxelEngine::AssetManager AssetManager;
-	GLCore::Application* Application;
+    bool MenuActive = false;
+    std::shared_ptr<GLCore::Utils::PerspectiveCameraController> CameraController;
 };
 
 }

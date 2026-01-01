@@ -1,8 +1,5 @@
 #pragma once
 
-#define GLCORE_PLATFORM_WINDOWS
-#define GLFW_INCLUDE_NONE
-
 #include "GLCore/Core/Window.hpp"
 #include <glfw/glfw3.h>
 

@@ -1,11 +1,18 @@
 project "VoxelEngine"
-	kind "ConsoleApp"
+	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
 	staticruntime "on"
 
-	targetdir ("../bin/" .. outputdir .. "/%{prj.name}")
+	targetdir ("../bin/" .. outputdir .. "/lib")
 	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
+
+	debugdir "%{cfg.targetdir}"
+
+	postbuildcommands {
+            -- Windows:
+            '{COPY} "%{prj.location}/assets" "%{cfg.targetdir}/../assets"'
+        }
 
 	files
 	{
@@ -24,16 +31,15 @@ project "VoxelEngine"
 		"../OpenGLCore/%{IncludeDir.Glad}",
 		"../OpenGLCore/%{IncludeDir.ImGui}",
 		"%{IncludeDir.JoltPhysics}",
-		"%{IncludeDir.Assimp}",
 		"%{IncludeDir.PerlinNoise}",
-		"%{IncludeDir.Entt}"
+		"%{IncludeDir.Entt}",
+		"%{IncludeDir.AssetUtils}"
 	}
 
 	links
 	{
 		"OpenGLCore",
-		"JoltPhysics",
-		"Assimp"
+		"JoltPhysics"
 	}
 
 	filter "system:windows"

@@ -1,14 +1,12 @@
+//
+// Created by RadU on 12/11/2025.
+//
+
 #pragma once
 
-#include <vector>
-#include <string>
-
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-
+#include "GLCoreUtils.hpp"
+#include "Gltf/Model.hpp"
 #include "Texture.hpp"
-#include "Model.hpp"
 
 namespace VoxelEngine
 {
@@ -16,21 +14,27 @@ namespace VoxelEngine
 class AssetManager
 {
 public:
-	AssetManager();
-	~AssetManager();
-	Texture& LoadTexture(std::string path, std::string type);
-	uint32_t LoadCubemap(std::vector<std::string> faces);
+    AssetManager();
+    ~AssetManager();
 
-	Model* LoadModel(std::string path);
+    static void Init();
+    static void Shutdown();
+    static AssetManager& Instance();
+
+    Model* LoadModel(std::string filename);
+
+    Texture& LoadTexture(const std::string& path, const std::string& type);
+
+    const Model& GetSphereModel() const;
+    static std::string GetShaderPath(const std::string& shaderName);
 
 private:
-	static std::vector<Texture> m_LoadedTextures;
+    uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);
 
-	uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);
-	uint32_t LoadTextureFromFile(const std::string& path, int32_t type, bool flip, const std::string& directory);
+    std::unique_ptr<Model> m_SphereModel;
 
-	void ProcessNode(aiNode* node, const aiScene* scene, Model& model, std::string directory);
-	Mesh ProcessMesh(aiMesh* mesh, const aiScene* scene, std::string directory);
-	std::vector<Texture> LoadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string typeName, std::string directory);
+    static AssetManager* g_AssetManager;
+    static std::vector<Texture> m_LoadedTextures;
 };
-};
+
+}

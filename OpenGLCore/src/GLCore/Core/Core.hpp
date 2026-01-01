@@ -2,9 +2,6 @@
 
 #include "Log.hpp"
 
-//temp
-#define GLCORE_DEBUG
-
 #ifdef GLCORE_DEBUG
 #define GLCORE_ENABLE_ASSERTS
 #endif
@@ -19,7 +16,7 @@
         }                                                                                                              \
     }
 #else
-#define GLCORE_ASSERT (x, ...)
+#define GLCORE_ASSERT(x, ...)
 #endif
 
 #define BIT(x) (1 << x)

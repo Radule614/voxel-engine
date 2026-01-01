@@ -1,127 +1,93 @@
 #include "glpch.hpp"
 #include "Shader.hpp"
 
-#include <fstream>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace GLCore::Utils
 {
-static std::string ReadFileAsString(const std::string& filepath)
-{
-	std::string result;
-	std::ifstream in(filepath, std::ios::in | std::ios::binary);
-	if (in)
-	{
-		in.seekg(0, std::ios::end);
-		result.resize((size_t)in.tellg());
-		in.seekg(0, std::ios::beg);
-		in.read(&result[0], result.size());
-		in.close();
-	}
-	else
-	{
-		LOG_ERROR("Could not open file '{0}'", filepath);
-	}
 
-	return result;
+Shader::Shader(GLenum program) : m_RendererID(program)
+{
 }
 
 Shader::~Shader()
 {
-	glDeleteProgram(m_RendererID);
+    glDeleteProgram(m_RendererID);
 }
 
-GLuint Shader::CompileShader(GLenum type, const std::string& source)
+void Shader::Use() const
 {
-	GLuint shader = glCreateShader(type);
-	const GLchar* sourceCStr = source.c_str();
-	glShaderSource(shader, 1, &sourceCStr, 0);
-	glCompileShader(shader);
-	GLint isCompiled = 0;
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-	if (isCompiled == GL_FALSE)
-	{
-		GLint maxLength = 0;
-		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-		std::vector<GLchar> infoLog(maxLength);
-		glGetShaderInfoLog(shader, maxLength, &maxLength, &infoLog[0]);
-		glDeleteShader(shader);
-		LOG_ERROR("{0}", infoLog.data());
-	}
-	return shader;
+    glUseProgram(m_RendererID);
 }
 
-Shader* Shader::FromGLSLTextFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
+void Shader::SetViewProjection(const glm::mat4& value) const { Set("u_ViewProjection", value); }
+
+void Shader::SetModel(const glm::mat4& value) const { Set("u_Model", value); }
+
+GLint Shader::GetLocation(const std::string& uniform) const
 {
-	Shader* shader = new Shader();
-	shader->LoadFromGLSLTextFiles(vertexShaderPath, fragmentShaderPath);
-	return shader;
+    return glGetUniformLocation(m_RendererID, uniform.c_str());
 }
 
-void Shader::SetVec3(const std::string& uniform, const glm::vec3& v) const
+GLint Shader::GetLocationAtIndex(const std::string& uniform, int32_t index) const
 {
-	glUniform3fv(glGetUniformLocation(m_RendererID, uniform.c_str()), 1, &v[0]);
+    return glGetUniformLocation(m_RendererID, std::format("{}[{}]", uniform, index).c_str());
 }
 
-void Shader::SetVec3(const std::string& uniform, float x, float y, float z) const
+// Common types
+
+template<>
+void Shader::Set<bool>(const std::string& uniform, const bool& value) const { Set<int32_t>(uniform, value); }
+
+template<>
+void Shader::Set<float_t>(const std::string& uniform, const float_t& value) const
 {
-	SetVec3(uniform, glm::vec3(x, y, z));
+    glUniform1f(GetLocation(uniform), value);
 }
 
-void Shader::SetFloat(const std::string& uniform, float x) const
+template<>
+void Shader::Set<int32_t>(const std::string& uniform, const int32_t& value) const
 {
-	glUniform1f(glGetUniformLocation(m_RendererID, uniform.c_str()), x);
+    glUniform1i(GetLocation(uniform), value);
 }
 
-void Shader::SetInt(const std::string& uniform, int i) const
+template<>
+void Shader::Set<int32_t>(const std::string& uniform, const int32_t& value, const int32_t index) const
 {
-	glUniform1i(glGetUniformLocation(m_RendererID, uniform.c_str()), i);
+    glUniform1i(GetLocationAtIndex(uniform, index), value);
 }
 
-void Shader::SetViewProjection(const glm::mat4 viewProjection) const
+template<>
+void Shader::Set<std::vector<int32_t> >(const std::string& uniform, const std::vector<int32_t>& value) const
 {
-	int32_t location = glGetUniformLocation(m_RendererID, "u_ViewProjection");
-	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(viewProjection));
+    glUniform1iv(GetLocation(uniform), value.size(), value.data());
 }
 
-void Shader::SetModel(const glm::mat4 model) const
+// Glm
+
+template<>
+void Shader::Set<glm::vec3>(const std::string& uniform, const glm::vec3& value) const
 {
-	int32_t location = glGetUniformLocation(m_RendererID, "u_Model");
-	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(model));
+    glUniform3fv(GetLocation(uniform), 1, &value[0]);
 }
 
-void Shader::LoadFromGLSLTextFiles(const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
+template<>
+void Shader::Set<glm::vec4>(const std::string& uniform, const glm::vec4& value) const
 {
-	std::string vertexSource = ReadFileAsString(vertexShaderPath);
-	std::string fragmentSource = ReadFileAsString(fragmentShaderPath);
-
-	GLuint program = glCreateProgram();
-	int glShaderIDIndex = 0;
-	GLuint vertexShader = CompileShader(GL_VERTEX_SHADER, vertexSource);
-	glAttachShader(program, vertexShader);
-	GLuint fragmentShader = CompileShader(GL_FRAGMENT_SHADER, fragmentSource);
-	glAttachShader(program, fragmentShader);
-	glLinkProgram(program);
-
-	GLint isLinked = 0;
-	glGetProgramiv(program, GL_LINK_STATUS, (int*)&isLinked);
-	if (isLinked == GL_FALSE)
-	{
-		GLint maxLength = 0;
-		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
-		std::vector<GLchar> infoLog(maxLength);
-		glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
-		glDeleteProgram(program);
-		glDeleteShader(vertexShader);
-		glDeleteShader(fragmentShader);
-		LOG_ERROR("{0}", infoLog.data());
-	}
-
-	glDetachShader(program, vertexShader);
-	glDetachShader(program, fragmentShader);
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
-	m_RendererID = program;
+    glUniform4fv(GetLocation(uniform), 1, &value[0]);
 }
+
+template<>
+void Shader::Set<glm::mat4>(const std::string& uniform, const glm::mat4& value) const
+{
+    const glm::mat4 model = value;
+    glUniformMatrix4fv(GetLocation(uniform), 1, GL_FALSE, glm::value_ptr(model));
+}
+
+template<>
+void Shader::Set<glm::mat4>(const std::string& uniform, const glm::mat4& value, const int32_t index) const
+{
+    glUniformMatrix4fv(GetLocationAtIndex(uniform, index), 1, GL_FALSE, glm::value_ptr(value));
+}
+
 }

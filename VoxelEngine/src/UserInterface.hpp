@@ -1,7 +1,5 @@
 #pragma once
 
-#include "GLCore.hpp"
-#include "GLCoreUtils.hpp"
 #include "EngineState.hpp"
 
 namespace VoxelEngine
@@ -10,15 +8,15 @@ namespace VoxelEngine
 class UserInterface : public GLCore::Layer
 {
 public:
-	UserInterface(EngineState& state);
-	~UserInterface();
+    explicit UserInterface(EngineState& state);
+    ~UserInterface() override;
 
-	virtual void OnAttach() override;
-	virtual void OnEvent(GLCore::Event& event) override;
-	virtual void OnImGuiRender() override;
-	virtual void OnUpdate(GLCore::Timestep ts) override;
+    void OnAttach() override;
+    void OnEvent(GLCore::Event& event) override;
+    void OnImGuiRender() override;
+    void OnUpdate(GLCore::Timestep ts) override;
 
 private:
-	EngineState& m_State;
+    EngineState& m_State;
 };
 }

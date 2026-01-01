@@ -1,103 +1,62 @@
 #pragma once
 
-#include <vector>
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
-#include "../Ecs/Ecs.hpp"
+#include "entt.hpp"
+#include "PointLight.hpp"
+#include "../Ecs/Components/LightComponent.hpp"
+#include "../Ecs/Components/TerrainMeshComponent.hpp"
+#include "../Ecs/Components/MeshComponent.hpp"
 
 namespace VoxelEngine
 {
 
-struct Material
-{
-	glm::vec3 Ambient;
-	glm::vec3 Diffuse;
-	glm::vec3 Specular;
-	float_t Shininess;
-};
-
-struct PointLight
-{
-	glm::vec3 Position;
-	glm::vec3 Ambient;
-	glm::vec3 Diffuse;
-	glm::vec3 Specular;
-	float_t Constant;
-	float_t Linear;
-	float_t Quadratic;
-
-	PointLight(glm::vec3 pos, glm::vec3 color)
-	{
-		Position = pos;
-		Ambient = color;
-		Diffuse = color;
-		Specular = color;
-		Constant = 0.005f;
-		Linear = 0.005f;
-		Quadratic = 0.012f;
-	}
-
-	PointLight(glm::vec3 pos, glm::vec3 a, glm::vec3 d, glm::vec3 s, float_t x, float_t y, float_t z)
-	{
-		Position = pos;
-		Ambient = a;
-		Diffuse = d;
-		Specular = s;
-		Constant = x;
-		Linear = y;
-		Quadratic = z;
-	}
-};
-
-struct DirectionalLight
-{
-	glm::vec3 Direction;
-	glm::vec3 Ambient;
-	glm::vec3 Diffuse;
-	glm::vec3 Specular;
-};
-
-struct SpotLight
-{
-	glm::vec3 Direction;
-	glm::vec3 Position;
-	glm::vec3 Ambient;
-	glm::vec3 Diffuse;
-	glm::vec3 Specular;
-	float_t CutOff;
-	float_t OuterCutOff;
-	float_t Constant;
-	float_t Linear;
-	float_t Quadratic;
-
-	SpotLight(glm::vec3 pos, glm::vec3 dir, glm::vec3 dif, glm::vec3 spec)
-	{
-		Position = pos;
-		Direction = dir;
-		Ambient = glm::vec3(0.0f);
-		Diffuse = dif;
-		Specular = spec;
-		CutOff = glm::cos(glm::radians(2.0f));
-		OuterCutOff = glm::cos(glm::radians(3.0f));
-		Constant = 0;
-		Linear = 0.009f;
-		Quadratic = 0;
-	}
-};
-
 class Renderer
 {
 public:
-	static void Init();
-	static void Shutdown();
-	static Renderer& Instance();
+    explicit Renderer(GLCore::Window& window);
+    ~Renderer();
 
-	void Render(MeshComponent& meshComponent, GLCore::Utils::PerspectiveCamera& camera, glm::mat4& model) const;
-	void SetPointLight(GLCore::Utils::Shader& shader, const std::string&, PointLight&) const;
-	void SetDirectionalLight(GLCore::Utils::Shader& shader, const std::string&, DirectionalLight&) const;
-	void SetSpotLight(GLCore::Utils::Shader& shader, const std::string&, SpotLight&) const;
+    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void Init() const;
+
+private:
+    static void Render(const GLCore::Utils::Shader& shader);
+
+    void DepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void DrawLights(const GLCore::Utils::PerspectiveCamera& camera) const;
+
+    static void DrawTerrain(const TerrainMeshComponent& mesh,
+                            const GLCore::Utils::Shader& shader,
+                            const glm::mat4& modelMatrix);
+    static void Clear();
+
+private:
+    GLCore::Window& m_Window;
+
+    GLuint m_DepthMapFbo;
+
+    GLCore::Utils::Shader* m_PbrShader;
+    GLCore::Utils::Shader* m_DepthShader;
+    GLCore::Utils::Shader* m_SimpleShader;
 };
 
-inline Renderer* g_Renderer = nullptr;
+}
+
+template<typename Component>
+using ViewType = decltype(std::declval<entt::registry>().view<Component>());
+
+namespace GLCore::Utils
+{
+
+template<>
+void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string& uniform,
+                                                        const std::vector<VoxelEngine::PointLight>& value) const;
+template<>
+void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string& uniform,
+                                                         const ViewType<VoxelEngine::LightComponent>& value) const;
+template<>
+void Shader::Set<VoxelEngine::Material>(const std::string& uniform, const VoxelEngine::Material& value) const;
 
 }
