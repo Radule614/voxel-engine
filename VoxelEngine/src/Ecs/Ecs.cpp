@@ -3,10 +3,6 @@
 namespace VoxelEngine
 {
 
-EntityComponentSystem::EntityComponentSystem() : m_EntityRegistry(std::make_unique<entt::registry>())
-{
-}
-
 void EntityComponentSystem::Init()
 {
     g_EntityComponentSystem = new EntityComponentSystem();
@@ -23,9 +19,18 @@ EntityComponentSystem& EntityComponentSystem::Instance()
     return *g_EntityComponentSystem;
 }
 
+bool EntityComponentSystem::HasShutdown()
+{
+    return g_EntityComponentSystem == nullptr;
+}
+
 entt::registry& EntityComponentSystem::GetEntityRegistry() const
 {
     return *m_EntityRegistry;
+}
+
+EntityComponentSystem::EntityComponentSystem() : m_EntityRegistry(std::make_unique<entt::registry>())
+{
 }
 
 }

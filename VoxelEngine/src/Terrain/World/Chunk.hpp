@@ -5,8 +5,8 @@
 #include <mutex>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "PerlinNoise.hpp"
 
+#include "entt.hpp"
 #include "../Voxel/Voxel.hpp"
 #include "../Voxel/VoxelMeshBuilder.hpp"
 #include "../Utils/Position2D.hpp"
@@ -37,10 +37,12 @@ public:
 
     VoxelGrid& GetVoxelGrid();
     Voxel& GetVoxelFromGrid(Position3D positionInGrid);
+    void AddPointLight(glm::vec3 position, glm::vec3 color = glm::vec3(1.0f));
 
     const std::vector<VoxelVertex>& GetMesh() const;
     const std::vector<VoxelVertex>& GetBorderMesh(VoxelFace face) const;
     Position2D GetPosition() const;
+    glm::ivec3 GetWorldPosition() const;
     std::mutex& GetLock();
     glm::mat4 GetModelMatrix() const;
 
@@ -63,6 +65,8 @@ private:
 
     std::unordered_set<BiomeType> m_BiomeTypes;
     std::mutex m_BiomeLock;
+
+    std::vector<entt::entity> m_Entities;
 };
 
 }

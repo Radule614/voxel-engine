@@ -7,15 +7,15 @@ namespace VoxelEngine
 
 struct ColliderComponent
 {
+    JPH::BodyID BodyId;
+
     ColliderComponent()
     {
     }
 
-    ColliderComponent(const JPH::BodyID bodyId) : BodyId(bodyId)
+    explicit ColliderComponent(const JPH::BodyID bodyId) : BodyId(bodyId)
     {
     }
-
-    JPH::BodyID BodyId;
 };
 
 }

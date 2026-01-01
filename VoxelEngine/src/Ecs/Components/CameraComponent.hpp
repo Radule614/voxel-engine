@@ -11,12 +11,12 @@ namespace VoxelEngine
 
 struct CameraComponent
 {
-    CameraComponent(
+    std::shared_ptr<GLCore::Utils::PerspectiveCameraController> CameraController;
+
+    explicit CameraComponent(
         const std::shared_ptr<GLCore::Utils::PerspectiveCameraController>& controller): CameraController(controller)
     {
     }
-
-    std::shared_ptr<GLCore::Utils::PerspectiveCameraController> CameraController;
 };
 
 }

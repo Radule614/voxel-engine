@@ -20,7 +20,7 @@ void ShrineGenerator::Generate(const Context& context, std::vector<Structure>& o
     {
         for (size_t z = 0; z < CHUNK_WIDTH; z += regionSize)
         {
-            const auto globalPosition = World::WorldToGlobalSpace(context.ChunkPosition, Position3D(x, 0, z));
+            const auto globalPosition = World::WorldToGlobalSpace(context.Chunk.GetPosition(), Position3D(x, 0, z));
 
             const double_t locationBias = context.Perlin.octave2D_01(((float_t) globalPosition.x - 2000.0f) * 0.01f,
                                                                      ((float_t) globalPosition.z - 2500.0f) * 0.01f,
@@ -45,8 +45,21 @@ void ShrineGenerator::Generate(const Context& context, std::vector<Structure>& o
     {
         auto& [voxel, bias] = possibleLocations[0];
 
-        if (bias > 0.85)
-            output.emplace_back(ShrineFactory::CreateShrine(voxel.GetPosition()));
+        if (bias > 0.86)
+        {
+            const Position3D position = voxel.GetPosition();
+            const auto shrine = ShrineFactory::CreateShrine(position);
+
+            const glm::vec3 lightPosition = (glm::vec3) position +
+                                            (glm::vec3) shrine.GetVoxelData().back().first +
+                                            glm::vec3(0.0f, 1.5f, 0.0f);
+
+            const glm::vec3 lightColor(1.0f, 0.0f, 0.0f);
+
+            context.Chunk.AddPointLight(lightPosition, lightColor);
+
+            output.emplace_back(shrine);
+        }
     }
 }
 

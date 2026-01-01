@@ -5,6 +5,7 @@
 #include "../Config.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Ecs.hpp"
+#include "../Ecs/Components/LightComponent.hpp"
 #include "../Ecs/Components/TransformComponent.hpp"
 #include "GLCore/Utils/ShaderBuilder.hpp"
 
@@ -15,6 +16,8 @@ static constexpr uint32_t MaxPointLights = 16;
 
 namespace VoxelEngine
 {
+
+static void CreateDepthCubeMap(GLuint* depthCubeMap);
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 {
@@ -34,20 +37,12 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("simple.frag.glsl"))
             .Build();
 
-    constexpr float_t baseHeight = 66.0f;
-
-    m_PointLights.emplace_back(glm::vec3(0.0f, baseHeight + 1.0f, 0.0), glm::vec3(1.0f));
-    // m_PointLights.emplace_back(glm::vec3(8.5f, baseHeight + 1.0f, -2.0), glm::vec3(1.0f, 0.0f, 0.0f));
-    // m_PointLights.emplace_back(glm::vec3(-8.5f, baseHeight + 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f));
-    // m_PointLights.emplace_back(glm::vec3(4.0f, baseHeight + 1.0f, 3.5f), glm::vec3(0.0f, 0.0f, 1.0f));
-    // m_PointLights.emplace_back(glm::vec3(-4.0f, baseHeight + 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 1.0f));
-
     glGenFramebuffers(1, &m_DepthMapFbo);
 }
 
 Renderer::~Renderer() = default;
 
-void Renderer::RenderScene(const PerspectiveCamera& camera) const
+void Renderer::RenderScene(const PerspectiveCamera& camera)
 {
     constexpr glm::vec3 skyColor(0.03f, 0.03f, 0.06f);
 
@@ -77,8 +72,6 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
     RenderLights();
 }
 
-std::vector<PointLight>& Renderer::GetPointLights() { return m_PointLights; }
-
 void Renderer::DepthPass() const
 {
     const Shader& shader = *m_DepthShader;
@@ -89,9 +82,18 @@ void Renderer::DepthPass() const
     glReadBuffer(GL_NONE);
 
     shader.Use();
-    for (const auto& light: m_PointLights)
+
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    const ViewType<LightComponent>& lightView = registry.view<LightComponent>();
+
+    for (const auto& lightEntity: lightView)
     {
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.GetDepthCubeMap(), 0);
+        auto& light = lightView.get<LightComponent>(lightEntity).PointLight;
+
+        if (light.DepthCubeMap == 0)
+            CreateDepthCubeMap(&light.DepthCubeMap);
+
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.DepthCubeMap, 0);
         glClear(GL_DEPTH_BUFFER_BIT);
 
         shader.Set("u_LightPosition", light.Position);
@@ -127,9 +129,9 @@ void Renderer::Render(const Shader& shader) const
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    shader.Set("", m_PointLights);
+    shader.Set("", registry.view<LightComponent>());
 
-    for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
+    for (const auto& terrainView = registry.view<TerrainComponent>(); const auto& entity: terrainView)
         RenderTerrain(shader, terrainView.get<TerrainComponent>(entity));
 
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
@@ -169,16 +171,46 @@ void Renderer::RenderLights() const
     const Shader& shader = *m_SimpleShader;
 
     shader.Use();
-    for (auto& pointLight: m_PointLights)
+
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    const ViewType<LightComponent>& lightView = registry.view<LightComponent>();
+
+    for (const auto& entity: lightView)
     {
-        shader.Set("u_Color", pointLight.LightColor);
+        auto light = lightView.get<LightComponent>(entity).PointLight;
+        shader.Set("u_Color", light.LightColor);
 
         auto model = glm::mat4(1.0);
-        model = glm::translate(model, pointLight.Position);
+        model = glm::translate(model, light.Position);
         model = glm::scale(model, glm::vec3(0.07f));
 
         AssetManager::Instance().GetSphereModel().Draw(shader, model);
     }
+}
+
+static void CreateDepthCubeMap(GLuint* depthCubeMap)
+{
+    glGenTextures(1, depthCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, *depthCubeMap);
+
+    for (uint32_t i = 0; i < 6; ++i)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     Config::ShadowWidth,
+                     Config::ShadowHeight,
+                     0,
+                     GL_DEPTH_COMPONENT,
+                     GL_FLOAT,
+                     nullptr);
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
 }
@@ -198,7 +230,28 @@ void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
         Set(std::format("u_PointLights[{}].LightColor", i), value[i].LightColor);
 
         glActiveTexture(GL_TEXTURE8 + i);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, value[i].GetDepthCubeMap());
+        glBindTexture(GL_TEXTURE_CUBE_MAP, value[i].DepthCubeMap);
+    }
+}
+
+template<>
+void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string&,
+                                                         const ViewType<VoxelEngine::LightComponent>& value) const
+{
+    Set<int32_t>("u_PointLightCount", value.size());
+
+    int32_t index = 0;
+    for (const auto& lightEntity: value)
+    {
+        auto light = value.get<VoxelEngine::LightComponent>(lightEntity).PointLight;
+
+        Set(std::format("u_PointLights[{}].LightPosition", index), light.Position);
+        Set(std::format("u_PointLights[{}].LightColor", index), light.LightColor);
+
+        glActiveTexture(GL_TEXTURE8 + index);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, light.DepthCubeMap);
+
+        index++;
     }
 }
 

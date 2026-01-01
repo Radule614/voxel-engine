@@ -50,17 +50,6 @@ void RendererLayer::OnImGuiRender()
 
     ImGui::Text("Fps: %.1f", m_Fps);
 
-    auto& pointLights = m_Renderer.GetPointLights();
-
-    ImGui::Text("Point Lights");
-    for (int32_t i = 0; i < pointLights.size(); ++i)
-    {
-        std::string label = std::format("Position {}", i + 1);
-
-        ImGui::SetNextItemWidth(400.0f);
-        ImGui::SliderFloat3(label.c_str(), glm::value_ptr(pointLights[i].Position), -15.0f, 15.0f);
-    }
-
     ImGui::End();
 }
 

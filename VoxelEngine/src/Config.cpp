@@ -12,7 +12,7 @@ int32_t Config::MaxChunkDistance = 5;
 
 uint32_t Config::ShadowHeight = 2048;
 uint32_t Config::ShadowWidth = 2048;
-float_t Config::ShadowNearPlane = 1.0f;
+float_t Config::ShadowNearPlane = 0.5f;
 float_t Config::ShadowFarPlane = 30.0f;
 
 }

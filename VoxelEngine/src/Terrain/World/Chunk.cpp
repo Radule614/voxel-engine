@@ -4,13 +4,16 @@
 #include "../Utils/Position2D.hpp"
 #include "../../Utils/Utils.hpp"
 #include "World.hpp"
+#include "../../Ecs/Ecs.hpp"
 
 #include <execution>
+
+#include "../../Ecs/Components/LightComponent.hpp"
 
 namespace VoxelEngine
 {
 
-Chunk::Chunk(World& world, const Biome& biome): Chunk(world, Position2D(), biome)
+Chunk::Chunk(World& world, const Biome& biome) : Chunk(world, Position2D(), biome)
 {
 }
 
@@ -26,9 +29,41 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     m_BorderMeshes.insert({RIGHT, {}});
     m_BorderMeshes.insert({BACK, {}});
     m_BorderMeshes.insert({LEFT, {}});
+
+
+    if (position == Position2D(0, 0))
+    {
+        auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+        const auto entityId = registry.create();
+
+        PointLight pointLight(glm::vec3(0.0f, 67.0f, 0.0), glm::vec3(1.0f));
+        registry.emplace<LightComponent>(entityId, std::move(pointLight));
+        m_Entities.push_back(entityId);
+    }
 }
 
-Chunk::~Chunk() = default;
+Chunk::~Chunk()
+{
+    if (EntityComponentSystem::HasShutdown())
+        return;
+
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    for (const auto entityId: m_Entities)
+    {
+        auto& light = registry.get<LightComponent>(entityId).PointLight;
+
+        if (light.DepthCubeMap != 0)
+        {
+            glDeleteTextures(1, &light.DepthCubeMap);
+            light.DepthCubeMap = 0;
+        }
+
+        registry.destroy(entityId);
+    }
+
+    m_Entities.clear();
+}
 
 void Chunk::Generate()
 {
@@ -61,7 +96,7 @@ void Chunk::Generate()
         }
     }
 
-    const Biome::GeneratorContext context(surfaceLayer, m_Position, m_BiomeTypes);
+    const Biome::GeneratorContext context(*this, surfaceLayer, m_BiomeTypes);
     std::vector<Structure> output{};
     m_Biome.GenerateStructures(context, output);
     AddStructures(output);
@@ -303,11 +338,25 @@ Voxel& Chunk::GetVoxelFromGrid(const Position3D positionInGrid)
     return m_VoxelGrid[positionInGrid.GetX()][positionInGrid.GetZ()][positionInGrid.GetY()];
 }
 
+void Chunk::AddPointLight(const glm::vec3 position, const glm::vec3 color)
+{
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    const auto entityId = registry.create();
+
+    const glm::vec3 globalPosition = (glm::vec3)GetWorldPosition() + position;
+
+    PointLight pointLight(globalPosition, color);
+    registry.emplace<LightComponent>(entityId, std::move(pointLight));
+    m_Entities.push_back(entityId);
+}
+
 const std::vector<VoxelVertex>& Chunk::GetMesh() const { return m_Mesh; }
 
 const std::vector<VoxelVertex>& Chunk::GetBorderMesh(const VoxelFace face) const { return m_BorderMeshes.at(face); }
 
 Position2D Chunk::GetPosition() const { return m_Position; }
+
+glm::ivec3 Chunk::GetWorldPosition() const { return {m_Position.x * CHUNK_WIDTH, 0, m_Position.y * CHUNK_WIDTH}; }
 
 std::mutex& Chunk::GetLock() { return m_Lock; }
 

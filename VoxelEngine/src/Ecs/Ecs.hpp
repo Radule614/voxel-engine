@@ -11,6 +11,7 @@ public:
     static void Init();
     static void Shutdown();
     static EntityComponentSystem& Instance();
+    static bool HasShutdown();
 
     entt::registry& GetEntityRegistry() const;
 

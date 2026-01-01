@@ -3,9 +3,14 @@
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
 
+#include "entt.hpp"
 #include "PointLight.hpp"
+#include "../Ecs/Components/LightComponent.hpp"
 #include "../Ecs/Components/TerrainComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
+
+template<typename Component>
+using ViewType = decltype(std::declval<entt::registry>().view<Component>());
 
 namespace VoxelEngine
 {
@@ -16,8 +21,7 @@ public:
     explicit Renderer(GLCore::Window& window);
     ~Renderer();
 
-    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
-    std::vector<PointLight>& GetPointLights();
+    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera);
 
 private:
     void Render(const GLCore::Utils::Shader& shader) const;
@@ -29,8 +33,6 @@ private:
 
 private:
     GLCore::Window& m_Window;
-
-    std::vector<PointLight> m_PointLights;
 
     GLuint m_DepthMapFbo;
 
@@ -47,6 +49,9 @@ namespace GLCore::Utils
 template<>
 void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string& uniform,
                                                         const std::vector<VoxelEngine::PointLight>& value) const;
+template<>
+void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string& uniform,
+                                                         const ViewType<VoxelEngine::LightComponent>& value) const;
 template<>
 void Shader::Set<VoxelEngine::Material>(const std::string& uniform, const VoxelEngine::Material& value) const;
 
