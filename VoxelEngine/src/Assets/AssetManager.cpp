@@ -35,7 +35,7 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
     {
         if (std::strcmp(m_LoadedTexture.path.data(), path.c_str()) == 0)
         {
-            LOG_INFO("Texture already present: {0}", m_LoadedTexture.path);
+            // LOG_INFO("Texture already present: {0}", m_LoadedTexture.path);
 
             return m_LoadedTexture;
         }

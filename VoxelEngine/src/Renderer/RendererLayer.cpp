@@ -19,22 +19,26 @@ RendererLayer::RendererLayer(EngineState& state) : m_State(state), m_Renderer(st
 void RendererLayer::OnAttach()
 {
     EnableGLDebugging();
+
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    m_Renderer.Init();
 }
 
-void RendererLayer::OnUpdate(Timestep ts)
+void RendererLayer::OnUpdate(const Timestep ts)
 {
+    m_Renderer.RenderScene(m_State.CameraController->GetCamera());
+
     if (m_AccumulatedTime > 0.5f)
     {
         m_Fps = 1.0 / ts;
+
         m_AccumulatedTime = 0.0f;
     }
     m_AccumulatedTime += ts;
-
-    m_Renderer.RenderScene(m_State.CameraController->GetCamera());
 }
 
 void RendererLayer::OnImGuiRender()
@@ -49,17 +53,6 @@ void RendererLayer::OnImGuiRender()
     ImGui::Text("Renderer");
 
     ImGui::Text("Fps: %.1f", m_Fps);
-
-    auto& pointLights = m_Renderer.GetPointLights();
-
-    ImGui::Text("Point Lights");
-    for (int32_t i = 0; i < pointLights.size(); ++i)
-    {
-        std::string label = std::format("Position {}", i + 1);
-
-        ImGui::SetNextItemWidth(400.0f);
-        ImGui::SliderFloat3(label.c_str(), glm::value_ptr(pointLights[i].Position), -15.0f, 15.0f);
-    }
 
     ImGui::End();
 }

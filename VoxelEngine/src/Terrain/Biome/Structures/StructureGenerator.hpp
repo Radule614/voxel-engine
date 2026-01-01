@@ -6,12 +6,13 @@
 
 #include "PerlinNoise.hpp"
 
-#include "../../TerrainConfig.hpp"
+#include "../../../Config.hpp"
 #include "../../Utils/Position2D.hpp"
 #include "Structure.hpp"
 
 namespace VoxelEngine
 {
+class Chunk;
 
 class StructureGenerator
 {
@@ -21,15 +22,15 @@ public:
 
     struct Context
     {
+        Chunk& Chunk;
         const siv::PerlinNoise& Perlin;
         const int32_t PerlinSeed;
         const Voxel (&SurfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH];
-        const Position2D ChunkPosition;
 
-        Context(const siv::PerlinNoise& perlin,
-                          int32_t perlinSeed,
-                          const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
-                          Position2D chunkPosition);
+        Context(VoxelEngine::Chunk& chunk,
+                const siv::PerlinNoise& perlin,
+                int32_t perlinSeed,
+                const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH]);
     };
 
     virtual void Generate(const Context& context, std::vector<Structure>& output) const = 0;

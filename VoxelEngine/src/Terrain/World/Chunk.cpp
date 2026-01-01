@@ -1,16 +1,22 @@
 #include "Chunk.hpp"
+
+#include <execution>
+
 #include "GLCoreUtils.hpp"
 #include "../Voxel/VoxelMeshBuilder.hpp"
 #include "../Utils/Position2D.hpp"
 #include "../../Utils/Utils.hpp"
 #include "World.hpp"
-
-#include <execution>
+#include "../../Ecs/Ecs.hpp"
+#include "../../Assets/AssetManager.hpp"
+#include "../../Ecs/Components/LightComponent.hpp"
+#include "../../Ecs/Components/TerrainMeshComponent.hpp"
+#include "../../Ecs/Components/TransformComponent.hpp"
 
 namespace VoxelEngine
 {
 
-Chunk::Chunk(World& world, const Biome& biome): Chunk(world, Position2D(), biome)
+Chunk::Chunk(World& world, const Biome& biome) : Chunk(world, Position2D(), biome)
 {
 }
 
@@ -26,9 +32,56 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     m_BorderMeshes.insert({RIGHT, {}});
     m_BorderMeshes.insert({BACK, {}});
     m_BorderMeshes.insert({LEFT, {}});
+
+    m_EntityId = EntityComponentSystem::Instance().SafeCreateEntity();
+
+    auto worldPosition = glm::vec3(0.0f);
+    worldPosition.x = m_Position.x * CHUNK_WIDTH;
+    worldPosition.z = m_Position.y * CHUNK_WIDTH;
+
+    TransformComponent transform{};
+    transform.Position = worldPosition;
+
+    EntityComponentSystem::Instance().GetEntityRegistry().emplace<TransformComponent>(m_EntityId, transform);
 }
 
-Chunk::~Chunk() = default;
+Chunk::~Chunk()
+{
+    if (EntityComponentSystem::HasShutdown())
+        return;
+
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    for (const auto entityId: m_Entities)
+    {
+        auto& light = registry.get<LightComponent>(entityId).PointLight;
+
+        if (light.DepthCubeMap != 0)
+        {
+            glDeleteTextures(1, &light.DepthCubeMap);
+            light.DepthCubeMap = 0;
+        }
+
+        registry.destroy(entityId);
+    }
+
+    m_Entities.clear();
+
+    if (registry.all_of<TerrainMeshComponent>(m_EntityId))
+    {
+        const auto& terrainMesh = registry.get<TerrainMeshComponent>(m_EntityId);
+
+        glBindVertexArray(0);
+        glDeleteBuffers(1, &terrainMesh.VertexBuffer);
+        glDeleteBuffers(1, &terrainMesh.IndexBuffer);
+        glDeleteVertexArrays(1, &terrainMesh.VertexArray);
+
+        registry.remove<TerrainMeshComponent>(m_EntityId);
+    }
+
+    if (registry.valid(m_EntityId))
+        registry.destroy(m_EntityId);
+}
 
 void Chunk::Generate()
 {
@@ -61,7 +114,7 @@ void Chunk::Generate()
         }
     }
 
-    const Biome::GeneratorContext context(surfaceLayer, m_Position, m_BiomeTypes);
+    const Biome::GeneratorContext context(*this, surfaceLayer, m_BiomeTypes);
     std::vector<Structure> output{};
     m_Biome.GenerateStructures(context, output);
     AddStructures(output);
@@ -193,98 +246,105 @@ void Chunk::GenerateEdgeMesh(const VoxelFace face)
 }
 
 // TODO: Refactor this method
-std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(glm::i32vec3 pos) const
+std::pair<Position2D, Position3D> Chunk::GetPositionRelativeToWorld(glm::i32vec3 position) const
 {
-    if (InRange(pos.x, 0, CHUNK_WIDTH - 1) && InRange(pos.y, 0, CHUNK_WIDTH - 1) && InRange(pos.z, 0, CHUNK_WIDTH - 1))
-        return {m_Position, Position3D(pos.x, pos.y, pos.z)};
-    Position2D chunkPos = m_Position;
-    while (pos.x < 0)
+    if (InRange(position.x, 0, CHUNK_WIDTH - 1) &&
+        InRange(position.y, 0, CHUNK_WIDTH - 1) &&
+        InRange(position.z, 0,CHUNK_WIDTH - 1)) { return {m_Position, Position3D(position.x, position.y, position.z)}; }
+
+    Position2D chunkPosition = m_Position;
+    while (position.x < 0)
     {
-        pos.x += CHUNK_WIDTH;
-        --chunkPos.x;
+        position.x += CHUNK_WIDTH;
+        --chunkPosition.x;
     }
-    while (pos.x > CHUNK_WIDTH - 1)
+    while (position.x > CHUNK_WIDTH - 1)
     {
-        pos.x -= CHUNK_WIDTH;
-        ++chunkPos.x;
+        position.x -= CHUNK_WIDTH;
+        ++chunkPosition.x;
     }
-    while (pos.z < 0)
+    while (position.z < 0)
     {
-        pos.z += CHUNK_WIDTH;
-        --chunkPos.y;
+        position.z += CHUNK_WIDTH;
+        --chunkPosition.y;
     }
-    while (pos.z > CHUNK_WIDTH - 1)
+    while (position.z > CHUNK_WIDTH - 1)
     {
-        pos.z -= CHUNK_WIDTH;
-        ++chunkPos.y;
+        position.z -= CHUNK_WIDTH;
+        ++chunkPosition.y;
     }
-    return {chunkPos, Position3D(pos.x, pos.y, pos.z)};
+    return {chunkPosition, Position3D(position.x, position.y, position.z)};
 }
 
-void Chunk::DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& v, size_t x, size_t z)
+void Chunk::DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& voxel, size_t x, size_t z)
 {
     if (x > 0 && x < CHUNK_WIDTH - 1)
     {
         if (z == CHUNK_WIDTH - 1)
-            AddEdgeMesh(meshBuilder, v, FRONT);
+            AddEdgeMesh(meshBuilder, voxel, FRONT);
         else if (z == 0)
-            AddEdgeMesh(meshBuilder, v, BACK);
+            AddEdgeMesh(meshBuilder, voxel, BACK);
     }
     if (z > 0 && z < CHUNK_WIDTH - 1)
     {
         if (x == CHUNK_WIDTH - 1)
-            AddEdgeMesh(meshBuilder, v, RIGHT);
+            AddEdgeMesh(meshBuilder, voxel, RIGHT);
         else if (x == 0)
-            AddEdgeMesh(meshBuilder, v, LEFT);
+            AddEdgeMesh(meshBuilder, voxel, LEFT);
     }
     if (x == 0 && z == 0)
-        AddEdgeMesh(meshBuilder, v, BACK, LEFT);
+        AddEdgeMesh(meshBuilder, voxel, BACK, LEFT);
     if (x == 0 && z == CHUNK_WIDTH - 1)
-        AddEdgeMesh(meshBuilder, v, FRONT, LEFT);
+        AddEdgeMesh(meshBuilder, voxel, FRONT, LEFT);
     if (x == CHUNK_WIDTH - 1 && z == 0)
-        AddEdgeMesh(meshBuilder, v, BACK, RIGHT);
+        AddEdgeMesh(meshBuilder, voxel, BACK, RIGHT);
     if (x == CHUNK_WIDTH - 1 && z == CHUNK_WIDTH - 1)
-        AddEdgeMesh(meshBuilder, v, FRONT, RIGHT);
+        AddEdgeMesh(meshBuilder, voxel, FRONT, RIGHT);
 }
 
-void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f)
+void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& voxel, const VoxelFace face)
 {
     bool faces[6] = {false, false, false, false, false, false};
-    faces[f] = true;
-    std::vector<VoxelVertex> data = meshBuilder.FromVoxelFaces(v, faces);
-    m_BorderMeshes.at(f).insert(m_BorderMeshes.at(f).begin(), data.begin(), data.end());
-    data = meshBuilder.FromVoxelExceptFaces(v, faces);
+    faces[face] = true;
+
+    std::vector<VoxelVertex> data = meshBuilder.FromVoxelFaces(voxel, faces);
+    m_BorderMeshes.at(face).insert(m_BorderMeshes.at(face).begin(), data.begin(), data.end());
+
+    data = meshBuilder.FromVoxelExceptFaces(voxel, faces);
     m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
 }
 
-void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2)
+void Chunk::AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& voxel, const VoxelFace face1, const VoxelFace face2)
 {
     bool faces[6] = {false, false, false, false, false, false};
-    faces[f1] = true;
-    std::vector<VoxelVertex> data = meshBuilder.FromVoxelFaces(v, faces);
-    m_BorderMeshes.at(f1).insert(m_BorderMeshes.at(f1).begin(), data.begin(), data.end());
-    faces[f1] = false;
-    faces[f2] = true;
-    data = meshBuilder.FromVoxelFaces(v, faces);
-    m_BorderMeshes.at(f2).insert(m_BorderMeshes.at(f2).begin(), data.begin(), data.end());
-    faces[f1] = true;
-    data = meshBuilder.FromVoxelExceptFaces(v, faces);
+    faces[face1] = true;
+
+    std::vector<VoxelVertex> data = meshBuilder.FromVoxelFaces(voxel, faces);
+    m_BorderMeshes.at(face1).insert(m_BorderMeshes.at(face1).begin(), data.begin(), data.end());
+
+    faces[face1] = false;
+    faces[face2] = true;
+    data = meshBuilder.FromVoxelFaces(voxel, faces);
+    m_BorderMeshes.at(face2).insert(m_BorderMeshes.at(face2).begin(), data.begin(), data.end());
+
+    faces[face1] = true;
+    data = meshBuilder.FromVoxelExceptFaces(voxel, faces);
     m_Mesh.insert(m_Mesh.begin(), data.begin(), data.end());
 }
 
-void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h)
+void Chunk::DetermineVoxelFeatures(Voxel& voxel, size_t x, size_t z, int32_t h)
 {
-    const int32_t y = &v - &m_VoxelGrid[x][z][0];
-    v.SetPosition(Position3D(x, y, z));
+    const int32_t y = &voxel - &m_VoxelGrid[x][z][0];
+    voxel.SetPosition(Position3D(x, y, z));
 
     if (y >= h)
         return;
 
-    const auto globalPosition = World::WorldToGlobalSpace(m_Position, v.GetPosition());
+    const auto globalPosition = World::WorldToGlobalSpace(m_Position, voxel.GetPosition());
 
     const auto [biomeType, voxelType] = m_Biome.ResolveBiomeFeatures(globalPosition, h);
 
-    v.SetVoxelType(voxelType);
+    voxel.SetVoxelType(voxelType);
 
     if (!m_BiomeTypes.contains(biomeType))
     {
@@ -296,11 +356,124 @@ void Chunk::DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h)
     }
 }
 
+void Chunk::CreateTerrainMeshComponent() const
+{
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    const Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
+
+    Material terrainMaterial{};
+    terrainMaterial.AlbedoFactor = glm::vec4(1.0f);
+    terrainMaterial.AlbedoTextureId = albedoTexture.id;
+    terrainMaterial.MetallicFactor = 0.0f;
+    terrainMaterial.RoughnessFactor = 0.85f;
+
+    TerrainMeshComponent terrainMeshComponent(m_Position, terrainMaterial);
+
+    glCreateVertexArrays(1, &terrainMeshComponent.VertexArray);
+    glBindVertexArray(terrainMeshComponent.VertexArray);
+
+    glCreateBuffers(1, &terrainMeshComponent.VertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, terrainMeshComponent.VertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1,
+                          3,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(VoxelVertex),
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, Normal)));
+    glEnableVertexAttribArray(2);
+    glVertexAttribPointer(2,
+                          2,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(VoxelVertex),
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, TexCoords)));
+
+    glCreateBuffers(1, &terrainMeshComponent.IndexBuffer);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainMeshComponent.IndexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, nullptr,GL_DYNAMIC_DRAW);
+
+    glBindVertexArray(0);
+
+    registry.emplace<TerrainMeshComponent>(m_EntityId, terrainMeshComponent);
+}
+
+void Chunk::UpdateTerrainMeshComponent() const
+{
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    if (!registry.all_of<TerrainMeshComponent>(m_EntityId))
+        CreateTerrainMeshComponent();
+
+    TerrainMeshComponent& terrainMeshComponent = registry.get<TerrainMeshComponent>(m_EntityId);
+
+    std::vector<VoxelVertex> vertices = {};
+    vertices.insert(vertices.end(), GetMesh().begin(), GetMesh().end());
+    vertices.insert(vertices.end(),
+                    GetBorderMesh(FRONT).begin(),
+                    GetBorderMesh(FRONT).end());
+    vertices.insert(vertices.end(),
+                    GetBorderMesh(RIGHT).begin(),
+                    GetBorderMesh(RIGHT).end());
+    vertices.insert(vertices.end(),
+                    GetBorderMesh(BACK).begin(),
+                    GetBorderMesh(BACK).end());
+    vertices.insert(vertices.end(),
+                    GetBorderMesh(LEFT).begin(),
+                    GetBorderMesh(LEFT).end());
+
+    if (vertices.empty())
+        return;
+
+    glBindVertexArray(terrainMeshComponent.VertexArray);
+
+    glBindBuffer(GL_ARRAY_BUFFER, terrainMeshComponent.VertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VoxelVertex), &vertices[0], GL_DYNAMIC_DRAW);
+
+    terrainMeshComponent.Indices.clear();
+    terrainMeshComponent.Indices.reserve(vertices.size() / 4 * 6);
+
+    const uint32_t faceCount = vertices.size() / 4;
+    for (uint32_t i = 0; i < faceCount; ++i)
+    {
+        terrainMeshComponent.Indices.emplace_back(i * 4 + 0);
+        terrainMeshComponent.Indices.emplace_back(i * 4 + 1);
+        terrainMeshComponent.Indices.emplace_back(i * 4 + 2);
+        terrainMeshComponent.Indices.emplace_back(i * 4 + 2);
+        terrainMeshComponent.Indices.emplace_back(i * 4 + 3);
+        terrainMeshComponent.Indices.emplace_back(i * 4 + 0);
+    }
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainMeshComponent.IndexBuffer);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                 terrainMeshComponent.Indices.size() * sizeof(uint32_t),
+                 &terrainMeshComponent.Indices[0],
+                 GL_DYNAMIC_DRAW);
+
+    glBindVertexArray(0);
+}
+
 VoxelGrid& Chunk::GetVoxelGrid() { return m_VoxelGrid; }
 
 Voxel& Chunk::GetVoxelFromGrid(const Position3D positionInGrid)
 {
     return m_VoxelGrid[positionInGrid.GetX()][positionInGrid.GetZ()][positionInGrid.GetY()];
+}
+
+void Chunk::AddPointLight(const glm::vec3 position, const glm::vec3 color)
+{
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    const auto entityId = registry.create();
+
+    const glm::vec3 globalPosition = (glm::vec3) GetWorldPosition() + position;
+
+    PointLight pointLight(globalPosition, color);
+    registry.emplace<LightComponent>(entityId, std::move(pointLight));
+    m_Entities.push_back(entityId);
 }
 
 const std::vector<VoxelVertex>& Chunk::GetMesh() const { return m_Mesh; }
@@ -309,15 +482,8 @@ const std::vector<VoxelVertex>& Chunk::GetBorderMesh(const VoxelFace face) const
 
 Position2D Chunk::GetPosition() const { return m_Position; }
 
-std::mutex& Chunk::GetLock() { return m_Lock; }
+glm::ivec3 Chunk::GetWorldPosition() const { return {m_Position.x * CHUNK_WIDTH, 0, m_Position.y * CHUNK_WIDTH}; }
 
-glm::mat4 Chunk::GetModelMatrix() const
-{
-    auto pos = glm::vec3(m_Position.x, 0, m_Position.y);
-    pos.x *= CHUNK_WIDTH;
-    pos.y *= CHUNK_HEIGHT;
-    pos.z *= CHUNK_WIDTH;
-    return glm::translate(glm::mat4(1.0f), pos);
-}
+std::mutex& Chunk::GetLock() { return m_Lock; }
 
 }

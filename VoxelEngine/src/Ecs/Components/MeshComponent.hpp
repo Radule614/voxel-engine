@@ -7,11 +7,11 @@ namespace VoxelEngine
 
 struct MeshComponent
 {
-    explicit MeshComponent(const Model& model) : Model(model)
+    const Model& Model;
+
+    explicit MeshComponent(const VoxelEngine::Model& model) : Model(model)
     {
     }
-
-    const Model& Model;
 };
 
 }

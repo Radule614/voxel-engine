@@ -5,13 +5,14 @@
 #include <mutex>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "PerlinNoise.hpp"
 
+#include "entt.hpp"
 #include "../Voxel/Voxel.hpp"
 #include "../Voxel/VoxelMeshBuilder.hpp"
 #include "../Utils/Position2D.hpp"
 #include "../Biome/Structures/Structure.hpp"
-#include "../TerrainConfig.hpp"
+#include "../../Config.hpp"
+#include "../../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../Biome/Biome.hpp"
 
 namespace VoxelEngine
@@ -33,22 +34,26 @@ public:
     void Generate();
     void GenerateMesh();
     void GenerateEdgeMesh(VoxelFace face);
-    std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::ivec3 pos) const;
+    std::pair<Position2D, Position3D> GetPositionRelativeToWorld(glm::ivec3 position) const;
+
+    void CreateTerrainMeshComponent() const;
+    void UpdateTerrainMeshComponent() const;
 
     VoxelGrid& GetVoxelGrid();
     Voxel& GetVoxelFromGrid(Position3D positionInGrid);
+    void AddPointLight(glm::vec3 position, glm::vec3 color = glm::vec3(1.0f));
 
     const std::vector<VoxelVertex>& GetMesh() const;
     const std::vector<VoxelVertex>& GetBorderMesh(VoxelFace face) const;
     Position2D GetPosition() const;
+    glm::ivec3 GetWorldPosition() const;
     std::mutex& GetLock();
-    glm::mat4 GetModelMatrix() const;
 
 private:
-    void DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& v, size_t x, size_t z);
-    void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f);
-    void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& v, VoxelFace f1, VoxelFace f2);
-    void DetermineVoxelFeatures(Voxel& v, size_t x, size_t z, int32_t h);
+    void DetermineEdgeMeshes(VoxelMeshBuilder& meshBuilder, Voxel& voxel, size_t x, size_t z);
+    void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& voxel, VoxelFace face);
+    void AddEdgeMesh(VoxelMeshBuilder& meshBuilder, Voxel& voxel, VoxelFace face1, VoxelFace face2);
+    void DetermineVoxelFeatures(Voxel& voxel, size_t x, size_t z, int32_t h);
     void AddStructures(const std::vector<Structure>& structures);
 
 private:
@@ -63,6 +68,9 @@ private:
 
     std::unordered_set<BiomeType> m_BiomeTypes;
     std::mutex m_BiomeLock;
+
+    entt::entity m_EntityId;
+    std::vector<entt::entity> m_Entities;
 };
 
 }

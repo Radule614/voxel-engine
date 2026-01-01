@@ -3,7 +3,7 @@
 //
 
 #include "Biome.hpp"
-#include "../TerrainConfig.hpp"
+#include "../../Config.hpp"
 #include "Structures/Cactus/CactusGenerator.hpp"
 #include "Structures/DarkTree/DarkTreeGenerator.hpp"
 #include "Structures/Tree/TreeGenerator.hpp"
@@ -24,16 +24,16 @@ Biome::Biome(const uint32_t seed) : m_Perlin(seed),
     m_Generators[SNOWY_PLAINS].emplace_back(std::make_unique<DarkTreeGenerator>());
 }
 
-Biome::GeneratorContext::GeneratorContext(const Voxel (&surfaceLayer)[16][16],
-                                          const Position2D chunkPosition,
+Biome::GeneratorContext::GeneratorContext(VoxelEngine::Chunk& chunk,
+                                          const Voxel (&surfaceLayer)[16][16],
                                           const std::unordered_set<BiomeType>& chunkBiomeTypes)
-    : SurfaceLayer(surfaceLayer),
-      ChunkPosition(chunkPosition),
+    : Chunk(chunk),
+      SurfaceLayer(surfaceLayer),
       ChunkBiomeTypes(chunkBiomeTypes)
 {
 }
 
-void Biome::AddGenerator(BiomeType biomeType, std::unique_ptr<StructureGenerator> generator)
+void Biome::AddGenerator(const BiomeType biomeType, std::unique_ptr<StructureGenerator> generator)
 {
     m_Generators[biomeType].emplace_back(std::move(generator));
 }
@@ -111,7 +111,10 @@ int32_t Biome::GetHeight(const int32_t x, const int32_t z) const
 
 void Biome::GenerateStructures(const GeneratorContext& ctx, std::vector<Structure>& output) const
 {
-    const StructureGenerator::Context generatorContext(m_Perlin, m_PerlinSeed, ctx.SurfaceLayer, ctx.ChunkPosition);
+    const StructureGenerator::Context generatorContext(ctx.Chunk,
+                                                       m_Perlin,
+                                                       m_PerlinSeed,
+                                                       ctx.SurfaceLayer);
 
     for (auto type: ctx.ChunkBiomeTypes)
     {

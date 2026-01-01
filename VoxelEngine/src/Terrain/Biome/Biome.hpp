@@ -23,12 +23,12 @@ public:
 
     struct GeneratorContext
     {
+        Chunk& Chunk;
         const Voxel (&SurfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH];
-        const Position2D ChunkPosition;
         const std::unordered_set<BiomeType>& ChunkBiomeTypes;
 
-        GeneratorContext(const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
-                         Position2D chunkPosition,
+        GeneratorContext(VoxelEngine::Chunk& chunk,
+                         const Voxel (&surfaceLayer)[CHUNK_WIDTH][CHUNK_WIDTH],
                          const std::unordered_set<BiomeType>& chunkBiomeTypes);
     };
 
