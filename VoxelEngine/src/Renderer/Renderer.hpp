@@ -24,8 +24,10 @@ private:
 
     void DepthPass() const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void RenderTerrain(const GLCore::Utils::Shader& shader, const TerrainMeshComponent& terrainComponent) const;
-    void RenderLights() const;
+    void DrawTerrain(const TerrainMeshComponent& mesh,
+                     const GLCore::Utils::Shader& shader,
+                     const glm::mat4& modelMatrix) const;
+    void DrawLights() const;
 
 private:
     GLCore::Window& m_Window;

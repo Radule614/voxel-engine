@@ -8,9 +8,10 @@
 #include "../../Utils/Utils.hpp"
 #include "World.hpp"
 #include "../../Ecs/Ecs.hpp"
+#include "../../Assets/AssetManager.hpp"
 #include "../../Ecs/Components/LightComponent.hpp"
 #include "../../Ecs/Components/TerrainMeshComponent.hpp"
-#include "../../Assets/AssetManager.hpp"
+#include "../../Ecs/Components/TransformComponent.hpp"
 
 namespace VoxelEngine
 {
@@ -35,6 +36,16 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     m_BorderMeshes.insert({LEFT, {}});
 
     m_EntityId = EntityComponentSystem::Instance().SafeCreateEntity();
+
+    auto worldPosition = glm::vec3(m_Position.x, 0, m_Position.y);
+
+    worldPosition.x *= CHUNK_WIDTH;
+    worldPosition.y *= CHUNK_HEIGHT;
+    worldPosition.z *= CHUNK_WIDTH;
+
+    TransformComponent transform{};
+    transform.Position = worldPosition;
+    EntityComponentSystem::Instance().GetEntityRegistry().emplace<TransformComponent>(m_EntityId, transform);
 }
 
 Chunk::~Chunk()
@@ -71,7 +82,8 @@ Chunk::~Chunk()
         registry.remove<TerrainMeshComponent>(m_EntityId);
     }
 
-    registry.destroy(m_EntityId);
+    if (registry.valid(m_EntityId))
+        registry.destroy(m_EntityId);
 }
 
 void Chunk::Generate()

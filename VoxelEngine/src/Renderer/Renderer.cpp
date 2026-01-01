@@ -1,7 +1,5 @@
 #include "Renderer.hpp"
 
-#include <ranges>
-
 #include "../Config.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Ecs.hpp"
@@ -16,6 +14,7 @@ static constexpr uint32_t MaxPointLights = 16;
 namespace VoxelEngine
 {
 
+static glm::mat4 CalculateModelMatrix(const TransformComponent& transform);
 static void CreateDepthCubeMap(GLuint* depthCubeMap);
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
@@ -72,7 +71,7 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
     // Debug
     m_SimpleShader->Use();
     m_SimpleShader->SetViewProjection(camera.GetViewProjectionMatrix());
-    RenderLights();
+    DrawLights();
 }
 
 void Renderer::DepthPass() const
@@ -134,43 +133,38 @@ void Renderer::Render(const Shader& shader) const
 
     shader.Set("", registry.view<LightComponent>());
 
-    const auto& terrainView = registry.view<TerrainMeshComponent>();
-    for (const auto& entity: terrainView)
+    for (const auto& view = registry.view<TerrainMeshComponent, TransformComponent>(); const auto& entity: view)
     {
-        if (terrainView.contains(entity))
-            RenderTerrain(shader, terrainView.get<TerrainMeshComponent>(entity));
+        auto& mesh = view.get<TerrainMeshComponent>(entity);
+        auto model = CalculateModelMatrix(view.get<TransformComponent>(entity));
+
+        DrawTerrain(mesh, shader, model);
     }
 
-    const auto view = registry.view<MeshComponent, TransformComponent>();
-    for (const auto entity: view)
+    for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
     {
         auto& mesh = view.get<MeshComponent>(entity);
-        auto& transform = view.get<TransformComponent>(entity);
-
-        auto model = glm::mat4(1.0);
-        model = glm::translate(model, transform.Position);
-        model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
-        model = glm::scale(model, transform.Scale);
+        auto model = CalculateModelMatrix(view.get<TransformComponent>(entity));
 
         mesh.Model.Draw(shader, model);
     }
 }
 
-void Renderer::RenderTerrain(const Shader& shader, const TerrainMeshComponent& terrainComponent) const
+void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shader, const glm::mat4& modelMatrix) const
 {
     glCullFace(GL_FRONT);
 
-    shader.Set("", terrainComponent.Material);
-    shader.SetModel(terrainComponent.GetModelMatrix());
+    shader.Set("", mesh.Material);
+    shader.SetModel(modelMatrix);
 
-    glBindVertexArray(terrainComponent.VertexArray);
-    glDrawElements(GL_TRIANGLES, terrainComponent.Indices.size(), GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(mesh.VertexArray);
+    glDrawElements(GL_TRIANGLES, mesh.Indices.size(), GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
 
     glCullFace(GL_BACK);
 }
 
-void Renderer::RenderLights() const
+void Renderer::DrawLights() const
 {
     const Shader& shader = *m_SimpleShader;
 
@@ -190,6 +184,17 @@ void Renderer::RenderLights() const
 
         AssetManager::Instance().GetSphereModel().Draw(shader, model);
     }
+}
+
+static glm::mat4 CalculateModelMatrix(const TransformComponent& transform)
+{
+    auto model = glm::mat4(1.0);
+
+    model = glm::translate(model, transform.Position);
+    model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
+    model = glm::scale(model, transform.Scale);
+
+    return model;
 }
 
 static void CreateDepthCubeMap(GLuint* depthCubeMap)
