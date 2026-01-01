@@ -41,26 +41,19 @@ void ShrineGenerator::Generate(const Context& context, std::vector<Structure>& o
     std::mt19937 rng(context.PerlinSeed);
     std::ranges::shuffle(possibleLocations, rng);
 
-    if (!possibleLocations.empty())
-    {
-        auto& [voxel, bias] = possibleLocations[0];
+    if (possibleLocations.empty() || possibleLocations[0].second < 0.88)
+        return;
 
-        if (bias > 0.86)
-        {
-            const Position3D position = voxel.GetPosition();
-            const auto shrine = ShrineFactory::CreateShrine(position);
+    const Position3D position = possibleLocations[0].first.GetPosition();
+    const auto shrine = ShrineFactory::CreateShrine(position);
 
-            const glm::vec3 lightPosition = (glm::vec3) position +
-                                            (glm::vec3) shrine.GetVoxelData().back().first +
-                                            glm::vec3(0.0f, 1.5f, 0.0f);
+    const glm::vec3 lightPosition = (glm::vec3) position +
+                                    (glm::vec3) shrine.GetVoxelData().back().first +
+                                    glm::vec3(0.0f, 1.5f, 0.0f);
 
-            const glm::vec3 lightColor(1.0f, 0.0f, 0.0f);
+    context.Chunk.AddPointLight(lightPosition, glm::vec3(1.0f, 0.0f, 0.0f));
 
-            context.Chunk.AddPointLight(lightPosition, lightColor);
-
-            output.emplace_back(shrine);
-        }
-    }
+    output.emplace_back(shrine);
 }
 
 }

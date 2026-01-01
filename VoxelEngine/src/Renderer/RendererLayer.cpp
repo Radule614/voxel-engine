@@ -28,7 +28,7 @@ void RendererLayer::OnAttach()
     m_Renderer.Init();
 }
 
-void RendererLayer::OnUpdate(Timestep ts)
+void RendererLayer::OnUpdate(const Timestep ts)
 {
     m_Renderer.RenderScene(m_State.CameraController->GetCamera());
 

@@ -16,6 +16,9 @@ namespace VoxelEngine
 
 static glm::mat4 CalculateModelMatrix(const TransformComponent& transform);
 static void CreateDepthCubeMap(GLuint* depthCubeMap);
+static std::vector<PointLight> GetCloseLights(glm::vec3 position,
+                                              ViewType<LightComponent> lightView,
+                                              bool shouldOffsetChunk = false);
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 {
@@ -58,13 +61,20 @@ void Renderer::Init() const
 void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
     Clear();
-    DepthPass();
+    DepthPass(camera);
     RenderPass(camera);
     DrawLights(camera);
 }
 
-void Renderer::DepthPass() const
+void Renderer::DepthPass(const PerspectiveCamera& camera) const
 {
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    static size_t lightIndex = 0;
+
+    const ViewType<LightComponent>& view = registry.view<LightComponent>();
+    if (view.empty())
+        return;
+
     const Shader& shader = *m_DepthShader;
 
     glViewport(0, 0, Config::ShadowWidth, Config::ShadowHeight);
@@ -74,29 +84,31 @@ void Renderer::DepthPass() const
 
     shader.Use();
 
-    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    const ViewType<LightComponent>& lightView = registry.view<LightComponent>();
+    const auto entity = view.begin()[lightIndex % view.size()];
+    auto& light = view.get<LightComponent>(entity).PointLight;
 
-    for (const auto& lightEntity: lightView)
+    if (light.DepthCubeMap == 0)
+        CreateDepthCubeMap(&light.DepthCubeMap);
+
+    if (glm::length(light.Position - camera.GetPosition()) < 100.0f)
     {
-        auto& light = lightView.get<LightComponent>(lightEntity).PointLight;
-
-        if (light.DepthCubeMap == 0)
-            CreateDepthCubeMap(&light.DepthCubeMap);
-
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.DepthCubeMap, 0);
         glClear(GL_DEPTH_BUFFER_BIT);
 
         shader.Set("u_LightPosition", light.Position);
         shader.Set("u_FarPlane", Config::ShadowFarPlane);
 
-        std::vector<glm::mat4> shadowTransforms = light.CalculateShadowTransforms();
+        const std::vector<glm::mat4> shadowTransforms = light.CalculateShadowTransforms();
 
         for (uint32_t i = 0; i < shadowTransforms.size(); ++i)
             shader.Set("u_ShadowMatrices", shadowTransforms[i], i);
 
         Render(shader);
     }
+
+    ++lightIndex;
+    if (lightIndex > 500000)
+        lightIndex = 0;
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -116,26 +128,29 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     Render(shader);
 }
 
-void Renderer::Render(const Shader& shader) const
+void Renderer::Render(const Shader& shader)
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-
-    shader.Set("", registry.view<LightComponent>());
+    const auto lightView = registry.view<LightComponent>();
 
     for (const auto& view = registry.view<TerrainMeshComponent, TransformComponent>(); const auto& entity: view)
     {
         auto& mesh = view.get<TerrainMeshComponent>(entity);
-        auto model = CalculateModelMatrix(view.get<TransformComponent>(entity));
+        auto& transform = view.get<TransformComponent>(entity);
 
-        DrawTerrain(mesh, shader, model);
+        shader.Set("", GetCloseLights(transform.Position, lightView, true));
+
+        DrawTerrain(mesh, shader, CalculateModelMatrix(transform));
     }
 
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
     {
         auto& mesh = view.get<MeshComponent>(entity);
-        auto model = CalculateModelMatrix(view.get<TransformComponent>(entity));
+        auto& transform = view.get<TransformComponent>(entity);
 
-        mesh.Model.Draw(shader, model);
+        shader.Set("", GetCloseLights(transform.Position, lightView));
+
+        mesh.Model.Draw(shader, CalculateModelMatrix(transform));
     }
 }
 
@@ -166,6 +181,9 @@ void Renderer::DrawLights(const PerspectiveCamera& camera) const
     for (const auto& entity: lightView)
     {
         auto light = lightView.get<LightComponent>(entity).PointLight;
+        if (!lightView.contains(entity))
+            continue;
+
         shader.Set("u_Color", light.LightColor);
 
         auto model = glm::mat4(1.0);
@@ -220,10 +238,58 @@ static void CreateDepthCubeMap(GLuint* depthCubeMap)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
+static std::vector<PointLight> GetCloseLights(const glm::vec3 position,
+                                              const ViewType<LightComponent> lightView,
+                                              const bool shouldOffsetChunk)
+{
+    std::vector<PointLight> closeLights{};
+
+    for (const auto lightEntity: lightView)
+    {
+        if (!lightView.contains(lightEntity))
+            continue;
+
+        auto& light = lightView.get<LightComponent>(lightEntity).PointLight;
+        glm::vec3 lightPosition = light.Position;
+        glm::vec3 temp = position;
+
+        if (shouldOffsetChunk)
+        {
+            lightPosition.y = 0.0f;
+            temp.x += CHUNK_WIDTH / 2;
+            temp.y = 0.0f;
+            temp.z += CHUNK_WIDTH / 2;
+        }
+
+        if (glm::length(lightPosition - temp) <= Config::ShadowFarPlane + 7.0f)
+            closeLights.push_back(light);
+    }
+
+    return closeLights;
+}
+
 }
 
 namespace GLCore::Utils
 {
+
+template<>
+void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
+                                                        const std::vector<VoxelEngine::PointLight>& value) const
+{
+    Set<int32_t>("u_PointLightCount", value.size());
+
+    for (int32_t i = 0; i < value.size(); ++i)
+    {
+        const auto& light = value[i];
+
+        Set(std::format("u_PointLights[{}].LightPosition", i), light.Position);
+        Set(std::format("u_PointLights[{}].LightColor", i), light.LightColor);
+
+        glActiveTexture(GL_TEXTURE8 + i);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, light.DepthCubeMap);
+    }
+}
 
 template<>
 void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string&,
@@ -234,7 +300,7 @@ void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string&,
     int32_t index = 0;
     for (const auto& lightEntity: value)
     {
-        auto light = value.get<VoxelEngine::LightComponent>(lightEntity).PointLight;
+        const auto& light = value.get<VoxelEngine::LightComponent>(lightEntity).PointLight;
 
         Set(std::format("u_PointLights[{}].LightPosition", index), light.Position);
         Set(std::format("u_PointLights[{}].LightColor", index), light.LightColor);

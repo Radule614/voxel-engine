@@ -27,7 +27,7 @@ void SandboxApp::Setup()
 
     WorldSettings settings{};
     settings.m_Biome = std::make_unique<Biome>(6512u);
-    // settings.m_Biome->AddGenerator(PLAINS, std::make_unique<ShrineGenerator>());
+    settings.m_Biome->AddGenerator(PLAINS, std::make_unique<ShrineGenerator>());
 
     auto* voxelLayer = new VoxelLayer(m_State);
     voxelLayer->Init(std::move(settings));

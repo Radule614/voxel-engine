@@ -35,14 +35,13 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
 
     m_EntityId = EntityComponentSystem::Instance().SafeCreateEntity();
 
-    auto worldPosition = glm::vec3(m_Position.x, 0, m_Position.y);
-
-    worldPosition.x *= CHUNK_WIDTH;
-    worldPosition.y *= CHUNK_HEIGHT;
-    worldPosition.z *= CHUNK_WIDTH;
+    auto worldPosition = glm::vec3(0.0f);
+    worldPosition.x = m_Position.x * CHUNK_WIDTH;
+    worldPosition.z = m_Position.y * CHUNK_WIDTH;
 
     TransformComponent transform{};
     transform.Position = worldPosition;
+
     EntityComponentSystem::Instance().GetEntityRegistry().emplace<TransformComponent>(m_EntityId, transform);
 }
 
