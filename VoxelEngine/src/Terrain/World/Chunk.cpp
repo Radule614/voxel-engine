@@ -16,8 +16,6 @@
 namespace VoxelEngine
 {
 
-std::mutex registryMutex;
-
 Chunk::Chunk(World& world, const Biome& biome) : Chunk(world, Position2D(), biome)
 {
 }

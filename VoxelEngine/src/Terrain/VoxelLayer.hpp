@@ -38,7 +38,6 @@ private:
     };
 
     void PollChunkRenderQueue() const;
-    void SetupRenderData(const Chunk& chunk) const;
     void ApplyState() const;
     void ResetWorld() const;
     void RemoveDistantChunks() const;
