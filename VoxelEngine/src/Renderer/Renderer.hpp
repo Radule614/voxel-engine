@@ -45,6 +45,9 @@ namespace GLCore::Utils
 {
 
 template<>
+void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string& uniform,
+                                                        const std::vector<VoxelEngine::PointLight>& value) const;
+template<>
 void Shader::Set<VoxelEngine::Material>(const std::string& uniform, const VoxelEngine::Material& value) const;
 
 }

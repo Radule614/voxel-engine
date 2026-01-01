@@ -3,7 +3,7 @@
 //
 
 #include "Biome.hpp"
-#include "../TerrainConfig.hpp"
+#include "../../Config.hpp"
 #include "Structures/Cactus/CactusGenerator.hpp"
 #include "Structures/DarkTree/DarkTreeGenerator.hpp"
 #include "Structures/Tree/TreeGenerator.hpp"

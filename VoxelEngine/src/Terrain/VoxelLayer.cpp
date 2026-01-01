@@ -151,9 +151,9 @@ void VoxelLayer::Init(WorldSettings&& settings)
 
 void VoxelLayer::ApplyState() const
 {
-    TerrainConfig::PolygonMode = m_UIState.PolygonMode == 0 ? GL_FILL : GL_LINE;
-    TerrainConfig::ThreadCount = m_UIState.ThreadCount + 1;
-    glPolygonMode(GL_FRONT_AND_BACK, TerrainConfig::PolygonMode);
+    Config::PolygonMode = m_UIState.PolygonMode == 0 ? GL_FILL : GL_LINE;
+    Config::ChunkThreadCount = m_UIState.ThreadCount + 1;
+    glPolygonMode(GL_FRONT_AND_BACK, Config::PolygonMode);
 }
 
 void VoxelLayer::ResetWorld() const
@@ -178,7 +178,7 @@ void VoxelLayer::RemoveDistantChunks() const
     int count = 0;
     for (const auto [position, chunk]: distantChunks)
     {
-        if (count >= TerrainConfig::ThreadCount)
+        if (count >= Config::ChunkThreadCount)
             break;
 
         if (!chunk->GetLock().try_lock())

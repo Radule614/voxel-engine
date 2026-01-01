@@ -6,7 +6,7 @@
 
 #include "PerlinNoise.hpp"
 
-#include "../../TerrainConfig.hpp"
+#include "../../../Config.hpp"
 #include "../../Utils/Position2D.hpp"
 #include "Structure.hpp"
 

@@ -33,8 +33,8 @@ public:
 private:
     struct UIState
     {
-        int32_t ThreadCount = TerrainConfig::ThreadCount - 1;
-        int32_t PolygonMode = TerrainConfig::PolygonMode == GL_FILL ? 0 : 1;
+        int32_t ThreadCount = Config::ChunkThreadCount - 1;
+        int32_t PolygonMode = Config::PolygonMode == GL_FILL ? 0 : 1;
     };
 
     void PollChunkRenderQueue() const;

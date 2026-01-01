@@ -47,7 +47,7 @@ std::vector<std::pair<Position2D, Chunk*> > World::FindDistantChunks()
 
     for (auto& [position, chunk]: m_ChunkMap)
     {
-        if (GetDistance(position, center) >= TerrainConfig::MaxChunkDistance)
+        if (GetDistance(position, center) >= Config::MaxChunkDistance)
             distantChunks.emplace_back(position, chunk.get());
     }
 
@@ -66,7 +66,7 @@ void World::GenerateWorld()
     while (m_ShouldGenerationRun)
     {
         const Position2D center = GlobalToChunkSpace(m_CameraController->GetCamera().GetPosition());
-        std::vector<Position2D> batch = GetNextChunkPositionBatch(center, TerrainConfig::ThreadCount);
+        std::vector<Position2D> batch = GetNextChunkPositionBatch(center, Config::ChunkThreadCount);
         std::vector<std::thread> threads = {};
 
         for (auto position: batch)
@@ -215,7 +215,7 @@ void World::GetNeighbours(const Chunk& chunk, std::map<Position2D, Chunk*>& neig
 
 std::vector<Position2D> World::GetNextChunkPositionBatch(const Position2D center, const int32_t batchSize) const
 {
-    int32_t maxDistance = TerrainConfig::MaxChunkDistance;
+    int32_t maxDistance = Config::MaxChunkDistance;
 
     std::vector<Position2D> batch = {};
     batch.reserve(batchSize);

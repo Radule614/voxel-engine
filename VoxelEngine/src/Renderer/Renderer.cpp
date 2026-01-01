@@ -2,8 +2,8 @@
 
 #include <ranges>
 
+#include "../Config.hpp"
 #include "../Assets/AssetManager.hpp"
-#include "../Terrain/TerrainConfig.hpp"
 #include "../Ecs/Ecs.hpp"
 #include "../Ecs/Components/TransformComponent.hpp"
 #include "GLCore/Utils/ShaderBuilder.hpp"
@@ -11,21 +11,10 @@
 using namespace GLCore;
 using namespace GLCore::Utils;
 
-static constexpr uint32_t ShadowHeight = 2048;
-static constexpr uint32_t ShadowWidth = 2048;
-static constexpr float_t ShadowNearPlane = 1.0f;
-static constexpr float_t ShadowFarPlane = 30.0f;
 static constexpr uint32_t MaxPointLights = 16;
 
 namespace VoxelEngine
 {
-
-static void CreateDepthCubeMap(GLuint* depthCubeMap);
-static std::vector<glm::mat4> CalculateShadowTransforms(glm::vec3 lightPosition);
-static void SetPointLightUniformAtIndex(const Shader& shader,
-                                        const std::string& uniform,
-                                        const PointLight& light,
-                                        int32_t index);
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 {
@@ -47,17 +36,13 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 
     constexpr float_t baseHeight = 66.0f;
 
-    m_PointLights = {
-        {{0.0f, baseHeight + 1.0f, 0.0}, {1.0f, 1.0f, 1.0f}},
-        // {{8.5f, baseHeight + 1.0f, -2.0f}, {1.0f, 0.0f, 0.0f}},
-        // {{-8.5f, baseHeight + 1.0f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-        // {{4.0f, baseHeight + 1.0f, 3.5f}, {0.0f, 0.0f, 1.0f}},
-        // {{-4.0f, baseHeight + 1.0f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-    };
+    m_PointLights.emplace_back(glm::vec3(0.0f, baseHeight + 1.0f, 0.0), glm::vec3(1.0f));
+    // m_PointLights.emplace_back(glm::vec3(8.5f, baseHeight + 1.0f, -2.0), glm::vec3(1.0f, 0.0f, 0.0f));
+    // m_PointLights.emplace_back(glm::vec3(-8.5f, baseHeight + 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+    // m_PointLights.emplace_back(glm::vec3(4.0f, baseHeight + 1.0f, 3.5f), glm::vec3(0.0f, 0.0f, 1.0f));
+    // m_PointLights.emplace_back(glm::vec3(-4.0f, baseHeight + 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 1.0f));
 
     glGenFramebuffers(1, &m_DepthMapFbo);
-    for (auto& light: m_PointLights)
-        CreateDepthCubeMap(&light.DepthCubeMap);
 }
 
 Renderer::~Renderer() = default;
@@ -98,23 +83,23 @@ void Renderer::DepthPass() const
 {
     const Shader& shader = *m_DepthShader;
 
-    glViewport(0, 0, ShadowWidth, ShadowHeight);
+    glViewport(0, 0, Config::ShadowWidth, Config::ShadowHeight);
     glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFbo);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
 
+    shader.Use();
     for (const auto& light: m_PointLights)
     {
-        shader.Use();
-
-        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.DepthCubeMap, 0);
-        glDrawBuffer(GL_NONE);
-        glReadBuffer(GL_NONE);
+        glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.GetDepthCubeMap(), 0);
+        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
         glClear(GL_DEPTH_BUFFER_BIT);
 
         shader.Set("u_LightPosition", light.Position);
-        shader.Set("u_FarPlane", ShadowFarPlane);
+        shader.Set("u_FarPlane", Config::ShadowFarPlane);
 
-        std::vector<glm::mat4> shadowTransforms = CalculateShadowTransforms(light.Position);
+        std::vector<glm::mat4> shadowTransforms = light.CalculateShadowTransforms();
 
         for (uint32_t i = 0; i < shadowTransforms.size(); ++i)
             shader.Set("u_ShadowMatrices", shadowTransforms[i], i);
@@ -135,12 +120,12 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     shader.Use();
     shader.SetViewProjection(camera.GetViewProjectionMatrix());
     shader.Set("u_CameraPosition", camera.GetPosition());
-    shader.Set("u_ShadowFarPlane", ShadowFarPlane);
+    shader.Set("u_ShadowFarPlane", Config::ShadowFarPlane);
 
     for (int32_t i = 0; i < m_PointLights.size(); ++i)
     {
         glActiveTexture(GL_TEXTURE8 + i);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, m_PointLights[i].DepthCubeMap);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, m_PointLights[i].GetDepthCubeMap());
     }
 
     Render(shader);
@@ -150,10 +135,7 @@ void Renderer::Render(const Shader& shader) const
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    shader.Set<int32_t>("u_PointLightCount", m_PointLights.size());
-
-    for (int32_t i = 0; i < m_PointLights.size(); ++i)
-        SetPointLightUniformAtIndex(shader, "u_PointLights", m_PointLights[i], i);
+    shader.Set("", m_PointLights);
 
     for (const auto terrainView = registry.view<TerrainComponent>(); const auto entity: terrainView)
         RenderTerrain(shader, terrainView.get<TerrainComponent>(entity));
@@ -195,7 +177,7 @@ void Renderer::RenderLights() const
     const Shader& shader = *m_SimpleShader;
 
     shader.Use();
-    for (auto pointLight: m_PointLights)
+    for (auto& pointLight: m_PointLights)
     {
         shader.Set("u_Color", pointLight.LightColor);
 
@@ -207,75 +189,23 @@ void Renderer::RenderLights() const
     }
 }
 
-static std::vector<glm::mat4> CalculateShadowTransforms(const glm::vec3 lightPosition)
-{
-    static float_t aspect = (float_t) ShadowWidth / (float_t) ShadowHeight;
-    static glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, ShadowNearPlane, ShadowFarPlane);
-
-    std::vector<glm::mat4> shadowTransforms{};
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPosition,
-                                                        lightPosition + glm::vec3(1.0, 0.0, 0.0),
-                                                        glm::vec3(0.0, -1.0, 0.0)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPosition,
-                                                        lightPosition + glm::vec3(-1.0, 0.0, 0.0),
-                                                        glm::vec3(0.0, -1.0, 0.0)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPosition,
-                                                        lightPosition + glm::vec3(0.0, 1.0, 0.0),
-                                                        glm::vec3(0.0, 0.0, 1.0)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPosition,
-                                                        lightPosition + glm::vec3(0.0, -1.0, 0.0),
-                                                        glm::vec3(0.0, 0.0, -1.0)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPosition,
-                                                        lightPosition + glm::vec3(0.0, 0.0, 1.0),
-                                                        glm::vec3(0.0, -1.0, 0.0)));
-    shadowTransforms.push_back(shadowProj * glm::lookAt(lightPosition,
-                                                        lightPosition + glm::vec3(0.0, 0.0, -1.0),
-                                                        glm::vec3(0.0, -1.0, 0.0)));
-
-    return shadowTransforms;
-}
-
-static void CreateDepthCubeMap(GLuint* depthCubeMap)
-{
-    glGenTextures(1, depthCubeMap);
-
-    glBindTexture(GL_TEXTURE_CUBE_MAP, *depthCubeMap);
-    for (uint32_t i = 0; i < 6; ++i)
-    {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                     0,
-                     GL_DEPTH_COMPONENT,
-                     ShadowWidth,
-                     ShadowHeight,
-                     0,
-                     GL_DEPTH_COMPONENT,
-                     GL_FLOAT,
-                     nullptr);
-
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-        constexpr float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-    }
-}
-
-static void SetPointLightUniformAtIndex(const Shader& shader,
-                                        const std::string& uniform,
-                                        const PointLight& light,
-                                        const int32_t index)
-{
-    shader.Set(std::format("{}[{}].LightPosition", uniform, index), light.Position);
-    shader.Set(std::format("{}[{}].LightColor", uniform, index), light.LightColor);
-}
-
 }
 
 namespace GLCore::Utils
 {
+
+template<>
+void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
+                                                        const std::vector<VoxelEngine::PointLight>& value) const
+{
+    Set<int32_t>("u_PointLightCount", value.size());
+
+    for (int32_t i = 0; i < value.size(); ++i)
+    {
+        Set(std::format("u_PointLights[{}].LightPosition", i), value[i].Position);
+        Set(std::format("u_PointLights[{}].LightColor", i), value[i].LightColor);
+    }
+}
 
 template<>
 void Shader::Set<VoxelEngine::Material>(const std::string&, const VoxelEngine::Material& value) const
