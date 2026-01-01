@@ -18,16 +18,19 @@ public:
     ~Renderer();
 
     void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void Init() const;
 
 private:
     void Render(const GLCore::Utils::Shader& shader) const;
 
     void DepthPass() const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void DrawTerrain(const TerrainMeshComponent& mesh,
+    void DrawLights(const GLCore::Utils::PerspectiveCamera& camera) const;
+
+    static void DrawTerrain(const TerrainMeshComponent& mesh,
                      const GLCore::Utils::Shader& shader,
-                     const glm::mat4& modelMatrix) const;
-    void DrawLights() const;
+                     const glm::mat4& modelMatrix);
+    static void Clear();
 
 private:
     GLCore::Window& m_Window;

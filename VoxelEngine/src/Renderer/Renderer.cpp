@@ -44,34 +44,23 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 
 Renderer::~Renderer() = default;
 
+void Renderer::Init() const
+{
+    m_PbrShader->Use();
+
+    std::vector<int32_t> vector{};
+    for (int32_t i = 0; i < MaxPointLights; ++i)
+        vector.push_back(8 + i);
+
+    m_PbrShader->Set("u_DepthMaps", vector);
+}
+
 void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
-    constexpr glm::vec3 skyColor(0.03f, 0.03f, 0.06f);
-
-    glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    static bool baked = false;
-    if (!baked)
-    {
-        m_PbrShader->Use();
-
-        std::vector<int32_t> vector{};
-        for (int32_t i = 0; i < MaxPointLights; ++i)
-            vector.push_back(8 + i);
-
-        m_PbrShader->Set("u_DepthMaps", vector);
-
-        baked = true;
-    }
-
+    Clear();
     DepthPass();
     RenderPass(camera);
-
-    // Debug
-    m_SimpleShader->Use();
-    m_SimpleShader->SetViewProjection(camera.GetViewProjectionMatrix());
-    DrawLights();
+    DrawLights(camera);
 }
 
 void Renderer::DepthPass() const
@@ -150,7 +139,7 @@ void Renderer::Render(const Shader& shader) const
     }
 }
 
-void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shader, const glm::mat4& modelMatrix) const
+void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shader, const glm::mat4& modelMatrix)
 {
     glCullFace(GL_FRONT);
 
@@ -164,11 +153,12 @@ void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shade
     glCullFace(GL_BACK);
 }
 
-void Renderer::DrawLights() const
+void Renderer::DrawLights(const PerspectiveCamera& camera) const
 {
     const Shader& shader = *m_SimpleShader;
 
     shader.Use();
+    shader.SetViewProjection(camera.GetViewProjectionMatrix());
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const ViewType<LightComponent>& lightView = registry.view<LightComponent>();
@@ -184,6 +174,14 @@ void Renderer::DrawLights() const
 
         AssetManager::Instance().GetSphereModel().Draw(shader, model);
     }
+}
+
+void Renderer::Clear()
+{
+    constexpr glm::vec3 skyColor(0.03f, 0.03f, 0.06f);
+
+    glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 static glm::mat4 CalculateModelMatrix(const TransformComponent& transform)

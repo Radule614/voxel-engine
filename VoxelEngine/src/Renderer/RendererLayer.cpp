@@ -19,10 +19,13 @@ RendererLayer::RendererLayer(EngineState& state) : m_State(state), m_Renderer(st
 void RendererLayer::OnAttach()
 {
     EnableGLDebugging();
+
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    m_Renderer.Init();
 }
 
 void RendererLayer::OnUpdate(Timestep ts)
