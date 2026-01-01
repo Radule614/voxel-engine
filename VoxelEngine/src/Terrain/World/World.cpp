@@ -57,8 +57,8 @@ std::vector<std::pair<Position2D, Chunk*> > World::FindDistantChunks()
 void World::RemoveChunk(const Position2D position)
 {
     m_RenderQueue.erase(position);
-    m_ChunkMap.erase(position);
     m_DeferredUpdateQueueMap.erase(position);
+    m_ChunkMap.erase(position);
 }
 
 void World::GenerateWorld()

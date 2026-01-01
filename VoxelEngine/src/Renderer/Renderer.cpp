@@ -5,7 +5,6 @@
 #include "../Config.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Ecs.hpp"
-#include "../Ecs/Components/LightComponent.hpp"
 #include "../Ecs/Components/TransformComponent.hpp"
 #include "GLCore/Utils/ShaderBuilder.hpp"
 
@@ -135,10 +134,15 @@ void Renderer::Render(const Shader& shader) const
 
     shader.Set("", registry.view<LightComponent>());
 
-    for (const auto& terrainView = registry.view<TerrainComponent>(); const auto& entity: terrainView)
-        RenderTerrain(shader, terrainView.get<TerrainComponent>(entity));
+    const auto& terrainView = registry.view<TerrainMeshComponent>();
+    for (const auto& entity: terrainView)
+    {
+        if (terrainView.contains(entity))
+            RenderTerrain(shader, terrainView.get<TerrainMeshComponent>(entity));
+    }
 
-    for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
+    const auto view = registry.view<MeshComponent, TransformComponent>();
+    for (const auto entity: view)
     {
         auto& mesh = view.get<MeshComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
@@ -152,20 +156,16 @@ void Renderer::Render(const Shader& shader) const
     }
 }
 
-void Renderer::RenderTerrain(const Shader& shader, const TerrainComponent& terrainComponent) const
+void Renderer::RenderTerrain(const Shader& shader, const TerrainMeshComponent& terrainComponent) const
 {
     glCullFace(GL_FRONT);
 
-    shader.Set("", terrainComponent.TerrainMaterial);
+    shader.Set("", terrainComponent.Material);
+    shader.SetModel(terrainComponent.GetModelMatrix());
 
-    for (const auto& renderData: terrainComponent.RenderData | std::views::values)
-    {
-        shader.SetModel(renderData.ModelMatrix);
-
-        glBindVertexArray(renderData.VertexArray);
-        glDrawElements(GL_TRIANGLES, renderData.Indices.size(), GL_UNSIGNED_INT, nullptr);
-        glBindVertexArray(0);
-    }
+    glBindVertexArray(terrainComponent.VertexArray);
+    glDrawElements(GL_TRIANGLES, terrainComponent.Indices.size(), GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(0);
 
     glCullFace(GL_BACK);
 }

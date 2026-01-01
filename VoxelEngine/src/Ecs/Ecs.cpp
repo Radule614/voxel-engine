@@ -29,6 +29,13 @@ entt::registry& EntityComponentSystem::GetEntityRegistry() const
     return *m_EntityRegistry;
 }
 
+entt::entity EntityComponentSystem::SafeCreateEntity()
+{
+    std::lock_guard lock(m_Mutex);
+    
+    return GetEntityRegistry().create();
+}
+
 EntityComponentSystem::EntityComponentSystem() : m_EntityRegistry(std::make_unique<entt::registry>())
 {
 }

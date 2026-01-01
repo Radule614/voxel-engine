@@ -43,8 +43,6 @@ private:
     void ResetWorld() const;
     void RemoveDistantChunks() const;
 
-    void DeleteChunkRenderData(const Chunk& chunk) const;
-
     void CreateTerrainCollider() const;
     void OnColliderLocationChanged(glm::vec3 pos);
     void OptimizeColliders();
@@ -53,7 +51,6 @@ private:
     EngineState& m_EngineState;
     UIState m_UIState;
     std::unique_ptr<World> m_World;
-    std::unordered_map<Position2D, ChunkRenderData>* m_RenderData;
     std::unordered_set<glm::i32vec3> m_ColliderPositions;
     float_t timeSinceLastColliderOptimization = 0.0f;
 

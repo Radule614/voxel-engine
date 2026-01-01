@@ -10,7 +10,6 @@
 #include "../Physics/Utils/ShapeFactory.hpp"
 #include "../Physics/PhysicsEngineLayers.hpp"
 #include "../Ecs/Ecs.hpp"
-#include "../Assets/AssetManager.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -26,18 +25,8 @@ VoxelLayer::VoxelLayer(EngineState& state)
 {
     m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
 
-    Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
-
-    Material terrainMaterial{};
-    terrainMaterial.AlbedoFactor = glm::vec4(1.0f);
-    terrainMaterial.AlbedoTextureId = albedoTexture.id;
-    terrainMaterial.MetallicFactor = 0.0f;
-    terrainMaterial.RoughnessFactor = 0.85f;
-
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     m_TerrainEntityId = registry.create();
-    registry.emplace<TerrainComponent>(m_TerrainEntityId, terrainMaterial);
-    m_RenderData = &registry.get<TerrainComponent>(m_TerrainEntityId).RenderData;
 }
 
 VoxelLayer::~VoxelLayer() = default;
@@ -51,16 +40,6 @@ void VoxelLayer::OnAttach()
 void VoxelLayer::OnDetach()
 {
     m_World->StopGeneration();
-    auto& renderDataMap = *m_RenderData;
-    for (auto& chunkRenderData: renderDataMap | std::views::values)
-    {
-        ChunkRenderData& data = chunkRenderData;
-        glDeleteBuffers(1, &data.VertexBuffer);
-        glDeleteBuffers(1, &data.IndexBuffer);
-        glDeleteVertexArrays(1, &data.VertexArray);
-        data.Indices.clear();
-    }
-    renderDataMap.clear();
 }
 
 void VoxelLayer::OnEvent(Event& event)
@@ -93,7 +72,6 @@ void VoxelLayer::OnEvent(Event& event)
 void VoxelLayer::OnUpdate(const Timestep ts)
 {
     RemoveDistantChunks();
-
     PollChunkRenderQueue();
 
     timeSinceLastColliderOptimization += ts;
@@ -160,10 +138,6 @@ void VoxelLayer::ResetWorld() const
 {
     m_World->GetLock().lock();
     m_World->StopGeneration();
-
-    for (auto& [_, chunk]: m_World->GetChunkMap())
-        DeleteChunkRenderData(*chunk);
-
     m_World->Reset();
     m_World->GetLock().unlock();
 }
@@ -184,29 +158,12 @@ void VoxelLayer::RemoveDistantChunks() const
         if (!chunk->GetLock().try_lock())
             continue;
 
-        DeleteChunkRenderData(*chunk);
         m_World->RemoveChunk(position);
 
         ++count;
     }
 
     m_World->GetLock().unlock();
-}
-
-void VoxelLayer::DeleteChunkRenderData(const Chunk& chunk) const
-{
-    const auto it = m_RenderData->find(chunk.GetPosition());
-    if (it != m_RenderData->end())
-    {
-        const ChunkRenderData& renderData = it->second;
-
-        glBindVertexArray(0);
-        glDeleteBuffers(1, &renderData.VertexBuffer);
-        glDeleteBuffers(1, &renderData.IndexBuffer);
-        glDeleteVertexArrays(1, &renderData.VertexArray);
-
-        m_RenderData->erase(chunk.GetPosition());
-    }
 }
 
 void VoxelLayer::CreateTerrainCollider() const
@@ -341,7 +298,7 @@ void VoxelLayer::PollChunkRenderQueue() const
             continue;
         }
 
-        SetupRenderData(chunk);
+        chunk.UpdateTerrainMeshComponent();
 
         chunkLock.unlock();
 
@@ -349,75 +306,6 @@ void VoxelLayer::PollChunkRenderQueue() const
     }
 
     m_World->GetLock().unlock();
-}
-
-void VoxelLayer::SetupRenderData(const Chunk& chunk) const
-{
-    DeleteChunkRenderData(chunk);
-
-    ChunkRenderData data = {};
-
-    std::vector<VoxelVertex> vertices = {};
-    vertices.insert(vertices.end(), chunk.GetMesh().begin(), chunk.GetMesh().end());
-    vertices.insert(vertices.end(),
-                    chunk.GetBorderMesh(FRONT).begin(),
-                    chunk.GetBorderMesh(FRONT).end());
-    vertices.insert(vertices.end(),
-                    chunk.GetBorderMesh(RIGHT).begin(),
-                    chunk.GetBorderMesh(RIGHT).end());
-    vertices.insert(vertices.end(),
-                    chunk.GetBorderMesh(BACK).begin(),
-                    chunk.GetBorderMesh(BACK).end());
-    vertices.insert(vertices.end(),
-                    chunk.GetBorderMesh(LEFT).begin(),
-                    chunk.GetBorderMesh(LEFT).end());
-
-    if (vertices.empty())
-        return;
-
-    glCreateVertexArrays(1, &data.VertexArray);
-    glBindVertexArray(data.VertexArray);
-
-    glCreateBuffers(1, &data.VertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, data.VertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(VoxelVertex), &vertices[0], GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(VoxelVertex), nullptr);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1,
-                          3,
-                          GL_FLOAT,
-                          GL_FALSE,
-                          sizeof(VoxelVertex),
-                          reinterpret_cast<void*>(offsetof(VoxelVertex, Normal)));
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2,
-                          2,
-                          GL_FLOAT,
-                          GL_FALSE,
-                          sizeof(VoxelVertex),
-                          reinterpret_cast<void*>(offsetof(VoxelVertex, TexCoords)));
-
-    const uint32_t faceCount = vertices.size() / 4;
-    for (uint32_t i = 0; i < faceCount; ++i)
-    {
-        data.Indices.push_back(i * 4 + 0);
-        data.Indices.push_back(i * 4 + 1);
-        data.Indices.push_back(i * 4 + 2);
-        data.Indices.push_back(i * 4 + 2);
-        data.Indices.push_back(i * 4 + 3);
-        data.Indices.push_back(i * 4 + 0);
-    }
-    glCreateBuffers(1, &data.IndexBuffer);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, data.IndexBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.Indices.size() * sizeof(uint32_t), &data.Indices[0], GL_STATIC_DRAW);
-
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
-    glBindVertexArray(0);
-
-    data.ModelMatrix = chunk.GetModelMatrix();
-
-    m_RenderData->emplace(chunk.GetPosition(), std::move(data));
 }
 
 };

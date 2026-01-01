@@ -2,11 +2,10 @@
 
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
-
 #include "entt.hpp"
 #include "PointLight.hpp"
 #include "../Ecs/Components/LightComponent.hpp"
-#include "../Ecs/Components/TerrainComponent.hpp"
+#include "../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
 
 namespace VoxelEngine
@@ -25,7 +24,7 @@ private:
 
     void DepthPass() const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void RenderTerrain(const GLCore::Utils::Shader& shader, const TerrainComponent& terrainComponent) const;
+    void RenderTerrain(const GLCore::Utils::Shader& shader, const TerrainMeshComponent& terrainComponent) const;
     void RenderLights() const;
 
 private:
