@@ -29,17 +29,6 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     m_BorderMeshes.insert({RIGHT, {}});
     m_BorderMeshes.insert({BACK, {}});
     m_BorderMeshes.insert({LEFT, {}});
-
-
-    if (position == Position2D(0, 0))
-    {
-        auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-        const auto entityId = registry.create();
-
-        PointLight pointLight(glm::vec3(0.0f, 67.0f, 0.0), glm::vec3(1.0f));
-        registry.emplace<LightComponent>(entityId, std::move(pointLight));
-        m_Entities.push_back(entityId);
-    }
 }
 
 Chunk::~Chunk()

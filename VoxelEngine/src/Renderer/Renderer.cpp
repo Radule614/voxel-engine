@@ -38,11 +38,15 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
             .Build();
 
     glGenFramebuffers(1, &m_DepthMapFbo);
+
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
+    registry.emplace<LightComponent>(registry.create(), std::move(pointLight));
 }
 
 Renderer::~Renderer() = default;
 
-void Renderer::RenderScene(const PerspectiveCamera& camera)
+void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
     constexpr glm::vec3 skyColor(0.03f, 0.03f, 0.06f);
 
@@ -217,22 +221,6 @@ static void CreateDepthCubeMap(GLuint* depthCubeMap)
 
 namespace GLCore::Utils
 {
-
-template<>
-void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
-                                                        const std::vector<VoxelEngine::PointLight>& value) const
-{
-    Set<int32_t>("u_PointLightCount", value.size());
-
-    for (int32_t i = 0; i < value.size(); ++i)
-    {
-        Set(std::format("u_PointLights[{}].LightPosition", i), value[i].Position);
-        Set(std::format("u_PointLights[{}].LightColor", i), value[i].LightColor);
-
-        glActiveTexture(GL_TEXTURE8 + i);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, value[i].DepthCubeMap);
-    }
-}
 
 template<>
 void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string&,

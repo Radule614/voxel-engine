@@ -9,9 +9,6 @@
 #include "../Ecs/Components/TerrainComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
 
-template<typename Component>
-using ViewType = decltype(std::declval<entt::registry>().view<Component>());
-
 namespace VoxelEngine
 {
 
@@ -21,7 +18,7 @@ public:
     explicit Renderer(GLCore::Window& window);
     ~Renderer();
 
-    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera);
+    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
 
 private:
     void Render(const GLCore::Utils::Shader& shader) const;
@@ -43,12 +40,12 @@ private:
 
 }
 
+template<typename Component>
+using ViewType = decltype(std::declval<entt::registry>().view<Component>());
+
 namespace GLCore::Utils
 {
 
-template<>
-void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string& uniform,
-                                                        const std::vector<VoxelEngine::PointLight>& value) const;
 template<>
 void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string& uniform,
                                                          const ViewType<VoxelEngine::LightComponent>& value) const;
