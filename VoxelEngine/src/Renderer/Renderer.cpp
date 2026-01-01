@@ -92,8 +92,6 @@ void Renderer::DepthPass() const
     for (const auto& light: m_PointLights)
     {
         glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light.GetDepthCubeMap(), 0);
-        assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-
         glClear(GL_DEPTH_BUFFER_BIT);
 
         shader.Set("u_LightPosition", light.Position);
@@ -121,12 +119,6 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     shader.SetViewProjection(camera.GetViewProjectionMatrix());
     shader.Set("u_CameraPosition", camera.GetPosition());
     shader.Set("u_ShadowFarPlane", Config::ShadowFarPlane);
-
-    for (int32_t i = 0; i < m_PointLights.size(); ++i)
-    {
-        glActiveTexture(GL_TEXTURE8 + i);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, m_PointLights[i].GetDepthCubeMap());
-    }
 
     Render(shader);
 }
@@ -204,6 +196,9 @@ void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
     {
         Set(std::format("u_PointLights[{}].LightPosition", i), value[i].Position);
         Set(std::format("u_PointLights[{}].LightColor", i), value[i].LightColor);
+
+        glActiveTexture(GL_TEXTURE8 + i);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, value[i].GetDepthCubeMap());
     }
 }
 
