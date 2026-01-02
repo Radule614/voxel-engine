@@ -94,7 +94,8 @@ void World::GenerateChunk(const Position2D position)
     auto deferredQueueMap = m_DeferredUpdateQueueMap.find(position);
     if (deferredQueueMap != m_DeferredUpdateQueueMap.end())
     {
-        m_Lock.lock();
+        std::lock_guard lock(m_Lock);
+
         auto& deferredQueue = deferredQueueMap->second;
 
         while (!deferredQueue.empty())
@@ -107,7 +108,6 @@ void World::GenerateChunk(const Position2D position)
 
             deferredQueue.pop();
         }
-        m_Lock.unlock();
     }
 
     std::map<Position2D, Chunk*> neighbours{};
@@ -125,13 +125,13 @@ void World::GenerateChunk(const Position2D position)
 
     chunk.GetLock().unlock();
 
-    m_Lock.lock();
+    {
+        std::lock_guard lock(m_Lock);
 
-    m_RenderQueue.insert({chunk.GetPosition(), &chunk});
-    for (const auto& neighbour: neighbours | std::views::values)
-        m_RenderQueue.insert({neighbour->GetPosition(), neighbour});
-
-    m_Lock.unlock();
+        m_RenderQueue.insert({chunk.GetPosition(), &chunk});
+        for (const auto& neighbour: neighbours | std::views::values)
+            m_RenderQueue.insert({neighbour->GetPosition(), neighbour});
+    }
 }
 
 void World::SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk*>& neighbours)

@@ -136,10 +136,9 @@ void VoxelLayer::ApplyState() const
 
 void VoxelLayer::ResetWorld() const
 {
-    m_World->GetLock().lock();
+    std::lock_guard lock(m_World->GetLock());
     m_World->StopGeneration();
     m_World->Reset();
-    m_World->GetLock().unlock();
 }
 
 void VoxelLayer::RemoveDistantChunks() const

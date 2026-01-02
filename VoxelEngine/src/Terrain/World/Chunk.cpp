@@ -153,7 +153,7 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
             {
                 auto& chunk = m_World.GetChunkMap().at(chunkPosition);
 
-                chunk->GetLock().lock();
+                std::lock_guard lock(chunk->GetLock());
 
                 auto& voxelGrid = chunk->GetVoxelGrid();
                 Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.GetY()];
@@ -161,22 +161,22 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
                 voxel.SetPosition(voxelPosition);
                 changedChunks.insert(chunk.get());
 
-                chunk->GetLock().unlock();
-
                 continue;
             }
             deferredQueueMap[chunkPosition].emplace(voxelType, voxelPosition);
         }
     }
 
-    m_World.GetLock().lock();
-    for (auto& c: changedChunks)
     {
-        c->GetLock().lock();
-        c->GenerateMesh();
-        c->GetLock().unlock();
+        std::lock_guard lock(m_World.GetLock());
+
+        for (auto& c: changedChunks)
+        {
+            c->GetLock().lock();
+            c->GenerateMesh();
+            c->GetLock().unlock();
+        }
     }
-    m_World.GetLock().unlock();
 }
 
 void Chunk::GenerateMesh()
@@ -349,11 +349,9 @@ void Chunk::DetermineVoxelFeatures(Voxel& voxel, size_t x, size_t z, int32_t h)
 
     if (!m_BiomeTypes.contains(biomeType))
     {
-        m_BiomeLock.lock();
+        std::lock_guard lock(m_BiomeLock);
 
         m_BiomeTypes.insert(biomeType);
-
-        m_BiomeLock.unlock();
     }
 }
 
