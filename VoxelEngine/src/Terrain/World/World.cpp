@@ -70,6 +70,9 @@ void World::GenerateWorld()
         std::vector<std::thread> threads = {};
 
         for (auto position: batch)
+            m_ChunkMap.emplace(position, std::make_unique<Chunk>(*this, position, *m_Settings.m_Biome));
+
+        for (auto position: batch)
             threads.emplace_back([this, position] { this->GenerateChunk(position); });
 
         for (auto& thread: threads)
@@ -80,11 +83,9 @@ void World::GenerateWorld()
     }
 }
 
-void World::GenerateChunk(Position2D position)
+void World::GenerateChunk(const Position2D position)
 {
-    auto [it, _] = m_ChunkMap.emplace(position, std::make_unique<Chunk>(*this, position, *m_Settings.m_Biome));
-
-    Chunk& chunk = *it->second;
+    Chunk& chunk = *m_ChunkMap[position];
 
     chunk.GetLock().lock();
 
@@ -124,10 +125,13 @@ void World::GenerateChunk(Position2D position)
 
     chunk.GetLock().unlock();
 
-    m_RenderQueue.insert({chunk.GetPosition(), &chunk});
+    m_Lock.lock();
 
+    m_RenderQueue.insert({chunk.GetPosition(), &chunk});
     for (const auto& neighbour: neighbours | std::views::values)
         m_RenderQueue.insert({neighbour->GetPosition(), neighbour});
+
+    m_Lock.unlock();
 }
 
 void World::SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk*>& neighbours)

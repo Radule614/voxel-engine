@@ -277,14 +277,8 @@ void VoxelLayer::PollChunkRenderQueue() const
 {
     auto& chunks = m_World->GetRenderQueue();
 
-    if (!m_World->GetLock().try_lock())
+    if (chunks.empty() || !m_World->GetLock().try_lock())
         return;
-
-    if (chunks.empty())
-    {
-        m_World->GetLock().unlock();
-        return;
-    }
 
     auto it = chunks.begin();
     while (it != chunks.end())

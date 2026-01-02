@@ -40,9 +40,9 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0)
 
     glGenFramebuffers(1, &m_DepthMapFbo);
 
-    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
-    registry.emplace<LightComponent>(registry.create(), std::move(pointLight));
+    // auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    // PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
+    // registry.emplace<LightComponent>(registry.create(), std::move(pointLight));
 }
 
 Renderer::~Renderer() = default;

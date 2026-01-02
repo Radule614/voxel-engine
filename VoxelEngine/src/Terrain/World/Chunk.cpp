@@ -33,7 +33,8 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     m_BorderMeshes.insert({BACK, {}});
     m_BorderMeshes.insert({LEFT, {}});
 
-    m_EntityId = EntityComponentSystem::Instance().SafeCreateEntity();
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    m_EntityId = registry.create();
 
     auto worldPosition = glm::vec3(0.0f);
     worldPosition.x = m_Position.x * CHUNK_WIDTH;
@@ -42,7 +43,7 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     TransformComponent transform{};
     transform.Position = worldPosition;
 
-    EntityComponentSystem::Instance().GetEntityRegistry().emplace<TransformComponent>(m_EntityId, transform);
+    registry.emplace<TransformComponent>(m_EntityId, transform);
 }
 
 Chunk::~Chunk()
