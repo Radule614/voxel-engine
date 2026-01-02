@@ -5,6 +5,7 @@
 #include "RendererLayer.hpp"
 
 #include "Renderer.hpp"
+#include "../Ecs/Ecs.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -34,7 +35,7 @@ void RendererLayer::OnUpdate(const Timestep ts)
 
     if (m_AccumulatedTime > 0.5f)
     {
-        m_Fps = 1.0 / ts;
+        m_Fps = 1.0f / ts;
 
         m_AccumulatedTime = 0.0f;
     }
@@ -53,6 +54,17 @@ void RendererLayer::OnImGuiRender()
     ImGui::Text("Renderer");
 
     ImGui::Text("Fps: %.1f", m_Fps);
+
+    ImGui::End();
+
+    ImGui::Begin("Texture Debug");
+
+    ImGui::Image(
+        (ImTextureID) (intptr_t) m_Renderer.m_DepthMap,
+        ImVec2(512, 512),
+        ImVec2(0, 1),
+        ImVec2(1, 0)
+    );
 
     ImGui::End();
 }

@@ -1,5 +1,6 @@
 #include "Renderer.hpp"
 
+#include "DirectionalLight.hpp"
 #include "../Config.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Ecs.hpp"
@@ -17,10 +18,11 @@ namespace VoxelEngine
 static glm::mat4 CalculateModelMatrix(const TransformComponent& transform);
 static void CreateDepthMap(GLuint* depthMap);
 static void CreateDepthCubeMap(GLuint* depthCubeMap);
-static glm::mat4 CalculateLightSpaceTransform();
 static std::vector<PointLight> GetCloseLights(glm::vec3 position,
                                               ViewType<LightComponent> lightView,
                                               bool shouldOffsetChunk = false);
+
+static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.1f));
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_DepthMap(0)
 {
@@ -48,9 +50,9 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_Depth
     glGenFramebuffers(1, &m_DepthMapFbo);
     CreateDepthMap(&m_DepthMap);
 
-    // auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    // PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
-    // registry.emplace<LightComponent>(registry.create(), std::move(pointLight));
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
+    registry.emplace<LightComponent>(registry.create(), pointLight);
 }
 
 Renderer::~Renderer() = default;
@@ -70,10 +72,32 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
     Clear();
 
-    DepthPass();
-    // PointDepthPass(camera);
+    DepthPass(camera);
+    PointDepthPass(camera);
     RenderPass(camera);
     DrawLights(camera);
+}
+
+void Renderer::DepthPass(const PerspectiveCamera& camera) const
+{
+    const Shader& shader = *m_DepthShader;
+
+    glViewport(0, 0, Config::ShadowWidth, Config::ShadowHeight);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFbo);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+
+    shader.Use();
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_DepthMap, 0);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    const auto position = DirLight.GetLightSpaceTransform(camera.GetPosition() + glm::vec3(0, 50.0f, 0));
+    shader.Set("u_LightSpaceMatrix", position);
+
+    Render(shader);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Renderer::PointDepthPass(const PerspectiveCamera& camera) const
@@ -122,28 +146,6 @@ void Renderer::PointDepthPass(const PerspectiveCamera& camera) const
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::DepthPass() const
-{
-    const Shader& shader = *m_DepthShader;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_DepthMap, 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    shader.Use();
-
-    glViewport(0, 0, Config::ShadowWidth, Config::ShadowHeight);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    shader.Set("u_LightSpaceMatrix", CalculateLightSpaceTransform());
-
-    Render(shader);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 void Renderer::RenderPass(const PerspectiveCamera& camera) const
 {
     const Shader& shader = *m_PbrShader;
@@ -155,10 +157,10 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     shader.SetViewProjection(camera.GetViewProjectionMatrix());
     shader.Set("u_CameraPosition", camera.GetPosition());
     shader.Set("u_ShadowFarPlane", Config::ShadowFarPlane);
-    shader.Set("u_LightSpaceMatrix", CalculateLightSpaceTransform());
-    shader.Set("u_LightPosition", glm::vec3(0.0f, 80.0f, 0.0f));
 
-    shader.Set("u_DepthMap", 7);
+    shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition() + glm::vec3(0, 50.0f, 0)));
+    shader.Set("", DirLight);
+
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, m_DepthMap);
 
@@ -233,24 +235,12 @@ void Renderer::DrawLights(const PerspectiveCamera& camera) const
 
 void Renderer::Clear()
 {
-    constexpr glm::vec3 skyColor(0.03f, 0.03f, 0.06f);
+    // constexpr glm::vec3 skyColor(0.03f, 0.03f, 0.06f);
+    // glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
 
-    glClearColor(skyColor.x, skyColor.y, skyColor.z, 1.0f);
+    glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-static glm::mat4 CalculateLightSpaceTransform()
-{
-    float near_plane = 0.5f, far_plane = 30.0f;
-    glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-
-    glm::mat4 lightView = glm::lookAt(glm::vec3(0.0f, 80.0f, 0.0f),
-                                      glm::vec3(0.0f, 60.0f, 0.0f),
-                                      glm::vec3(0.0f, 1.0f, 0.0f));
-
-    glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-    return lightSpaceMatrix;
 }
 
 static glm::mat4 CalculateModelMatrix(const TransformComponent& transform)
@@ -361,6 +351,13 @@ void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
         glActiveTexture(GL_TEXTURE8 + i);
         glBindTexture(GL_TEXTURE_CUBE_MAP, light.DepthCubeMap);
     }
+}
+
+template<>
+void Shader::Set<VoxelEngine::DirectionalLight>(const std::string&, const VoxelEngine::DirectionalLight& value) const
+{
+    Set("u_DirectionalLight.LightDirection", value.Direction);
+    Set("u_DirectionalLight.LightColor", value.LightColor);
 }
 
 template<>

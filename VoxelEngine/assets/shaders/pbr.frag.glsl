@@ -21,6 +21,12 @@ struct PointLight
     vec3 LightColor;
 };
 
+struct DirectionalLight
+{
+    vec3 LightDirection;
+    vec3 LightColor;
+};
+
 struct Material
 {
     vec3 Albedo;
@@ -57,7 +63,7 @@ uniform int u_PointLightCount;
 uniform float u_ShadowFarPlane;
 uniform samplerCube u_DepthMaps[MAX_POINT_LIGHTS];
 
-uniform vec3 u_LightPosition;
+uniform DirectionalLight u_DirectionalLight;
 uniform sampler2D u_DepthMap;
 
 vec3 GridSamplingDisk[20] = vec3[]
@@ -74,41 +80,16 @@ float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 
+
 vec4 GetAlbedo();
 vec2 GetMatallicRougness();
 float GetAmbientOcclusion();
 vec3 GetNormal();
+
 vec4 CalculateColor(Material material);
 
 float CalculatePointShadow(vec3 fragPos, int lightIndex);
-float CalculateDirectionalShadow(vec4 fragPosLightSpace)
-{
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    projCoords = projCoords * 0.5 + 0.5;
-    float closestDepth = texture(u_DepthMap, projCoords.xy).r;
-    float currentDepth = projCoords.z;
-    vec3 normal = normalize(i_Fragment.FragNormal);
-    vec3 lightDir = normalize(u_LightPosition - i_Fragment.FragPosition);
-    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
-    float shadow = 0.0;
-    vec2 texelSize = 1.0 / textureSize(u_DepthMap, 0);
-    for(int x = -1; x <= 1; ++x)
-    {
-        for(int y = -1; y <= 1; ++y)
-        {
-            float pcfDepth = texture(u_DepthMap, projCoords.xy + vec2(x, y) * texelSize).r;
-            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;
-        }
-    }
-    shadow /= 9.0;
-
-    if(projCoords.z > 1.0)
-    {
-        shadow = 0.0;
-    }
-
-    return shadow;
-}
+float CalculateDirectionalShadow(vec4 fragPosLightSpace);
 
 void main()
 {
@@ -129,18 +110,36 @@ void main()
     material.AmbientOcclusion = ambientOcclusion;
     material.Normal = normal;
 
-    vec4 color = CalculateColor(material);
-
-    float shadow = CalculateDirectionalShadow(i_Fragment.FragLightSpacePosition);
-//    float shadow = 0.6;
-//    shadow = min(shadow, CalculateDirectionalShadow(i_Fragment.FragLightSpacePosition));
+    float shadow = 0.6;
+    shadow = min(shadow, CalculateDirectionalShadow(i_Fragment.FragLightSpacePosition));
     for (int i = 0; i < u_PointLightCount; ++i)
     {
         shadow = min(shadow, CalculatePointShadow(i_Fragment.FragPosition, i));
     }
 
-        o_Color = vec4((1.0 - shadow) * albedo.xyz, color.a);
-    //    o_Color = vec4((1.0 - shadow) * color.xyz, color.a);
+    vec4 color = CalculateColor(material);
+
+    o_Color = vec4((1.0 - shadow) * color.xyz, color.a);
+}
+
+vec3 CalculatePbr(Material material, vec3 radiance, vec3 L, vec3 V, vec3 N, vec3 F0)
+{
+    vec3 H = normalize(V + L);
+
+    float NDF = DistributionGGX(N, H, material.Rougness);
+    float G = GeometrySmith(N, V, L, material.Rougness);
+    vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - material.Metallic;
+
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    vec3 specular = numerator / denominator;
+
+    float NdotL = max(dot(N, L), 0.0);
+    return (kD * material.Albedo / PI + specular) * radiance * NdotL;
 }
 
 vec4 CalculateColor(Material material)
@@ -152,29 +151,20 @@ vec4 CalculateColor(Material material)
     F0 = mix(F0, material.Albedo, material.Metallic);
 
     vec3 Lo = vec3(0.0);
+
+    // Drectional light
+    vec3 L = normalize(-u_DirectionalLight.LightDirection);
+    Lo += CalculatePbr(material, u_DirectionalLight.LightColor, L, V, N, F0);
+
+    // Pointlights
     for (int i = 0; i < u_PointLightCount; ++i)
     {
         vec3 L = normalize(u_PointLights[i].LightPosition - i_Fragment.FragPosition);
-        vec3 H = normalize(V + L);
-
         float distance = length(u_PointLights[i].LightPosition - i_Fragment.FragPosition);
         float attenuation = 1.0 / (distance * distance);
         vec3 radiance = u_PointLights[i].LightColor * attenuation;
 
-        float NDF = DistributionGGX(N, H, material.Rougness);
-        float G = GeometrySmith(N, V, L, material.Rougness);
-        vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
-
-        vec3 kS = F;
-        vec3 kD = vec3(1.0) - kS;
-        kD *= 1.0 - material.Metallic;
-
-        vec3 numerator = NDF * G * F;
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
-        vec3 specular = numerator / denominator;
-
-        float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * material.Albedo / PI + specular) * radiance * NdotL;
+        Lo += CalculatePbr(material, radiance, L, V, N, F0);
     }
 
     vec3 ambient = vec3(0.03) * material.Albedo * material.AmbientOcclusion;
@@ -184,6 +174,35 @@ vec4 CalculateColor(Material material)
     color = pow(color, vec3(1.0 / 2.2));
 
     return vec4(color, material.Alpha);
+}
+
+float CalculateDirectionalShadow(vec4 fragPosLightSpace)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    float closestDepth = texture(u_DepthMap, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+    vec3 normal = normalize(i_Fragment.FragNormal);
+    vec3 lightDir = normalize(-u_DirectionalLight.LightDirection);
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / vec2(textureSize(u_DepthMap, 0));
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(u_DepthMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+
+    if (projCoords.z > 1.0)
+    {
+        shadow = 0.0;
+    }
+
+    return shadow;
 }
 
 float CalculatePointShadow(vec3 fragPos, int lightIndex)
@@ -202,7 +221,7 @@ float CalculatePointShadow(vec3 fragPos, int lightIndex)
         float closestDepth = texture(u_DepthMaps[lightIndex], fragToLight + GridSamplingDisk[i] * diskRadius).r;
         closestDepth *= u_ShadowFarPlane;
 
-        if (currentDepth - bias > closestDepth){
+        if (currentDepth - bias > closestDepth) {
             shadow += 1.0;
         }
     }

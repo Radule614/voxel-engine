@@ -2,11 +2,18 @@
 
 #include <GLCore.hpp>
 #include <GLCoreUtils.hpp>
+
+#include "DirectionalLight.hpp"
 #include "entt.hpp"
 #include "PointLight.hpp"
 #include "../Ecs/Components/LightComponent.hpp"
 #include "../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
+
+namespace VoxelEngine
+{
+
+}
 
 namespace VoxelEngine
 {
@@ -23,8 +30,8 @@ public:
 private:
     static void Render(const GLCore::Utils::Shader& shader);
 
+    void DepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void PointDepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void DepthPass() const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void DrawLights(const GLCore::Utils::PerspectiveCamera& camera) const;
 
@@ -43,6 +50,8 @@ private:
     GLCore::Utils::Shader* m_PointDepthShader;
     GLCore::Utils::Shader* m_DepthShader;
     GLCore::Utils::Shader* m_SimpleShader;
+
+    friend class RendererLayer;
 };
 
 }
@@ -56,6 +65,8 @@ namespace GLCore::Utils
 template<>
 void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string& uniform,
                                                         const std::vector<VoxelEngine::PointLight>& value) const;
+template<>
+void Shader::Set<VoxelEngine::DirectionalLight>(const std::string&, const VoxelEngine::DirectionalLight& value) const;
 template<>
 void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string& uniform,
                                                          const ViewType<VoxelEngine::LightComponent>& value) const;
