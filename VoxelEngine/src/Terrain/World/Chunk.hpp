@@ -12,7 +12,6 @@
 #include "../Utils/Position2D.hpp"
 #include "../Biome/Structures/Structure.hpp"
 #include "../../Config.hpp"
-#include "../../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../Biome/Biome.hpp"
 
 namespace VoxelEngine

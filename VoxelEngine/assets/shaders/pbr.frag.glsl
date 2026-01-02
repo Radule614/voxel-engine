@@ -12,6 +12,7 @@ in o_Vertex
     vec2 FragTexCoords;
     vec3 FragPosition;
     mat3 TBN;
+    vec4 FragLightSpacePosition;
 } i_Fragment;
 
 struct PointLight
@@ -56,6 +57,9 @@ uniform int u_PointLightCount;
 uniform float u_ShadowFarPlane;
 uniform samplerCube u_DepthMaps[MAX_POINT_LIGHTS];
 
+uniform vec3 u_LightPosition;
+uniform sampler2D u_DepthMap;
+
 vec3 GridSamplingDisk[20] = vec3[]
 (
 vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
@@ -76,7 +80,35 @@ float GetAmbientOcclusion();
 vec3 GetNormal();
 vec4 CalculateColor(Material material);
 
-float CalculateShadow(vec3 fragPos, int lightIndex);
+float CalculatePointShadow(vec3 fragPos, int lightIndex);
+float CalculateDirectionalShadow(vec4 fragPosLightSpace)
+{
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords = projCoords * 0.5 + 0.5;
+    float closestDepth = texture(u_DepthMap, projCoords.xy).r;
+    float currentDepth = projCoords.z;
+    vec3 normal = normalize(i_Fragment.FragNormal);
+    vec3 lightDir = normalize(u_LightPosition - i_Fragment.FragPosition);
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(u_DepthMap, 0);
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = texture(u_DepthMap, projCoords.xy + vec2(x, y) * texelSize).r;
+            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+
+    if(projCoords.z > 1.0)
+    {
+        shadow = 0.0;
+    }
+
+    return shadow;
+}
 
 void main()
 {
@@ -99,13 +131,16 @@ void main()
 
     vec4 color = CalculateColor(material);
 
-    float shadow = 0.6;
+    float shadow = CalculateDirectionalShadow(i_Fragment.FragLightSpacePosition);
+//    float shadow = 0.6;
+//    shadow = min(shadow, CalculateDirectionalShadow(i_Fragment.FragLightSpacePosition));
     for (int i = 0; i < u_PointLightCount; ++i)
     {
-        shadow = min(shadow, CalculateShadow(i_Fragment.FragPosition, i));
+        shadow = min(shadow, CalculatePointShadow(i_Fragment.FragPosition, i));
     }
 
-    o_Color = vec4((1.0 - shadow) * color.xyz, color.a);
+        o_Color = vec4((1.0 - shadow) * albedo.xyz, color.a);
+    //    o_Color = vec4((1.0 - shadow) * color.xyz, color.a);
 }
 
 vec4 CalculateColor(Material material)
@@ -151,7 +186,7 @@ vec4 CalculateColor(Material material)
     return vec4(color, material.Alpha);
 }
 
-float CalculateShadow(vec3 fragPos, int lightIndex)
+float CalculatePointShadow(vec3 fragPos, int lightIndex)
 {
     vec3 fragToLight = fragPos - u_PointLights[lightIndex].LightPosition;
     float currentDepth = length(fragToLight);

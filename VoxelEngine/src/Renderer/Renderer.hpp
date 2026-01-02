@@ -23,7 +23,8 @@ public:
 private:
     static void Render(const GLCore::Utils::Shader& shader);
 
-    void DepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void PointDepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void DepthPass() const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void DrawLights(const GLCore::Utils::PerspectiveCamera& camera) const;
 
@@ -36,8 +37,10 @@ private:
     GLCore::Window& m_Window;
 
     GLuint m_DepthMapFbo;
+    GLuint m_DepthMap;
 
     GLCore::Utils::Shader* m_PbrShader;
+    GLCore::Utils::Shader* m_PointDepthShader;
     GLCore::Utils::Shader* m_DepthShader;
     GLCore::Utils::Shader* m_SimpleShader;
 };

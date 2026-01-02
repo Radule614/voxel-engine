@@ -11,10 +11,12 @@ out o_Vertex
     vec2 FragTexCoords;
     vec3 FragPosition;
     mat3 TBN;
+    vec4 FragLightSpacePosition;
 } o_VertexOut;
 
 uniform mat4 u_ViewProjection;
 uniform mat4 u_Model;
+uniform mat4 u_LightSpaceMatrix;
 
 void main()
 {
@@ -30,6 +32,7 @@ void main()
     o_VertexOut.FragPosition = vec3(position);
     o_VertexOut.FragTexCoords = i_TexCoords;
     o_VertexOut.TBN = mat3(T, B, N);
+    o_VertexOut.FragLightSpacePosition = u_LightSpaceMatrix * position;
 
     gl_Position = u_ViewProjection * position;
 }
