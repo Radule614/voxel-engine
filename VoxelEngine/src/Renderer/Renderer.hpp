@@ -30,6 +30,8 @@ public:
 private:
     static void Render(const GLCore::Utils::Shader& shader);
 
+    void Skybox() const;
+
     void DepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void PointDepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
@@ -50,6 +52,7 @@ private:
     GLCore::Utils::Shader* m_PointDepthShader;
     GLCore::Utils::Shader* m_DepthShader;
     GLCore::Utils::Shader* m_SimpleShader;
+    GLCore::Utils::Shader* m_SkyboxShader;
 
     friend class RendererLayer;
 };

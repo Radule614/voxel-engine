@@ -14,7 +14,9 @@ static uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, b
 
 AssetManager* AssetManager::g_AssetManager = nullptr;
 
-AssetManager::AssetManager() : m_SphereModel(std::unique_ptr<Model>(LoadModel("assets/models/sphere/Sphere.glb")))
+AssetManager::AssetManager()
+    : m_SphereModel(std::unique_ptr<Model>(LoadModel("assets/models/sphere/Sphere.glb"))),
+      m_CubeModel(std::unique_ptr<Model>(LoadModel("assets/models/Cube.glb")))
 {
 }
 
@@ -109,6 +111,8 @@ Model* AssetManager::LoadModel(std::string filename)
 }
 
 const Model& AssetManager::GetSphereModel() const { return *m_SphereModel; }
+
+const Model& AssetManager::GetCubeModel() const { return *m_CubeModel; }
 
 std::string AssetManager::GetShaderPath(const std::string& shaderName) { return "assets/shaders/" + shaderName; }
 

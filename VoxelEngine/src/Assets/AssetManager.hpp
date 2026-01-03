@@ -27,10 +27,12 @@ public:
     Texture& LoadHdrTexture(const std::string& path);
 
     const Model& GetSphereModel() const;
+    const Model& GetCubeModel() const;
     static std::string GetShaderPath(const std::string& shaderName);
 
 private:
     std::unique_ptr<Model> m_SphereModel;
+    std::unique_ptr<Model> m_CubeModel;
     std::vector<Texture> m_LoadedTextures;
 
     static AssetManager* g_AssetManager;

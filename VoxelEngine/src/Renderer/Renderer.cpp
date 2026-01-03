@@ -47,6 +47,11 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_Depth
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("simple.frag.glsl"))
             .Build();
 
+    m_SkyboxShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("skybox.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("skybox.frag.glsl"))
+            .Build();
+
     glGenFramebuffers(1, &m_DepthMapFbo);
     CreateDepthMap(&m_DepthMap);
 
@@ -75,10 +80,19 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
     Clear();
 
+    Skybox();
+
     DepthPass(camera);
     PointDepthPass(camera);
     RenderPass(camera);
     DrawLights(camera);
+}
+
+void Renderer::Skybox() const
+{
+    const Shader& shader = *m_SkyboxShader;
+
+    shader.Use();
 }
 
 void Renderer::DepthPass(const PerspectiveCamera& camera) const
