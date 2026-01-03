@@ -53,6 +53,8 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_Depth
     // auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     // PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
     // registry.emplace<LightComponent>(registry.create(), pointLight);
+
+    Texture skybox = AssetManager::Instance().LoadHdrTexture("assets/hdr/skybox.hdr");
 }
 
 Renderer::~Renderer() = default;

@@ -50,6 +50,38 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
     return m_LoadedTextures[m_LoadedTextures.size() - 1];
 }
 
+Texture& AssetManager::LoadHdrTexture(const std::string& path)
+{
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, nrComponents;
+    float* data = stbi_loadf(path.c_str(), &width, &height, &nrComponents, 0);
+
+    Texture texture;
+    texture.path = path;
+    m_LoadedTextures.push_back(texture);
+
+    if (data)
+    {
+        glGenTextures(1, &texture.id);
+        glBindTexture(GL_TEXTURE_2D, texture.id);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        LOG_INFO("Loaded hdr image, path: {}", path);
+
+        stbi_image_free(data);
+    }
+    else LOG_INFO("Failed to load hdr texture, path: {}", path);
+
+    stbi_set_flip_vertically_on_load(false);
+
+    return m_LoadedTextures[m_LoadedTextures.size() - 1];
+}
+
 uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, const int32_t type, const bool flip)
 {
     uint32_t id;

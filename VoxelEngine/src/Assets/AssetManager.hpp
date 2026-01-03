@@ -24,6 +24,7 @@ public:
     Model* LoadModel(std::string filename);
 
     Texture& LoadTexture(const std::string& path, const std::string& type);
+    Texture& LoadHdrTexture(const std::string& path);
 
     const Model& GetSphereModel() const;
     static std::string GetShaderPath(const std::string& shaderName);

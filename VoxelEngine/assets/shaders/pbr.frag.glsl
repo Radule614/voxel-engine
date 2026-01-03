@@ -31,7 +31,6 @@ struct Material
     vec3 Normal;
 };
 
-
 uniform bool u_HasAlbedoTexture;
 uniform vec4 u_AlbedoFactor;
 uniform sampler2D u_AlbedoTexture;
