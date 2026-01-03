@@ -30,12 +30,10 @@ public:
     static std::string GetShaderPath(const std::string& shaderName);
 
 private:
-    uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);
-
     std::unique_ptr<Model> m_SphereModel;
+    std::vector<Texture> m_LoadedTextures;
 
     static AssetManager* g_AssetManager;
-    static std::vector<Texture> m_LoadedTextures;
 };
 
 }

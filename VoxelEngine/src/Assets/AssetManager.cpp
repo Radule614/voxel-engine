@@ -10,8 +10,9 @@
 namespace VoxelEngine
 {
 
+static uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);
+
 AssetManager* AssetManager::g_AssetManager = nullptr;
-std::vector<Texture> AssetManager::m_LoadedTextures = {};
 
 AssetManager::AssetManager() : m_SphereModel(std::unique_ptr<Model>(LoadModel("assets/models/sphere/Sphere.glb")))
 {
@@ -52,60 +53,36 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
 
 Texture& AssetManager::LoadHdrTexture(const std::string& path)
 {
-    stbi_set_flip_vertically_on_load(true);
-    int width, height, nrComponents;
-    float* data = stbi_loadf(path.c_str(), &width, &height, &nrComponents, 0);
-
     Texture texture;
     texture.path = path;
     m_LoadedTextures.push_back(texture);
 
+    glGenTextures(1, &texture.id);
+    glBindTexture(GL_TEXTURE_2D, texture.id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, nrComponents;
+    float* data = stbi_loadf(path.c_str(), &width, &height, &nrComponents, 0);
+
     if (data)
     {
-        glGenTextures(1, &texture.id);
-        glBindTexture(GL_TEXTURE_2D, texture.id);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        LOG_INFO("Loaded hdr image, path: {}", path);
+        LOG_INFO("Loaded hdr texture, path: {}", path);
 
         stbi_image_free(data);
     }
-    else LOG_INFO("Failed to load hdr texture, path: {}", path);
+    else
+        LOG_INFO("Failed to load hdr texture, path: {}", path);
 
     stbi_set_flip_vertically_on_load(false);
 
     return m_LoadedTextures[m_LoadedTextures.size() - 1];
-}
-
-uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, const int32_t type, const bool flip)
-{
-    uint32_t id;
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    int32_t width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(flip);
-    unsigned char* data = stbi_load((fullpath).c_str(), &width, &height, &nrChannels, 0);
-    if (data)
-    {
-        glTexImage2D(GL_TEXTURE_2D, 0, type, width, height, 0, type, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-    }
-    else { LOG_INFO("Failed to load texture"); }
-    stbi_set_flip_vertically_on_load(false);
-    stbi_image_free(data);
-    LOG_INFO("Loaded texture: {0}", fullpath);
-    return id;
 }
 
 Model* AssetManager::LoadModel(std::string filename)
@@ -134,5 +111,37 @@ Model* AssetManager::LoadModel(std::string filename)
 const Model& AssetManager::GetSphereModel() const { return *m_SphereModel; }
 
 std::string AssetManager::GetShaderPath(const std::string& shaderName) { return "assets/shaders/" + shaderName; }
+
+static uint32_t LoadTextureFromFile(const std::string& fullpath, const int32_t type, const bool flip)
+{
+    uint32_t id;
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    int32_t width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(flip);
+    unsigned char* data = stbi_load((fullpath).c_str(), &width, &height, &nrChannels, 0);
+
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, type, width, height, 0, type, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        LOG_INFO("Loaded texture: {0}", fullpath);
+
+        stbi_image_free(data);
+    }
+    else
+        LOG_INFO("Failed to load texture");
+
+    stbi_set_flip_vertically_on_load(false);
+
+    return id;
+}
 
 }
