@@ -57,11 +57,11 @@ void RendererLayer::OnImGuiRender()
 
     ImGui::End();
 
-    ImGui::Begin("Texture Debug");
+    ImGui::Begin("Directional Light Depth Texture");
 
     ImGui::Image(
         (ImTextureID) (intptr_t) m_Renderer.m_DepthMap,
-        ImVec2(512, 512),
+        ImVec2(256, 256),
         ImVec2(0, 1),
         ImVec2(1, 0)
     );

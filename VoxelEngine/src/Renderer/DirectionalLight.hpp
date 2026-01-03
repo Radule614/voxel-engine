@@ -16,7 +16,7 @@ struct DirectionalLight
 
     explicit DirectionalLight(glm::vec3 direction, glm::vec3 color = glm::vec3(1.0f));
 
-    glm::mat4 GetLightSpaceTransform(glm::vec3 position) const;
+    glm::mat4 GetLightSpaceTransform(glm::vec3 cameraPosition) const;
 };
 
 }

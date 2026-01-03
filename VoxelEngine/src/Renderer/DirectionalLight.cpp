@@ -15,13 +15,23 @@ DirectionalLight::DirectionalLight(const glm::vec3 direction, const glm::vec3 co
 {
 }
 
-glm::mat4 DirectionalLight::GetLightSpaceTransform(const glm::vec3 position) const
+glm::mat4 DirectionalLight::GetLightSpaceTransform(const glm::vec3 cameraPosition) const
 {
-    constexpr float nearPlane = 0.5f;
+    constexpr float nearPlane = 1.0f;
     constexpr float farPlane = 100.0f;
+    constexpr float size = 120.0f;
 
-    const glm::mat4 lightProjection = glm::ortho(-100.0f, 100.0f, -100.0f, 100.0f, nearPlane, farPlane);
-    const glm::mat4 lightView = glm::lookAt(position, position + Direction, glm::vec3(0.0f, 1.0f, 0.0f));
+    const glm::vec3 position = cameraPosition + glm::vec3(0.0f, 50.0f, 0.0f);
+    const glm::vec3 center = position + Direction;
+
+    glm::vec3 up;
+    if (abs(Direction.y) > 0.99f)
+        up = glm::vec3(0, 0, 1);
+    else
+        up = glm::vec3(0, 1, 0);
+
+    const glm::mat4 lightProjection = glm::ortho(-size, size, -size, size, nearPlane, farPlane);
+    const glm::mat4 lightView = glm::lookAt(position, center, up);
 
     return lightProjection * lightView;
 }

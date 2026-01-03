@@ -80,7 +80,6 @@ float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 
-
 vec4 GetAlbedo();
 vec2 GetMatallicRougness();
 float GetAmbientOcclusion();
@@ -110,7 +109,7 @@ void main()
     material.AmbientOcclusion = ambientOcclusion;
     material.Normal = normal;
 
-    float shadow = 0.6;
+    float shadow = 0.5;
     shadow = min(shadow, CalculateDirectionalShadow(i_Fragment.FragLightSpacePosition));
     for (int i = 0; i < u_PointLightCount; ++i)
     {
@@ -154,7 +153,8 @@ vec4 CalculateColor(Material material)
 
     // Drectional light
     vec3 L = normalize(-u_DirectionalLight.LightDirection);
-    Lo += CalculatePbr(material, u_DirectionalLight.LightColor, L, V, N, F0);
+    vec3 radiance = u_DirectionalLight.LightColor * 1.2;
+    Lo += CalculatePbr(material, radiance, L, V, N, F0);
 
     // Pointlights
     for (int i = 0; i < u_PointLightCount; ++i)
@@ -185,6 +185,7 @@ float CalculateDirectionalShadow(vec4 fragPosLightSpace)
     vec3 normal = normalize(i_Fragment.FragNormal);
     vec3 lightDir = normalize(-u_DirectionalLight.LightDirection);
     float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(u_DepthMap, 0));
     for (int x = -1; x <= 1; ++x)

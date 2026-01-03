@@ -22,7 +22,7 @@ static std::vector<PointLight> GetCloseLights(glm::vec3 position,
                                               ViewType<LightComponent> lightView,
                                               bool shouldOffsetChunk = false);
 
-static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.1f));
+static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.0f));
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_DepthMap(0)
 {
@@ -50,9 +50,9 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_Depth
     glGenFramebuffers(1, &m_DepthMapFbo);
     CreateDepthMap(&m_DepthMap);
 
-    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
-    registry.emplace<LightComponent>(registry.create(), pointLight);
+    // auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    // PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
+    // registry.emplace<LightComponent>(registry.create(), pointLight);
 }
 
 Renderer::~Renderer() = default;
@@ -66,6 +66,7 @@ void Renderer::Init() const
         vector.push_back(8 + i);
 
     m_PbrShader->Set("u_DepthMaps", vector);
+    m_PbrShader->Set("u_DepthMap", 7);
 }
 
 void Renderer::RenderScene(const PerspectiveCamera& camera) const
@@ -73,7 +74,7 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
     Clear();
 
     DepthPass(camera);
-    PointDepthPass(camera);
+    // PointDepthPass(camera);
     RenderPass(camera);
     DrawLights(camera);
 }
@@ -92,7 +93,7 @@ void Renderer::DepthPass(const PerspectiveCamera& camera) const
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_DepthMap, 0);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    const auto position = DirLight.GetLightSpaceTransform(camera.GetPosition() + glm::vec3(0, 50.0f, 0));
+    const auto position = DirLight.GetLightSpaceTransform(camera.GetPosition());
     shader.Set("u_LightSpaceMatrix", position);
 
     Render(shader);
@@ -158,7 +159,7 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     shader.Set("u_CameraPosition", camera.GetPosition());
     shader.Set("u_ShadowFarPlane", Config::ShadowFarPlane);
 
-    shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition() + glm::vec3(0, 50.0f, 0)));
+    shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition()));
     shader.Set("", DirLight);
 
     glActiveTexture(GL_TEXTURE7);
@@ -296,8 +297,11 @@ static void CreateDepthMap(GLuint* depthMap)
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+    constexpr float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 }
 
 static std::vector<PointLight> GetCloseLights(const glm::vec3 position,
