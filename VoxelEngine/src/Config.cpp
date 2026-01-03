@@ -8,7 +8,7 @@ namespace VoxelEngine
 int32_t Config::PolygonMode = GL_FILL;
 
 int32_t Config::ChunkThreadCount = 4;
-int32_t Config::MaxChunkDistance = 22;
+int32_t Config::MaxChunkDistance = 12;
 
 uint32_t Config::ShadowHeight = 4096;
 uint32_t Config::ShadowWidth = 4096;
