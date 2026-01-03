@@ -6,20 +6,21 @@
 
 #include "glm/ext/matrix_clip_space.hpp"
 #include "glm/ext/matrix_transform.hpp"
+#include "../Config.hpp"
 
 namespace VoxelEngine
 {
 
-DirectionalLight::DirectionalLight(const glm::vec3 direction, const glm::vec3 color)
-    : Direction(glm::normalize(direction)), LightColor(color)
+DirectionalLight::DirectionalLight(const glm::vec3 direction, const float_t intensity, const glm::vec3 color)
+    : Direction(glm::normalize(direction)), LightColor(color), LightIntensity(intensity)
 {
 }
 
 glm::mat4 DirectionalLight::GetLightSpaceTransform(const glm::vec3 cameraPosition) const
 {
-    constexpr float nearPlane = 1.0f;
-    constexpr float farPlane = 100.0f;
-    constexpr float size = 120.0f;
+    const float nearPlane = Config::ShadowNearPlane;
+    const float farPlane = Config::ShadowFarPlane;
+    const float size = Config::ShadowFrustumSize;
 
     const glm::vec3 position = cameraPosition + glm::vec3(0.0f, 50.0f, 0.0f);
     const glm::vec3 center = position + Direction;

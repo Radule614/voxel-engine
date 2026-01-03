@@ -25,6 +25,7 @@ struct DirectionalLight
 {
     vec3 LightDirection;
     vec3 LightColor;
+    float LightIntensity;
 };
 
 struct Material
@@ -64,6 +65,7 @@ uniform float u_ShadowFarPlane;
 uniform samplerCube u_DepthMaps[MAX_POINT_LIGHTS];
 
 uniform DirectionalLight u_DirectionalLight;
+uniform bool u_HasDirectionalLight;
 uniform sampler2D u_DepthMap;
 
 vec3 GridSamplingDisk[20] = vec3[]
@@ -110,7 +112,12 @@ void main()
     material.Normal = normal;
 
     float shadow = 0.5;
-    shadow = min(shadow, CalculateDirectionalShadow(i_Fragment.FragLightSpacePosition));
+
+    if(u_HasDirectionalLight)
+    {
+        shadow = min(shadow, CalculateDirectionalShadow(i_Fragment.FragLightSpacePosition));
+    }
+
     for (int i = 0; i < u_PointLightCount; ++i)
     {
         shadow = min(shadow, CalculatePointShadow(i_Fragment.FragPosition, i));
@@ -152,9 +159,12 @@ vec4 CalculateColor(Material material)
     vec3 Lo = vec3(0.0);
 
     // Drectional light
-    vec3 L = normalize(-u_DirectionalLight.LightDirection);
-    vec3 radiance = u_DirectionalLight.LightColor * 1.2;
-    Lo += CalculatePbr(material, radiance, L, V, N, F0);
+    if(u_HasDirectionalLight)
+    {
+        vec3 L = normalize(-u_DirectionalLight.LightDirection);
+        vec3 radiance = u_DirectionalLight.LightColor * u_DirectionalLight.LightIntensity;
+        Lo += CalculatePbr(material, radiance, L, V, N, F0);
+    }
 
     // Pointlights
     for (int i = 0; i < u_PointLightCount; ++i)

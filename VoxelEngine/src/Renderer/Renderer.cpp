@@ -22,7 +22,7 @@ static std::vector<PointLight> GetCloseLights(glm::vec3 position,
                                               ViewType<LightComponent> lightView,
                                               bool shouldOffsetChunk = false);
 
-static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.0f));
+static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.3f), 2.0f, glm::vec3(1.0f, 0.97f, 0.92f));
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_DepthMap(0)
 {
@@ -74,7 +74,7 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
     Clear();
 
     DepthPass(camera);
-    // PointDepthPass(camera);
+    PointDepthPass(camera);
     RenderPass(camera);
     DrawLights(camera);
 }
@@ -111,7 +111,7 @@ void Renderer::PointDepthPass(const PerspectiveCamera& camera) const
 
     const Shader& shader = *m_PointDepthShader;
 
-    glViewport(0, 0, Config::ShadowWidth, Config::ShadowHeight);
+    glViewport(0, 0, Config::PointShadowWidth, Config::PointShadowHeight);
     glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFbo);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
@@ -132,7 +132,7 @@ void Renderer::PointDepthPass(const PerspectiveCamera& camera) const
         glClear(GL_DEPTH_BUFFER_BIT);
 
         shader.Set("u_LightPosition", light.Position);
-        shader.Set("u_FarPlane", Config::ShadowFarPlane);
+        shader.Set("u_FarPlane", Config::PointShadowFarPlane);
 
         const std::vector<glm::mat4> shadowTransforms = light.CalculateShadowTransforms();
 
@@ -157,10 +157,11 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     shader.Use();
     shader.SetViewProjection(camera.GetViewProjectionMatrix());
     shader.Set("u_CameraPosition", camera.GetPosition());
-    shader.Set("u_ShadowFarPlane", Config::ShadowFarPlane);
+    shader.Set("u_ShadowFarPlane", Config::PointShadowFarPlane);
 
     shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition()));
     shader.Set("", DirLight);
+    shader.Set("u_HasDirectionalLight", true);
 
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, m_DepthMap);
@@ -265,8 +266,8 @@ static void CreateDepthCubeMap(GLuint* depthCubeMap)
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
                      0,
                      GL_DEPTH_COMPONENT,
-                     Config::ShadowWidth,
-                     Config::ShadowHeight,
+                     Config::PointShadowWidth,
+                     Config::PointShadowHeight,
                      0,
                      GL_DEPTH_COMPONENT,
                      GL_FLOAT,
@@ -327,7 +328,7 @@ static std::vector<PointLight> GetCloseLights(const glm::vec3 position,
             temp.z += CHUNK_WIDTH / 2;
         }
 
-        if (glm::length(lightPosition - temp) <= Config::ShadowFarPlane + 7.0f)
+        if (glm::length(lightPosition - temp) <= Config::PointShadowFarPlane + 7.0f)
             closeLights.push_back(light);
     }
 
@@ -362,6 +363,7 @@ void Shader::Set<VoxelEngine::DirectionalLight>(const std::string&, const VoxelE
 {
     Set("u_DirectionalLight.LightDirection", value.Direction);
     Set("u_DirectionalLight.LightColor", value.LightColor);
+    Set("u_DirectionalLight.LightIntensity", value.LightIntensity);
 }
 
 template<>
