@@ -13,7 +13,7 @@ struct LightComponent
 {
     PointLight PointLight;
 
-    explicit LightComponent(const VoxelEngine::PointLight&& pointLight) : PointLight(pointLight)
+    explicit LightComponent(const VoxelEngine::PointLight& pointLight) : PointLight(pointLight)
     {
     }
 };
