@@ -167,15 +167,12 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
         }
     }
 
-    {
-        std::lock_guard lock(m_World.GetLock());
 
-        for (auto& c: changedChunks)
-        {
-            c->GetLock().lock();
-            c->GenerateMesh();
-            c->GetLock().unlock();
-        }
+    std::lock_guard lock(m_World.GetLock());
+    for (auto& chunk: changedChunks)
+    {
+        std::lock_guard chunkLock(chunk->GetLock());
+        chunk->GenerateMesh();
     }
 }
 
