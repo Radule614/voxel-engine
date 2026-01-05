@@ -360,7 +360,7 @@ void Chunk::CreateTerrainMeshComponent() const
 
     Material terrainMaterial{};
     terrainMaterial.AlbedoFactor = glm::vec4(1.0f);
-    terrainMaterial.AlbedoTextureId = albedoTexture.id;
+    terrainMaterial.AlbedoTextureId = albedoTexture.Id;
     terrainMaterial.MetallicFactor = 0.0f;
     terrainMaterial.RoughnessFactor = 0.85f;
 

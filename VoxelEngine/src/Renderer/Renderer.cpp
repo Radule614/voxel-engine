@@ -18,11 +18,16 @@ namespace VoxelEngine
 static glm::mat4 CalculateModelMatrix(const TransformComponent& transform);
 static void CreateDepthMap(GLuint* depthMap);
 static void CreateDepthCubeMap(GLuint* depthCubeMap);
+static void CreateEnvCubeMap(GLuint* envCubeMap);
 static std::vector<PointLight> GetCloseLights(glm::vec3 position,
                                               ViewType<LightComponent> lightView,
                                               bool shouldOffsetChunk = false);
 
 static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.3f), 2.0f, glm::vec3(1.0f, 0.97f, 0.92f));
+
+// Temp
+static Texture SkyboxTexture;
+static GLuint SkyboxCubeMap;
 
 Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_DepthMap(0)
 {
@@ -47,6 +52,11 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_Depth
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("simple.frag.glsl"))
             .Build();
 
+    m_SkyboxConversionShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("skybox_conversion.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("skybox_conversion.frag.glsl"))
+            .Build();
+
     m_SkyboxShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("skybox.vert.glsl"))
             .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("skybox.frag.glsl"))
@@ -54,12 +64,13 @@ Renderer::Renderer(Window& window) : m_Window(window), m_DepthMapFbo(0), m_Depth
 
     glGenFramebuffers(1, &m_DepthMapFbo);
     CreateDepthMap(&m_DepthMap);
+    CreateEnvCubeMap(&SkyboxCubeMap);
+
+    SkyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/skybox.hdr");
 
     // auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     // PointLight pointLight(glm::vec3(2.0f, 67.0f, 0.0), glm::vec3(1.0f));
     // registry.emplace<LightComponent>(registry.create(), pointLight);
-
-    Texture skybox = AssetManager::Instance().LoadHdrTexture("assets/hdr/skybox.hdr");
 }
 
 Renderer::~Renderer() = default;
@@ -74,25 +85,93 @@ void Renderer::Init() const
 
     m_PbrShader->Set("u_DepthMaps", vector);
     m_PbrShader->Set("u_DepthMap", 7);
+
+    PrepareSkybox();
 }
 
 void Renderer::RenderScene(const PerspectiveCamera& camera) const
 {
     Clear();
 
-    Skybox();
-
     DepthPass(camera);
     PointDepthPass(camera);
+
     RenderPass(camera);
     DrawLights(camera);
+    Skybox(camera);
 }
 
-void Renderer::Skybox() const
+void Renderer::PrepareSkybox() const
+{
+    const Shader& shader = *m_SkyboxConversionShader;
+
+    shader.Use();
+
+    static glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    static glm::mat4 captureViews[] =
+    {
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))
+    };
+
+    shader.Set("u_Projection", captureProjection);
+    shader.Set<int32_t>("u_EquirectangularMap", 6);
+
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, SkyboxTexture.Id);
+
+    glViewport(0, 0, 512, 512);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_DepthMapFbo);
+
+    for (unsigned int i = 0; i < 6; ++i)
+    {
+        shader.Set("u_View", captureViews[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER,
+                               GL_COLOR_ATTACHMENT0,
+                               GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                               SkyboxCubeMap,
+                               0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        AssetManager::Instance().GetCubeModel().Draw(shader, glm::mat4(1.0));
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::Skybox(const PerspectiveCamera& camera) const
 {
     const Shader& shader = *m_SkyboxShader;
 
     shader.Use();
+    shader.Set("u_View", camera.GetViewMatrix());
+    shader.Set("u_Projection", camera.GetProjectionMatrix());
+    shader.Set("u_EnvironmentMap", 6);
+
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, SkyboxCubeMap);
+
+    // const Shader& shader = *m_SimpleShader;
+    //
+    // shader.Use();
+    // shader.SetViewProjection(camera.GetViewProjectionMatrix());
+    // shader.Set("u_Color", glm::vec3(1.0f, 0, 0));
+
+    auto model = glm::mat4(1.0f);
+    model = glm::scale(model, glm::vec3(1.0));
+
+    glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_FALSE);
+    glCullFace(GL_FRONT);;
+    AssetManager::Instance().GetCubeModel().Draw(shader, model);
+    glCullFace(GL_BACK);
+    glDepthMask(GL_TRUE);
+    glDepthFunc(GL_LESS);
+
 }
 
 void Renderer::DepthPass(const PerspectiveCamera& camera) const
@@ -295,6 +374,22 @@ static void CreateDepthCubeMap(GLuint* depthCubeMap)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+}
+
+static void CreateEnvCubeMap(GLuint* envCubeMap)
+{
+    glGenTextures(1, envCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, *envCubeMap);
+
+    for (unsigned int i = 0; i < 6; ++i)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 }
 
 static void CreateDepthMap(GLuint* depthMap)

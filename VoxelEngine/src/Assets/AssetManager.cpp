@@ -36,7 +36,7 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
 {
     for (auto& m_LoadedTexture: m_LoadedTextures)
     {
-        if (std::strcmp(m_LoadedTexture.path.data(), path.c_str()) == 0)
+        if (std::strcmp(m_LoadedTexture.Path.data(), path.c_str()) == 0)
         {
             // LOG_INFO("Texture already present: {0}", m_LoadedTexture.path);
 
@@ -45,9 +45,9 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
     }
 
     Texture texture;
-    texture.id = LoadTextureFromFile(path, GL_RGBA, true);
-    texture.type = type;
-    texture.path = path;
+    texture.Id = LoadTextureFromFile(path, GL_RGBA, true);
+    texture.Type = type;
+    texture.Path = path;
 
     m_LoadedTextures.push_back(texture);
     return m_LoadedTextures[m_LoadedTextures.size() - 1];
@@ -56,11 +56,11 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
 Texture& AssetManager::LoadHdrTexture(const std::string& path)
 {
     Texture texture;
-    texture.path = path;
+    texture.Path = path;
     m_LoadedTextures.push_back(texture);
 
-    glGenTextures(1, &texture.id);
-    glBindTexture(GL_TEXTURE_2D, texture.id);
+    glGenTextures(1, &texture.Id);
+    glBindTexture(GL_TEXTURE_2D, texture.Id);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);

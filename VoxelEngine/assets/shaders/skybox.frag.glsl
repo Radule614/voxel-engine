@@ -1,28 +1,22 @@
 #version 450 core
 
-layout (location = 0) out vec4 o_Color;
+out vec4 o_Color;
 
 in o_Vertex
 {
-    vec3 LocalPosition;
+    vec3 WorldPosition;
 } i_Fragment;
 
-uniform sampler2D u_EquirectangularMap;
-
-const vec2 InvAtan = vec2(0.1591, 0.3183);
-
-vec2 SampleSphericalMap(vec3 v)
-{
-    vec2 uv = vec2(atan(v.z, v.x), asin(v.y));
-    uv *= InvAtan;
-    uv += 0.5;
-    return uv;
-}
+uniform samplerCube u_EnvironmentMap;
 
 void main()
 {
-    vec2 uv = SampleSphericalMap(normalize(i_Fragment.LocalPosition));
-    vec3 color = texture(u_EquirectangularMap, uv).rgb;
+    vec3 envColor = texture(u_EnvironmentMap, i_Fragment.WorldPosition).rgb;
 
-    o_Color = vec4(color, 1.0);
+    // HDR tonemap and gamma correct
+    envColor = envColor / (envColor + vec3(1.0));
+    envColor = pow(envColor, vec3(1.0/2.2));
+
+//    o_Color = vec4(1.0, 0.0, 0.0, 1.0);
+    o_Color = vec4(envColor, 1.0);
 }
