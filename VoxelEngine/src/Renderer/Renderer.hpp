@@ -18,6 +18,12 @@ namespace VoxelEngine
 namespace VoxelEngine
 {
 
+enum ShadeType
+{
+    Albedo,
+    Full
+};
+
 class Renderer
 {
 public:
@@ -31,7 +37,7 @@ private:
     static void Render(const GLCore::Utils::Shader& shader);
 
     void PrepareSkybox() const;
-    void Skybox(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void DrawSkybox(const GLCore::Utils::PerspectiveCamera& camera) const;
 
     void DepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void PointDepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
@@ -45,6 +51,7 @@ private:
 
 private:
     GLCore::Window& m_Window;
+    ShadeType m_ShadeType;
 
     GLuint m_DepthMapFbo;
     GLuint m_DepthMap;

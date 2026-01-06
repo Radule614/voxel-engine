@@ -57,7 +57,6 @@ Texture& AssetManager::LoadHdrTexture(const std::string& path)
 {
     Texture texture;
     texture.Path = path;
-    m_LoadedTextures.push_back(texture);
 
     glGenTextures(1, &texture.Id);
     glBindTexture(GL_TEXTURE_2D, texture.Id);
@@ -70,7 +69,6 @@ Texture& AssetManager::LoadHdrTexture(const std::string& path)
     stbi_set_flip_vertically_on_load(true);
     int width, height, nrComponents;
     float* data = stbi_loadf(path.c_str(), &width, &height, &nrComponents, 0);
-
     if (data)
     {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
@@ -81,9 +79,8 @@ Texture& AssetManager::LoadHdrTexture(const std::string& path)
     }
     else
         LOG_INFO("Failed to load hdr texture, path: {}", path);
-
     stbi_set_flip_vertically_on_load(false);
-
+    m_LoadedTextures.push_back(texture);
     return m_LoadedTextures[m_LoadedTextures.size() - 1];
 }
 

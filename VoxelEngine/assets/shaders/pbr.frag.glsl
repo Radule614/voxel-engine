@@ -15,8 +15,9 @@ in o_Vertex
     vec4 FragLightSpacePosition;
 } i_Fragment;
 
-// Camera
+// General
 
+uniform int u_ShadeType;        // 0 albedo only, 1 full
 uniform vec3 u_CameraPosition;
 
 // Materials
@@ -85,6 +86,12 @@ void main()
 
     if (material.Alpha < 0.99) {
         discard;
+    }
+
+    if(u_ShadeType == 0)
+    {
+        o_Color = vec4(material.Albedo, material.Alpha);
+        return;
     }
 
     float shadow = 0.5;
