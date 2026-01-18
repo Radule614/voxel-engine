@@ -2,7 +2,7 @@
 
 layout (location = 0) out vec4 o_Color;
 
-in o_Vertex
+in VertexOut
 {
     vec3 LocalPosition;
 } i_Fragment;

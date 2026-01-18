@@ -46,19 +46,19 @@ static GLuint CaptureFBO, CaptureRBO;
 Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview), m_DepthMapFbo(0), m_DepthMap(0)
 {
     m_PointDepthShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("point_shadows_depth.vert.glsl"))
-            .AddShader(GL_GEOMETRY_SHADER, AssetManager::GetShaderPath("point_shadows_depth.geo.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("point_shadows_depth.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.vert.glsl"))
+            .AddShader(GL_GEOMETRY_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.geo.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.frag.glsl"))
             .Build();
 
     m_DepthShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("depth.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("depth.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("shadows/depth.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("shadows/depth.frag.glsl"))
             .Build();
 
     m_PbrShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("pbr.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("pbr.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/pbr.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/pbr.frag.glsl"))
             .Build();
 
     m_SimpleShader = ShaderBuilder()
@@ -67,18 +67,18 @@ Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview), m_D
             .Build();
 
     m_SkyboxConversionShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("skybox_conversion.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("skybox_conversion.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/cubemap.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/skybox_conversion.frag.glsl"))
             .Build();
 
     m_SkyboxShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("skybox.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("skybox.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/skybox.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/skybox.frag.glsl"))
             .Build();
 
     m_IrradianceMapShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("irradiance_map.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("irradiance_map.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/cubemap.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/irradiance_map.frag.glsl"))
             .Build();
 
     glGenFramebuffers(1, &m_DepthMapFbo);
