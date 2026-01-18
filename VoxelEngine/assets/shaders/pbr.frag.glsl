@@ -15,8 +15,9 @@ in o_Vertex
     vec4 FragLightSpacePosition;
 } i_Fragment;
 
-// Camera
+// General
 
+uniform int u_ShadeType;        // 0 albedo only, 1 preview (material only), 2 full
 uniform vec3 u_CameraPosition;
 
 // Materials
@@ -30,7 +31,6 @@ struct Material
     float AmbientOcclusion;
     vec3 Normal;
 };
-
 
 uniform bool u_HasAlbedoTexture;
 uniform vec4 u_AlbedoFactor;
@@ -75,6 +75,11 @@ uniform DirectionalLight u_DirectionalLight;
 uniform bool u_HasDirectionalLight;
 uniform sampler2D u_DepthMap;
 
+// Ibl
+
+uniform samplerCube u_IrradianceMap;
+
+
 Material CreateMaterial();
 float CalculatePointShadow(vec3 fragPos, int lightIndex);
 float CalculateDirectionalShadow(vec4 fragPosLightSpace);
@@ -88,6 +93,20 @@ void main()
         discard;
     }
 
+    if (u_ShadeType == 0)
+    {
+        o_Color = vec4(material.Albedo, material.Alpha);
+        return;
+    }
+
+    vec4 color = CalculateColor(material);
+
+    if (u_ShadeType == 1)
+    {
+        o_Color = color;
+        return;
+    }
+
     float shadow = 0.5;
 
     if (u_HasDirectionalLight)
@@ -99,8 +118,6 @@ void main()
     {
         shadow = min(shadow, CalculatePointShadow(i_Fragment.FragPosition, i));
     }
-
-    vec4 color = CalculateColor(material);
 
     o_Color = vec4((1.0 - shadow) * color.xyz, color.a);
 }
@@ -267,9 +284,16 @@ vec4 CalculateColor(Material material)
         Lo += CalculatePbr(material, radiance, L, V, N, F0);
     }
 
-    vec3 ambient = vec3(0.03) * material.Albedo * material.AmbientOcclusion;
-    vec3 color = ambient + Lo;
+    vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - material.Metallic;
+    vec3 irradiance = texture(u_IrradianceMap, N).rgb;
+    vec3 diffuse      = irradiance * material.Albedo;
+    vec3 ambient = (kD * diffuse) * material.AmbientOcclusion;
 
+//    ambient = vec3(0.03) * material.Albedo * material.AmbientOcclusion;
+
+    vec3 color = ambient + Lo;
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
 

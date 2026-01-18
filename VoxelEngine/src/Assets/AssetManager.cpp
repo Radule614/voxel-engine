@@ -10,10 +10,13 @@
 namespace VoxelEngine
 {
 
-AssetManager* AssetManager::g_AssetManager = nullptr;
-std::vector<Texture> AssetManager::m_LoadedTextures = {};
+static uint32_t LoadTextureFromFile(const std::string& fullpath, int32_t type, bool flip);
 
-AssetManager::AssetManager() : m_SphereModel(std::unique_ptr<Model>(LoadModel("assets/models/sphere/Sphere.glb")))
+AssetManager* AssetManager::g_AssetManager = nullptr;
+
+AssetManager::AssetManager()
+    : m_SphereModel(std::unique_ptr<Model>(LoadModel("assets/models/sphere/Sphere.glb"))),
+      m_CubeModel(std::unique_ptr<Model>(LoadModel("assets/models/Cube.glb")))
 {
 }
 
@@ -33,7 +36,7 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
 {
     for (auto& m_LoadedTexture: m_LoadedTextures)
     {
-        if (std::strcmp(m_LoadedTexture.path.data(), path.c_str()) == 0)
+        if (std::strcmp(m_LoadedTexture.Path.data(), path.c_str()) == 0)
         {
             // LOG_INFO("Texture already present: {0}", m_LoadedTexture.path);
 
@@ -42,38 +45,43 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
     }
 
     Texture texture;
-    texture.id = LoadTextureFromFile(path, GL_RGBA, true);
-    texture.type = type;
-    texture.path = path;
+    texture.Id = LoadTextureFromFile(path, GL_RGBA, true);
+    texture.Type = type;
+    texture.Path = path;
 
     m_LoadedTextures.push_back(texture);
     return m_LoadedTextures[m_LoadedTextures.size() - 1];
 }
 
-uint32_t AssetManager::LoadTextureFromFile(const std::string& fullpath, const int32_t type, const bool flip)
+Texture& AssetManager::LoadHdrTexture(const std::string& path)
 {
-    uint32_t id;
-    glGenTextures(1, &id);
-    glBindTexture(GL_TEXTURE_2D, id);
+    Texture texture;
+    texture.Path = path;
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glGenTextures(1, &texture.Id);
+    glBindTexture(GL_TEXTURE_2D, texture.Id);
 
-    int32_t width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(flip);
-    unsigned char* data = stbi_load((fullpath).c_str(), &width, &height, &nrChannels, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, nrComponents;
+    float* data = stbi_loadf(path.c_str(), &width, &height, &nrComponents, 0);
     if (data)
     {
-        glTexImage2D(GL_TEXTURE_2D, 0, type, width, height, 0, type, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, width, height, 0, GL_RGB, GL_FLOAT, data);
+
+        LOG_INFO("Loaded hdr texture, path: {}", path);
+
+        stbi_image_free(data);
     }
-    else { LOG_INFO("Failed to load texture"); }
+    else
+        LOG_INFO("Failed to load hdr texture, path: {}", path);
     stbi_set_flip_vertically_on_load(false);
-    stbi_image_free(data);
-    LOG_INFO("Loaded texture: {0}", fullpath);
-    return id;
+    m_LoadedTextures.push_back(texture);
+    return m_LoadedTextures[m_LoadedTextures.size() - 1];
 }
 
 Model* AssetManager::LoadModel(std::string filename)
@@ -101,6 +109,40 @@ Model* AssetManager::LoadModel(std::string filename)
 
 const Model& AssetManager::GetSphereModel() const { return *m_SphereModel; }
 
+const Model& AssetManager::GetCubeModel() const { return *m_CubeModel; }
+
 std::string AssetManager::GetShaderPath(const std::string& shaderName) { return "assets/shaders/" + shaderName; }
+
+static uint32_t LoadTextureFromFile(const std::string& fullpath, const int32_t type, const bool flip)
+{
+    uint32_t id;
+    glGenTextures(1, &id);
+    glBindTexture(GL_TEXTURE_2D, id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    int32_t width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(flip);
+    unsigned char* data = stbi_load((fullpath).c_str(), &width, &height, &nrChannels, 0);
+
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, type, width, height, 0, type, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        LOG_INFO("Loaded texture: {0}", fullpath);
+
+        stbi_image_free(data);
+    }
+    else
+        LOG_INFO("Failed to load texture");
+
+    stbi_set_flip_vertically_on_load(false);
+
+    return id;
+}
 
 }
