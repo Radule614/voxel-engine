@@ -24,13 +24,14 @@ SponzaLayer::~SponzaLayer() = default;
 
 void SponzaLayer::OnAttach()
 {
-    static Model* model = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
+    // static Model* model = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
+    static Model* model = AssetManager::Instance().LoadModel("assets/models/EnvironmentTest.glb");
 
     const auto& cameraController = m_State.CameraController;
     const auto cameraPosition = cameraController->GetCamera().GetPosition();
 
     TransformComponent transform{};
-    transform.Position = cameraPosition + glm::vec3(0.0f, 0.0f, 0.0f);
+    transform.Position = cameraPosition + glm::vec3(0.0f, 5.0f, 0.0f);
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();

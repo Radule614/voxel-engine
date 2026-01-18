@@ -21,6 +21,7 @@ namespace VoxelEngine
 enum ShadeType
 {
     Albedo,
+    Preview,
     Full
 };
 
@@ -36,7 +37,8 @@ public:
 private:
     static void Render(const GLCore::Utils::Shader& shader);
 
-    void PrepareSkybox() const;
+    void BuildSkyboxMap() const;
+    void BuildIrradianceMap() const;
     void DrawSkybox(const GLCore::Utils::PerspectiveCamera& camera) const;
 
     void DepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
@@ -63,6 +65,7 @@ private:
 
     GLCore::Utils::Shader* m_SkyboxConversionShader;
     GLCore::Utils::Shader* m_SkyboxShader;
+    GLCore::Utils::Shader* m_IrradianceMapShader;
 
     friend class RendererLayer;
 };
