@@ -39,6 +39,10 @@ private:
 
     void BuildSkyboxMap() const;
     void BuildIrradianceMap() const;
+
+    void BuildPreFilterMap() const;
+    void BuildBrdfMap() const;
+
     void DrawSkybox(const GLCore::Utils::PerspectiveCamera& camera) const;
 
     void DepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
@@ -66,6 +70,8 @@ private:
     GLCore::Utils::Shader* m_SkyboxConversionShader;
     GLCore::Utils::Shader* m_SkyboxShader;
     GLCore::Utils::Shader* m_IrradianceMapShader;
+    GLCore::Utils::Shader* m_PreFilterConvolutionShader;
+    GLCore::Utils::Shader* m_BrdfShader;
 
     friend class RendererLayer;
 };

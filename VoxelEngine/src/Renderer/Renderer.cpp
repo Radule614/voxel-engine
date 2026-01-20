@@ -1,6 +1,7 @@
 #include "Renderer.hpp"
 
 #include "DirectionalLight.hpp"
+#include "Quad.hpp"
 #include "../Config.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Ecs.hpp"
@@ -16,9 +17,11 @@ namespace VoxelEngine
 {
 
 static glm::mat4 CalculateModelMatrix(const TransformComponent& transform);
+static void CreateEnvCubeMap(GLuint* envCubeMap, uint32_t size);
+static void CreatePreFilterMap(GLuint* preFilterMap);
 static void CreateDepthMap(GLuint* depthMap);
 static void CreateDepthCubeMap(GLuint* depthCubeMap);
-static void CreateEnvCubeMap(GLuint* envCubeMap, uint32_t size);
+static void CreateBrdfLutTexture(GLuint* bdrLutTexture);
 static std::vector<PointLight> GetCloseLights(glm::vec3 position,
                                               ViewType<LightComponent> lightView,
                                               bool shouldOffsetChunk = false);
@@ -40,25 +43,27 @@ static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.3f), 2.0f, glm::vec3(1
 static Texture SkyboxTexture;
 static GLuint SkyboxCubeMap;
 static GLuint IrradianceCubeMap;
+static GLuint PreFilterCubeMap;
+static GLuint BrdfLutTexture;
 
 static GLuint CaptureFBO, CaptureRBO;
 
 Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview), m_DepthMapFbo(0), m_DepthMap(0)
 {
     m_PointDepthShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("point_shadows_depth.vert.glsl"))
-            .AddShader(GL_GEOMETRY_SHADER, AssetManager::GetShaderPath("point_shadows_depth.geo.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("point_shadows_depth.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.vert.glsl"))
+            .AddShader(GL_GEOMETRY_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.geo.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.frag.glsl"))
             .Build();
 
     m_DepthShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("depth.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("depth.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("shadows/depth.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("shadows/depth.frag.glsl"))
             .Build();
 
     m_PbrShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("pbr.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("pbr.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/pbr.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/pbr.frag.glsl"))
             .Build();
 
     m_SimpleShader = ShaderBuilder()
@@ -67,24 +72,36 @@ Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview), m_D
             .Build();
 
     m_SkyboxConversionShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("skybox_conversion.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("skybox_conversion.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/cubemap.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/skybox_conversion.frag.glsl"))
             .Build();
 
     m_SkyboxShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("skybox.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("skybox.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/skybox.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/skybox.frag.glsl"))
             .Build();
 
     m_IrradianceMapShader = ShaderBuilder()
-            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("irradiance_map.vert.glsl"))
-            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("irradiance_map.frag.glsl"))
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/cubemap.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/irradiance_map.frag.glsl"))
+            .Build();
+
+    m_PreFilterConvolutionShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/cubemap.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/pre_filter_convolution.frag.glsl"))
+            .Build();
+
+    m_BrdfShader = ShaderBuilder()
+            .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("lighting/brdf.vert.glsl"))
+            .AddShader(GL_FRAGMENT_SHADER, AssetManager::GetShaderPath("lighting/brdf.frag.glsl"))
             .Build();
 
     glGenFramebuffers(1, &m_DepthMapFbo);
-    CreateDepthMap(&m_DepthMap);
     CreateEnvCubeMap(&SkyboxCubeMap, 512);
     CreateEnvCubeMap(&IrradianceCubeMap, 64);
+    CreatePreFilterMap(&PreFilterCubeMap);
+    CreateDepthMap(&m_DepthMap);
+    CreateBrdfLutTexture(&BrdfLutTexture);
 
     SkyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/skybox.hdr");
     // SkyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/newport_loft.hdr");
@@ -103,6 +120,8 @@ Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview), m_D
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, CaptureRBO);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 Renderer::~Renderer() = default;
@@ -117,11 +136,16 @@ void Renderer::Init() const
 
     m_PbrShader->Set("u_DepthMaps", vector);
     m_PbrShader->Set("u_DepthMap", 7);
+    m_PbrShader->Set("u_IrradianceMap", 6);
+    m_PbrShader->Set("u_PrefilterMap", 5);
+    m_PbrShader->Set("u_BrdfLut", 4);
 
     glCullFace(GL_FRONT);
     BuildSkyboxMap();
     BuildIrradianceMap();
+    BuildPreFilterMap();
     glCullFace(GL_BACK);
+    BuildBrdfMap();
 }
 
 void Renderer::RenderScene(const PerspectiveCamera& camera) const
@@ -201,6 +225,65 @@ void Renderer::BuildIrradianceMap() const
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void Renderer::BuildPreFilterMap() const
+{
+    const Shader& shader = *m_PreFilterConvolutionShader;
+
+    shader.Use();
+    shader.Set("u_Projection", CaptureProjection);
+    shader.Set("u_EnvironmentMap", 6);
+
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, SkyboxCubeMap);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, CaptureFBO);
+    uint32_t maxMipLevels = 5;
+    for (size_t mip = 0; mip < maxMipLevels; ++mip)
+    {
+        uint32_t mipWidth = 128 >> mip;
+        uint32_t mipHeight = 128 >> mip;
+
+        glBindRenderbuffer(GL_RENDERBUFFER, CaptureRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
+        glViewport(0, 0, mipWidth, mipHeight);
+
+        float_t roughness = (float_t) mip / (float_t) (maxMipLevels - 1);
+        shader.Set("u_Roughness", roughness);
+
+        for (size_t i = 0; i < 6; ++i)
+        {
+            shader.Set("u_View", CaptureViews[i]);
+            glFramebufferTexture2D(GL_FRAMEBUFFER,
+                                   GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                                   PreFilterCubeMap,
+                                   mip);
+
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            AssetManager::Instance().GetCubeModel().Draw(shader, glm::mat4(1.0f));
+        }
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::BuildBrdfMap() const
+{
+    m_BrdfShader->Use();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, CaptureFBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, CaptureRBO);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, BrdfLutTexture, 0);
+
+    glViewport(0, 0, 512, 512);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    Quad::Draw();
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void Renderer::DrawSkybox(const PerspectiveCamera& camera) const
 {
     const Shader& shader = *m_SkyboxShader;
@@ -212,6 +295,7 @@ void Renderer::DrawSkybox(const PerspectiveCamera& camera) const
 
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_CUBE_MAP, SkyboxCubeMap);
+    // glBindTexture(GL_TEXTURE_CUBE_MAP, PreFilterCubeMap);
 
     glDepthFunc(GL_LEQUAL);
     glCullFace(GL_FRONT);
@@ -308,6 +392,15 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
 
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, m_DepthMap);
+
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, IrradianceCubeMap);
+
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, PreFilterCubeMap);
+
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, BrdfLutTexture);
 
     Render(shader);
 }
@@ -438,6 +531,25 @@ static void CreateEnvCubeMap(GLuint* envCubeMap, const uint32_t size)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 }
 
+static void CreatePreFilterMap(GLuint* preFilterMap)
+{
+    glGenTextures(1, preFilterMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, *preFilterMap);
+
+    for (size_t i = 0; i < 6; ++i)
+    {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+}
+
 static void CreateDepthMap(GLuint* depthMap)
 {
     glGenTextures(1, depthMap);
@@ -460,6 +572,19 @@ static void CreateDepthMap(GLuint* depthMap)
 
     constexpr float borderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+}
+
+static void CreateBrdfLutTexture(GLuint* bdrLutTexture)
+{
+    glGenTextures(1, bdrLutTexture);
+
+    glBindTexture(GL_TEXTURE_2D, *bdrLutTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 static std::vector<PointLight> GetCloseLights(const glm::vec3 position,

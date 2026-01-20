@@ -27,7 +27,7 @@ struct Material
     vec3 Albedo;
     float Alpha;
     float Metallic;
-    float Rougness;
+    float Roughness;
     float AmbientOcclusion;
     vec3 Normal;
 };
@@ -78,7 +78,8 @@ uniform sampler2D u_DepthMap;
 // Ibl
 
 uniform samplerCube u_IrradianceMap;
-
+uniform samplerCube u_PrefilterMap;
+uniform sampler2D u_BrdfLut;
 
 Material CreateMaterial();
 float CalculatePointShadow(vec3 fragPos, int lightIndex);
@@ -200,6 +201,11 @@ vec3 FresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
 float DistributionGGX(vec3 N, vec3 H, float roughness)
 {
     float a = roughness * roughness;
@@ -239,8 +245,8 @@ vec3 CalculatePbr(Material material, vec3 radiance, vec3 L, vec3 V, vec3 N, vec3
 {
     vec3 H = normalize(V + L);
 
-    float NDF = DistributionGGX(N, H, material.Rougness);
-    float G = GeometrySmith(N, V, L, material.Rougness);
+    float NDF = DistributionGGX(N, H, material.Roughness);
+    float G = GeometrySmith(N, V, L, material.Roughness);
     vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
     vec3 kS = F;
@@ -259,6 +265,7 @@ vec4 CalculateColor(Material material)
 {
     vec3 N = normalize(material.Normal);
     vec3 V = normalize(u_CameraPosition - i_Fragment.FragPosition);
+    vec3 R = reflect(-V, N);
 
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, material.Albedo, material.Metallic);
@@ -284,16 +291,24 @@ vec4 CalculateColor(Material material)
         Lo += CalculatePbr(material, radiance, L, V, N, F0);
     }
 
-    vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, material.Roughness);
+
+    vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - material.Metallic;
-    vec3 irradiance = texture(u_IrradianceMap, N).rgb;
-    vec3 diffuse      = irradiance * material.Albedo;
-    vec3 ambient = (kD * diffuse) * material.AmbientOcclusion;
 
-//    ambient = vec3(0.03) * material.Albedo * material.AmbientOcclusion;
+    vec3 irradiance = texture(u_IrradianceMap, N).rgb;
+    vec3 diffuse = irradiance * material.Albedo;
+
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(u_PrefilterMap, R, material.Roughness * MAX_REFLECTION_LOD).rgb;
+    vec2 envBRDF = texture(u_BrdfLut, vec2(max(dot(N, V), 0.0), material.Roughness)).rg;
+    vec3 specular = prefilteredColor * (F * envBRDF.x + envBRDF.y);
+
+    vec3 ambient = (kD * diffuse + specular) * material.AmbientOcclusion;
 
     vec3 color = ambient + Lo;
+
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0 / 2.2));
 
@@ -371,7 +386,7 @@ Material CreateMaterial()
     material.Albedo = albedo.xyz;
     material.Alpha = albedo.a;
     material.Metallic = metallicRougness.x;
-    material.Rougness = metallicRougness.y;
+    material.Roughness = metallicRougness.y;
     material.AmbientOcclusion = ambientOcclusion;
     material.Normal = normal;
 
