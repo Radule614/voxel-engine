@@ -25,7 +25,7 @@ float RadicalInverse_Vdc(uint bits)
 
 vec2 Hammersley(uint i, uint N)
 {
-    return vec2(float(i) / float(N), RadicalInverse_VdC(i));
+    return vec2(float(i) / float(N), RadicalInverse_Vdc(i));
 }
 
 vec3 ImportanceSamplerGGX(vec2 Xi, vec3 N, float roughness)
@@ -46,14 +46,12 @@ vec3 ImportanceSamplerGGX(vec2 Xi, vec3 N, float roughness)
     vec3 bitangent = cross(N, tangent);
 
     vec3 sampleVec = tangent * H.x + bitangent * H.y + N * H.z;
-    return normalize();
+
+    return normalize(sampleVec);
 }
 
 void main()
 {
-    o_Color = vec4(1.0, 0.0, 0.0, 1.0);
-    return;
-
     vec3 N = normalize(i_Fragment.LocalPosition);
     vec3 R = N;
     vec3 V = R;
