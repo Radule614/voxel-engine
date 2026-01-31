@@ -58,7 +58,7 @@ void Model::DrawMesh(const Shader& shader,
         glBindVertexArray(Vao);
 
         shader.SetModel(modelMatrix);
-        shader.Set("", Material);
+        shader.Set(Material);
 
         glDrawElements(Mode, IndexCount, IndexType, nullptr);
     }

@@ -21,7 +21,7 @@ static void CreateEnvCubeMap(GLuint* envCubeMap, uint32_t size);
 static void CreatePreFilterMap(GLuint* preFilterMap);
 static void CreateDepthMap(GLuint* depthMap);
 static void CreateDepthCubeMap(GLuint* depthCubeMap);
-static void CreateBrdfLutTexture(GLuint* bdrLutTexture);
+static void CreateBrdfLutMap(GLuint* bdrLutTexture);
 static std::vector<PointLight> GetCloseLights(glm::vec3 position,
                                               ViewType<LightComponent> lightView,
                                               bool shouldOffsetChunk = false);
@@ -39,16 +39,7 @@ static glm::mat4 CaptureViews[] =
 
 static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.3f), 2.0f, glm::vec3(1.0f, 0.97f, 0.92f));
 
-// Temp
-static Texture SkyboxTexture;
-static GLuint SkyboxCubeMap;
-static GLuint IrradianceCubeMap;
-static GLuint PreFilterCubeMap;
-static GLuint BrdfLutTexture;
-
-static GLuint CaptureFBO, CaptureRBO;
-
-Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview), m_DepthMapFbo(0), m_DepthMap(0)
+Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview)
 {
     m_PointDepthShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.vert.glsl"))
@@ -97,27 +88,20 @@ Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview), m_D
             .Build();
 
     glGenFramebuffers(1, &m_DepthMapFbo);
-    CreateEnvCubeMap(&SkyboxCubeMap, 512);
-    CreateEnvCubeMap(&IrradianceCubeMap, 64);
-    CreatePreFilterMap(&PreFilterCubeMap);
+    CreateEnvCubeMap(&m_SkyboxCubeMap, 512);
+    CreateEnvCubeMap(&m_IrradianceCubeMap, 64);
+    CreatePreFilterMap(&m_PreFilterCubeMap);
     CreateDepthMap(&m_DepthMap);
-    CreateBrdfLutTexture(&BrdfLutTexture);
+    CreateBrdfLutMap(&m_BrdfLutMap);
 
-    SkyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/skybox.hdr");
-    // SkyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/newport_loft.hdr");
+    glGenFramebuffers(1, &m_CaptureFbo);
+    glGenRenderbuffers(1, &m_CaptureRbo);
 
-    // auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    // PointLight pointLight(glm::vec3(2.0f, 3.0f, 0.0), glm::vec3(1.0f));
-    // registry.emplace<LightComponent>(registry.create(), pointLight);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_CaptureFbo);
 
-    glGenFramebuffers(1, &CaptureFBO);
-    glGenRenderbuffers(1, &CaptureRBO);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, CaptureFBO);
-
-    glBindRenderbuffer(GL_RENDERBUFFER, CaptureRBO);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_CaptureRbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, CaptureRBO);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_CaptureRbo);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -141,11 +125,11 @@ void Renderer::Init() const
     m_PbrShader->Set("u_BrdfLut", 4);
 
     glCullFace(GL_FRONT);
-    BuildSkyboxMap();
-    BuildIrradianceMap();
-    BuildPreFilterMap();
+    BuildSkyboxCubeMap();
+    BuildIrradianceCubeMap();
+    BuildPreFilterCubeMap();
     glCullFace(GL_BACK);
-    BuildBrdfMap();
+    BuildBrdfTexture();
 }
 
 void Renderer::RenderScene(const PerspectiveCamera& camera) const
@@ -161,8 +145,10 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
     DrawSkybox(camera);
 }
 
-void Renderer::BuildSkyboxMap() const
+void Renderer::BuildSkyboxCubeMap() const
 {
+    static Texture skyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/day_pure_sky.hdr");
+
     const Shader& shader = *m_SkyboxConversionShader;
 
     shader.Use();
@@ -170,10 +156,10 @@ void Renderer::BuildSkyboxMap() const
     shader.Set("u_EquirectangularMap", 6);
 
     glActiveTexture(GL_TEXTURE6);
-    glBindTexture(GL_TEXTURE_2D, SkyboxTexture.Id);
+    glBindTexture(GL_TEXTURE_2D, skyboxTexture.Id);
 
     glViewport(0, 0, 512, 512);
-    glBindFramebuffer(GL_FRAMEBUFFER, CaptureFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_CaptureFbo);
 
     for (size_t i = 0; i < 6; ++i)
     {
@@ -181,7 +167,7 @@ void Renderer::BuildSkyboxMap() const
         glFramebufferTexture2D(GL_FRAMEBUFFER,
                                GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                               SkyboxCubeMap,
+                               m_SkyboxCubeMap,
                                0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -191,7 +177,7 @@ void Renderer::BuildSkyboxMap() const
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::BuildIrradianceMap() const
+void Renderer::BuildIrradianceCubeMap() const
 {
     const Shader& shader = *m_IrradianceMapShader;
 
@@ -200,11 +186,11 @@ void Renderer::BuildIrradianceMap() const
     shader.Set("u_EnvironmentMap", 6);
 
     glActiveTexture(GL_TEXTURE6);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, SkyboxCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_SkyboxCubeMap);
 
     glViewport(0, 0, 64, 64);
-    glBindFramebuffer(GL_FRAMEBUFFER, CaptureFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, CaptureRBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_CaptureFbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_CaptureRbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 64, 64);
 
     for (size_t i = 0; i < 6; ++i)
@@ -214,7 +200,7 @@ void Renderer::BuildIrradianceMap() const
         glFramebufferTexture2D(GL_FRAMEBUFFER,
                                GL_COLOR_ATTACHMENT0,
                                GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                               IrradianceCubeMap,
+                               m_IrradianceCubeMap,
                                0);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -225,7 +211,7 @@ void Renderer::BuildIrradianceMap() const
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::BuildPreFilterMap() const
+void Renderer::BuildPreFilterCubeMap() const
 {
     const Shader& shader = *m_PreFilterConvolutionShader;
 
@@ -234,16 +220,16 @@ void Renderer::BuildPreFilterMap() const
     shader.Set("u_EnvironmentMap", 6);
 
     glActiveTexture(GL_TEXTURE6);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, SkyboxCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_SkyboxCubeMap);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, CaptureFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_CaptureFbo);
     uint32_t maxMipLevels = 5;
     for (size_t mip = 0; mip < maxMipLevels; ++mip)
     {
         uint32_t mipWidth = 128 >> mip;
         uint32_t mipHeight = 128 >> mip;
 
-        glBindRenderbuffer(GL_RENDERBUFFER, CaptureRBO);
+        glBindRenderbuffer(GL_RENDERBUFFER, m_CaptureRbo);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipWidth, mipHeight);
         glViewport(0, 0, mipWidth, mipHeight);
 
@@ -256,7 +242,7 @@ void Renderer::BuildPreFilterMap() const
             glFramebufferTexture2D(GL_FRAMEBUFFER,
                                    GL_COLOR_ATTACHMENT0,
                                    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                                   PreFilterCubeMap,
+                                   m_PreFilterCubeMap,
                                    mip);
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -268,14 +254,14 @@ void Renderer::BuildPreFilterMap() const
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::BuildBrdfMap() const
+void Renderer::BuildBrdfTexture() const
 {
     m_BrdfShader->Use();
 
-    glBindFramebuffer(GL_FRAMEBUFFER, CaptureFBO);
-    glBindRenderbuffer(GL_RENDERBUFFER, CaptureRBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, m_CaptureFbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_CaptureRbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, BrdfLutTexture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_BrdfLutMap, 0);
 
     glViewport(0, 0, 512, 512);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -294,8 +280,7 @@ void Renderer::DrawSkybox(const PerspectiveCamera& camera) const
     shader.Set("u_EnvironmentMap", 6);
 
     glActiveTexture(GL_TEXTURE6);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, SkyboxCubeMap);
-    // glBindTexture(GL_TEXTURE_CUBE_MAP, PreFilterCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_SkyboxCubeMap);
 
     glDepthFunc(GL_LEQUAL);
     glCullFace(GL_FRONT);
@@ -385,8 +370,7 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     shader.Set("u_ShadowFarPlane", Config::PointShadowFarPlane);
 
     shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition()));
-    shader.Set("", DirLight);
-    shader.Set("u_HasDirectionalLight", true);
+    shader.Set(DirLight);
 
     shader.Set<int32_t>("u_ShadeType", m_ShadeType);
 
@@ -394,13 +378,13 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     glBindTexture(GL_TEXTURE_2D, m_DepthMap);
 
     glActiveTexture(GL_TEXTURE6);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, IrradianceCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_IrradianceCubeMap);
 
     glActiveTexture(GL_TEXTURE5);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, PreFilterCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_PreFilterCubeMap);
 
     glActiveTexture(GL_TEXTURE4);
-    glBindTexture(GL_TEXTURE_2D, BrdfLutTexture);
+    glBindTexture(GL_TEXTURE_2D, m_BrdfLutMap);
 
     Render(shader);
 }
@@ -415,7 +399,7 @@ void Renderer::Render(const Shader& shader)
         auto& mesh = view.get<TerrainMeshComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
 
-        shader.Set("", GetCloseLights(transform.Position, lightView, true));
+        shader.Set(GetCloseLights(transform.Position, lightView, true));
 
         DrawTerrain(mesh, shader, CalculateModelMatrix(transform));
     }
@@ -425,7 +409,7 @@ void Renderer::Render(const Shader& shader)
         auto& mesh = view.get<MeshComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
 
-        shader.Set("", GetCloseLights(transform.Position, lightView));
+        shader.Set(GetCloseLights(transform.Position, lightView));
 
         mesh.Model.Draw(shader, CalculateModelMatrix(transform));
     }
@@ -435,7 +419,7 @@ void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shade
 {
     glCullFace(GL_FRONT);
 
-    shader.Set("", mesh.Material);
+    shader.Set(mesh.Material);
     shader.SetModel(modelMatrix);
 
     glBindVertexArray(mesh.VertexArray);
@@ -574,7 +558,7 @@ static void CreateDepthMap(GLuint* depthMap)
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 }
 
-static void CreateBrdfLutTexture(GLuint* bdrLutTexture)
+static void CreateBrdfLutMap(GLuint* bdrLutTexture)
 {
     glGenTextures(1, bdrLutTexture);
 
@@ -623,8 +607,7 @@ namespace GLCore::Utils
 {
 
 template<>
-void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
-                                                        const std::vector<VoxelEngine::PointLight>& value) const
+void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::vector<VoxelEngine::PointLight>& value) const
 {
     Set<int32_t>("u_PointLightCount", value.size());
 
@@ -641,16 +624,16 @@ void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string&,
 }
 
 template<>
-void Shader::Set<VoxelEngine::DirectionalLight>(const std::string&, const VoxelEngine::DirectionalLight& value) const
+void Shader::Set<VoxelEngine::DirectionalLight>(const VoxelEngine::DirectionalLight& value) const
 {
+    Set("u_HasDirectionalLight", true);
     Set("u_DirectionalLight.LightDirection", value.Direction);
     Set("u_DirectionalLight.LightColor", value.LightColor);
     Set("u_DirectionalLight.LightIntensity", value.LightIntensity);
 }
 
 template<>
-void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string&,
-                                                         const ViewType<VoxelEngine::LightComponent>& value) const
+void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const ViewType<VoxelEngine::LightComponent>& value) const
 {
     Set<int32_t>("u_PointLightCount", value.size());
 
@@ -670,7 +653,7 @@ void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string&,
 }
 
 template<>
-void Shader::Set<VoxelEngine::Material>(const std::string&, const VoxelEngine::Material& value) const
+void Shader::Set<VoxelEngine::Material>(const VoxelEngine::Material& value) const
 {
     Set("u_AlbedoFactor", value.AlbedoFactor);
     if (value.AlbedoTextureId > 0)
