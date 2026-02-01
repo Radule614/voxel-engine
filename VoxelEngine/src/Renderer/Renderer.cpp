@@ -16,7 +16,6 @@ static constexpr uint32_t MaxPointLights = 16;
 namespace VoxelEngine
 {
 
-static glm::mat4 CalculateModelMatrix(const TransformComponent& transform);
 static void CreateEnvCubeMap(GLuint* envCubeMap, uint32_t size);
 static void CreatePreFilterMap(GLuint* preFilterMap);
 static void CreateDepthMap(GLuint* depthMap);
@@ -401,7 +400,7 @@ void Renderer::Render(const Shader& shader)
 
         shader.Set(GetCloseLights(transform.Position, lightView, true));
 
-        DrawTerrain(mesh, shader, CalculateModelMatrix(transform));
+        DrawTerrain(mesh, shader, transform.World);
     }
 
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
@@ -411,7 +410,7 @@ void Renderer::Render(const Shader& shader)
 
         shader.Set(GetCloseLights(transform.Position, lightView));
 
-        mesh.Model.Draw(shader, CalculateModelMatrix(transform));
+        mesh.Model.Draw(shader, transform.World);
     }
 }
 
@@ -460,17 +459,6 @@ void Renderer::Clear()
     glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-static glm::mat4 CalculateModelMatrix(const TransformComponent& transform)
-{
-    auto model = glm::mat4(1.0);
-
-    model = glm::translate(model, transform.Position);
-    model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
-    model = glm::scale(model, transform.Scale);
-
-    return model;
 }
 
 static void CreateDepthCubeMap(GLuint* depthCubeMap)

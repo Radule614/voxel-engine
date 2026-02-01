@@ -16,6 +16,8 @@ public:
     void OnImGuiRender() override;
     void OnUpdate(GLCore::Timestep ts) override;
 
+    void DrawEntityViewer() const;
+
 private:
     EngineState& m_State;
 };

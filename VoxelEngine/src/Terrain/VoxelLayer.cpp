@@ -24,12 +24,14 @@ VoxelLayer::VoxelLayer(EngineState& state)
       m_ColliderPositions({})
 {
     m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
-
-    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    m_TerrainEntityId = registry.create();
 }
 
 VoxelLayer::~VoxelLayer() = default;
+
+void VoxelLayer::Init(WorldSettings&& settings)
+{
+    m_World = std::make_unique<World>(m_EngineState.CameraController, std::move(settings));
+}
 
 void VoxelLayer::OnAttach()
 {
@@ -122,11 +124,6 @@ void VoxelLayer::OnImGuiRender()
     ImGui::End();
 }
 
-void VoxelLayer::Init(WorldSettings&& settings)
-{
-    m_World = std::make_unique<World>(m_EngineState.CameraController, std::move(settings));
-}
-
 void VoxelLayer::ApplyState() const
 {
     Config::PolygonMode = m_UIState.PolygonMode == 0 ? GL_FILL : GL_LINE;
@@ -174,27 +171,29 @@ void VoxelLayer::CreateTerrainCollider() const
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
     BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
 
-    // TODO: Change this to mutable compound shape since it's constantly changed
+    // TODO: Change this to mutable compound shape since it's frequently changed
     StaticCompoundShapeSettings compoundSettings{};
 
     for (auto position: m_ColliderPositions)
         compoundSettings.AddShape(JoltUtils::GlmToJoltVec3(position), Quat::sIdentity(), m_VoxelShape);
+
     const ShapeRefC shape = compoundSettings.Create().Get();
 
     ColliderComponent* collider = nullptr;
-    if (const auto c = registry.try_get<ColliderComponent>(m_TerrainEntityId))
+    if (const auto c = registry.try_get<ColliderComponent>(m_World->GetEntity()))
     {
         bodyInterface.RemoveBody(c->BodyId);
         bodyInterface.DestroyBody(c->BodyId);
         collider = c;
     }
-    else { collider = &registry.emplace<ColliderComponent>(m_TerrainEntityId); }
+    else { collider = &registry.emplace<ColliderComponent>(m_World->GetEntity()); }
 
     auto bodySettings = BodyCreationSettings(shape,
                                              Vec3::sZero(),
                                              Quat::sIdentity(),
                                              EMotionType::Static,
                                              Layers::NON_MOVING);
+
     bodySettings.mEnhancedInternalEdgeRemoval = true;
     collider->BodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
 }

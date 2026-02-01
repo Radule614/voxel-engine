@@ -35,7 +35,6 @@ void SandboxApp::Setup()
 
     PushLayer(voxelLayer);
     PushLayer(new BallLayer(m_State));
-
     PushLayer(new SponzaLayer(m_State));
 }
 

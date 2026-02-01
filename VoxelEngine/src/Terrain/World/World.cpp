@@ -4,6 +4,8 @@
 #include <ranges>
 #include <utility>
 #include <vector>
+#include "../../Ecs/Ecs.hpp"
+#include "../../Ecs/Components/TransformComponent.hpp"
 
 namespace VoxelEngine
 {
@@ -16,6 +18,9 @@ World::World(
       m_Lock(std::mutex()),
       m_Settings(std::move(settings))
 {
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    m_Entity = registry.create();
+    registry.emplace<TransformComponent>(m_Entity);
 }
 
 World::~World() { StopGeneration(); }
@@ -123,9 +128,7 @@ void World::GenerateChunk(const Position2D position)
     for (const auto& neighbour: neighbours | std::views::values)
         neighbour->GetLock().unlock();
 
-    chunk.GetLock().unlock();
-
-    {
+    chunk.GetLock().unlock(); {
         std::lock_guard lock(m_Lock);
 
         m_RenderQueue.insert({chunk.GetPosition(), &chunk});
@@ -265,6 +268,8 @@ std::map<Position2D, Chunk*>& World::GetRenderQueue() { return m_RenderQueue; }
 std::mutex& World::GetLock() { return m_Lock; }
 
 std::map<Position2D, std::queue<Voxel> >& World::GetDeferredUpdateQueueMap() { return m_DeferredUpdateQueueMap; }
+
+entt::entity World::GetEntity() const { return m_Entity; }
 
 Position2D World::GlobalToChunkSpace(const glm::i32vec3& pos)
 {

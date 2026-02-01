@@ -10,6 +10,7 @@
 #include "../Ecs/Components/TransformComponent.hpp"
 #include "../Ecs/Components/ColliderComponent.hpp"
 #include "../Ecs/Components/CharacterComponent.hpp"
+#include "../Ecs/Scene.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -22,6 +23,8 @@ static void UpdateTransformComponent(TransformComponent& transform, const BodyID
 static void UpdateTransformComponent(TransformComponent& transform, const CharacterController& controller);
 static void UpdateTransformComponent(TransformComponent& transform, glm::vec3 position, float_t angle, glm::vec3 axis);
 static void RaiseColliderLocationChangedEvent(const TransformComponent& transform, Application& application);
+
+static void UpdateTransformRecursive(entt::entity entity, const TransformComponent& parentTransform);
 
 PhysicsLayer::PhysicsLayer(EngineState& state) : m_State(state)
 {
@@ -43,14 +46,22 @@ void PhysicsLayer::OnUpdate(const Timestep ts)
     PhysicsCharacterManager& physicsCharacterManager = PhysicsEngine::Instance().GetPlayerCharacterManager();
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    // TODO:    Voxel terrain entity doesn't have a transform component so it won't go into this loop
-    //          Add a check for static collider so it doesn't break things if said entity gets Transform component
+    const auto rootView = registry.view<TransformComponent>(entt::exclude<ParentComponent>);
+
+    for (const auto rootEntity: rootView)
+    {
+        UpdateTransformRecursive(rootEntity, TransformComponent{});
+    }
 
     for (const auto view = registry.view<ColliderComponent, TransformComponent>(); const auto entity: view)
     {
         const auto& collider = view.get<ColliderComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
-        if (!bodyInterface.IsActive(collider.BodyId))
+
+        const bool isBodyActive = bodyInterface.IsActive(collider.BodyId);
+        const bool isBodyStatic = bodyInterface.GetMotionType(collider.BodyId) == EMotionType::Static;
+
+        if (!isBodyActive || isBodyStatic)
             continue;
 
         UpdateTransformComponent(transform, collider.BodyId);
@@ -121,6 +132,46 @@ static void RaiseColliderLocationChangedEvent(const TransformComponent& transfor
         ColliderLocationChangedEvent event(transform.Position);
         application.RaiseEvent(event);
     }
+}
+
+static void CalculateModelMatrix(glm::mat4 model, TransformComponent& transform)
+{
+    model = glm::translate(model, transform.Position);
+    model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
+    model = glm::scale(model, transform.Scale);
+    transform.World = model;
+}
+
+static void UpdateTransformRecursive(const entt::entity entity, const TransformComponent& parentTransform)
+{
+    static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    auto transform = registry.try_get<TransformComponent>(entity);
+    if (transform == nullptr)
+        return;
+
+    // auto collider = registry.try_get<ColliderComponent>(entity);
+
+    // if (collider != nullptr)
+    // {
+    //     UpdateTransformComponent(transform, collider->BodyId);
+    //     UpdateTransformComponent(transform,
+    //                              transform.Position - parentTransform.Position,
+    //                              transform.RotationAngle - parentTransform.RotationAngle,
+    //                              transform.RotationAxis - parentTransform.RotationAxis);
+    // }
+
+    // transform += parentTransform;
+    // UpdateTransformComponent(transform, transform.Position);
+
+    CalculateModelMatrix(parentTransform.World, *transform);
+
+    const auto children = registry.try_get<ChildrenComponent>(entity);
+    if (children == nullptr)
+        return;
+
+    for (const auto& child: children->Entities)
+        UpdateTransformRecursive(child, *transform);
 }
 
 }
