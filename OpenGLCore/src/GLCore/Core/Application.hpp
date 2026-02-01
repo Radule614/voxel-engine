@@ -24,6 +24,7 @@ public:
 	void OnEvent(Event& e);
 	void PushLayer(Layer* layer);
 	void PushOverlay(Layer* layer);
+	void AppendToWindowTitle(const std::string& text) const;
 
 	inline Window& GetWindow()
 	{
@@ -43,6 +44,7 @@ public:
 	{
 		return m_Window->RaiseEvent(event);
 	}
+
 
 private:
 	bool OnWindowClose(WindowCloseEvent& e);

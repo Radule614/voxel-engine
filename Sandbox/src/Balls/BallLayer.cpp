@@ -59,7 +59,7 @@ void BallLayer::OnEvent(Event& event)
     EventDispatcher dispatcher(event);
     dispatcher.Dispatch<KeyPressedEvent>(
         [&](const KeyPressedEvent& e) {
-            if (e.GetKeyCode() == VE_KEY_T)
+            if (e.GetKeyCode() == VE_KEY_T && !m_State.MenuActive)
             {
                 const PerspectiveCamera& camera = m_State.CameraController->GetCamera();
                 const glm::vec3 front = camera.GetFront();
@@ -91,6 +91,9 @@ void BallLayer::OnEvent(Event& event)
 
 void BallLayer::OnUpdate(const Timestep ts)
 {
+    if (m_State.MenuActive)
+        return;
+
     for (auto it = m_SphereEntities.begin(); it != m_SphereEntities.end();)
     {
         const entt::entity& sphere = it->first;

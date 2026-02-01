@@ -13,6 +13,8 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
+static void DrawDepthMap(GLuint depthMap);
+
 RendererLayer::RendererLayer(EngineState& state) : m_State(state), m_Renderer(state.Application->GetWindow())
 {
 }
@@ -37,6 +39,8 @@ void RendererLayer::OnUpdate(const Timestep ts)
     {
         m_Fps = 1.0f / ts;
 
+        m_State.Application->AppendToWindowTitle(std::format("Fps: {0}", m_Fps));
+
         m_AccumulatedTime = 0.0f;
     }
     m_AccumulatedTime += ts;
@@ -44,23 +48,15 @@ void RendererLayer::OnUpdate(const Timestep ts)
 
 void RendererLayer::OnImGuiRender()
 {
-    constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
-                                             ImGuiWindowFlags_NoMove;
-    ImGui::SetNextWindowSize(ImVec2(500.0, 300.0));
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
+    // DrawDepthMap(m_Renderer.m_DepthMap);
+}
 
-    ImGui::Begin("Renderer", nullptr, windowFlags);
-    ImGui::Text("Renderer");
-
-    ImGui::Text("Fps: %.1f", m_Fps);
-
-    ImGui::End();
-
+static void DrawDepthMap(const GLuint depthMap)
+{
     ImGui::Begin("Directional Light Depth Texture");
 
     ImGui::Image(
-        (ImTextureID) (intptr_t) m_Renderer.m_DepthMap,
+        (ImTextureID) (intptr_t) depthMap,
         ImVec2(256, 256),
         ImVec2(0, 1),
         ImVec2(1, 0)
