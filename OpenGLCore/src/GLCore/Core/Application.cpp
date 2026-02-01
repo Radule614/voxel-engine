@@ -4,7 +4,6 @@
 #include "Input.hpp"
 #include <glfw/glfw3.h>
 
-
 namespace GLCore
 {
 #define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
@@ -29,6 +28,13 @@ Application::Application(const std::string& name, uint32_t width, uint32_t heigh
 void Application::PushLayer(Layer* layer) { m_LayerStack.PushLayer(layer); }
 
 void Application::PushOverlay(Layer* layer) { m_LayerStack.PushOverlay(layer); }
+
+void Application::AppendToWindowTitle(const std::string& text) const
+{
+    const auto title = std::format("Voxel Engine | {0}", text);
+
+    glfwSetWindowTitle((GLFWwindow*) m_Window->GetNativeWindow(), title.c_str());
+}
 
 void Application::OnEvent(Event& e)
 {

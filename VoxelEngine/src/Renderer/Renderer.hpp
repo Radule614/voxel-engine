@@ -37,11 +37,11 @@ public:
 private:
     static void Render(const GLCore::Utils::Shader& shader);
 
-    void BuildSkyboxMap() const;
-    void BuildIrradianceMap() const;
+    void BuildSkyboxCubeMap() const;
+    void BuildIrradianceCubeMap() const;
 
-    void BuildPreFilterMap() const;
-    void BuildBrdfMap() const;
+    void BuildPreFilterCubeMap() const;
+    void BuildBrdfTexture() const;
 
     void DrawSkybox(const GLCore::Utils::PerspectiveCamera& camera) const;
 
@@ -59,8 +59,15 @@ private:
     GLCore::Window& m_Window;
     ShadeType m_ShadeType;
 
-    GLuint m_DepthMapFbo;
-    GLuint m_DepthMap;
+    GLuint m_DepthMapFbo = 0;
+    GLuint m_DepthMap = 0;
+
+    GLuint m_CaptureFbo = 0;
+    GLuint m_CaptureRbo = 0;
+    GLuint m_SkyboxCubeMap = 0;
+    GLuint m_IrradianceCubeMap = 0;
+    GLuint m_PreFilterCubeMap = 0;
+    GLuint m_BrdfLutMap = 0;
 
     GLCore::Utils::Shader* m_PbrShader;
     GLCore::Utils::Shader* m_PointDepthShader;
@@ -85,14 +92,12 @@ namespace GLCore::Utils
 {
 
 template<>
-void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::string& uniform,
-                                                        const std::vector<VoxelEngine::PointLight>& value) const;
+void Shader::Set<std::vector<VoxelEngine::PointLight> >(const std::vector<VoxelEngine::PointLight>& value) const;
 template<>
-void Shader::Set<VoxelEngine::DirectionalLight>(const std::string&, const VoxelEngine::DirectionalLight& value) const;
+void Shader::Set<VoxelEngine::DirectionalLight>(const VoxelEngine::DirectionalLight& value) const;
 template<>
-void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const std::string& uniform,
-                                                         const ViewType<VoxelEngine::LightComponent>& value) const;
+void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const ViewType<VoxelEngine::LightComponent>& value) const;
 template<>
-void Shader::Set<VoxelEngine::Material>(const std::string& uniform, const VoxelEngine::Material& value) const;
+void Shader::Set<VoxelEngine::Material>(const VoxelEngine::Material& value) const;
 
 }

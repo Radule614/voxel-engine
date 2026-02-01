@@ -33,6 +33,9 @@ void PhysicsLayer::OnAttach()
 
 void PhysicsLayer::OnUpdate(const Timestep ts)
 {
+    if (m_State.MenuActive)
+        return;
+
     PhysicsEngine::Instance().OnUpdate(ts);
 
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
