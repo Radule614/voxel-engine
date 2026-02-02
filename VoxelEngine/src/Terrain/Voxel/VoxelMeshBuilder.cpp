@@ -17,6 +17,14 @@ std::vector<glm::vec2> VoxelMeshBuilder::s_TextureCoordinates = {
 std::unordered_map<VoxelFace, std::vector<glm::vec3> > VoxelMeshBuilder::s_PositionMap = {};
 std::unordered_map<VoxelFace, glm::vec3> VoxelMeshBuilder::s_NormalMap = {};
 std::unordered_map<VoxelType, std::vector<int32_t> > VoxelMeshBuilder::s_FaceTextureMap = {};
+static const std::unordered_map<VoxelFace, glm::vec4> TangentMap = {
+    {TOP, {1, 0, 0, 1}},
+    {BOTTOM, {1, 0, 0, 1}},
+    {FRONT, {1, 0, 0, 1}},
+    {RIGHT, {0, 0, -1, 1}},
+    {BACK, {-1, 0, 0, 1}},
+    {LEFT, {0, 0, 1, 1}},
+};
 
 void VoxelMeshBuilder::Init()
 {
@@ -174,6 +182,7 @@ std::vector<VoxelVertex> VoxelMeshBuilder::FromVoxelFaces(Voxel& voxel, bool fac
             v.Position = pos + static_cast<glm::vec3>(voxelPosition);
             v.Normal = s_NormalMap.at(face);
             v.TexCoords = atlasTexCoord;
+            v.Tangent = TangentMap.at(face);
 
             data.push_back(v);
         }

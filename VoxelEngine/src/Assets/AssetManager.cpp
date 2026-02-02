@@ -32,7 +32,7 @@ void AssetManager::Shutdown()
 
 AssetManager& AssetManager::Instance() { return *g_AssetManager; }
 
-Texture& AssetManager::LoadTexture(const std::string& path, const std::string& type)
+Texture& AssetManager::LoadTexture(const std::string& path)
 {
     for (auto& m_LoadedTexture: m_LoadedTextures)
     {
@@ -46,7 +46,6 @@ Texture& AssetManager::LoadTexture(const std::string& path, const std::string& t
 
     Texture texture;
     texture.Id = LoadTextureFromFile(path, GL_RGBA, true);
-    texture.Type = type;
     texture.Path = path;
 
     m_LoadedTextures.push_back(texture);

@@ -366,13 +366,15 @@ void Chunk::CreateTerrainMeshComponent() const
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    const Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
+    const Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png");
+    const Texture roughnessTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas_roughness.png");
+    const Texture normalTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas_normal.png");
 
     Material terrainMaterial{};
-    terrainMaterial.AlbedoFactor = glm::vec4(1.0f);
+
     terrainMaterial.AlbedoTextureId = albedoTexture.Id;
-    terrainMaterial.MetallicFactor = 0.0f;
-    terrainMaterial.RoughnessFactor = 0.85f;
+    terrainMaterial.MetallicRoughnessTextureId = roughnessTexture.Id;
+    terrainMaterial.NormalTextureId = normalTexture.Id;
 
     TerrainMeshComponent terrainMeshComponent(m_Position, terrainMaterial);
 
@@ -398,6 +400,13 @@ void Chunk::CreateTerrainMeshComponent() const
                           GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, TexCoords)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3,
+                          4,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(VoxelVertex),
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, Tangent)));
 
     glCreateBuffers(1, &terrainMeshComponent.IndexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainMeshComponent.IndexBuffer);
