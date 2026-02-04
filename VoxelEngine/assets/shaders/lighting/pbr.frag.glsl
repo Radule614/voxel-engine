@@ -334,19 +334,19 @@ vec4 GetAlbedo()
 vec2 GetMatallicRougness()
 {
     float metallic = u_MetallicFactor;
-    float rougness = u_RoughnessFactor;
+    float roughness = u_RoughnessFactor;
 
     if (u_HasMetallicRoughnessTexture)
     {
         vec4 metallicRougnessTexture = texture(u_MetallicRoughnessTexture, i_Fragment.FragTexCoords);
 
         metallic *= metallicRougnessTexture.b;
-        rougness *= metallicRougnessTexture.g;
+        roughness *= metallicRougnessTexture.g;
     }
 
-    rougness = clamp(rougness, 0.04, 1.0);
+    roughness = clamp(roughness, 0.04, 1.0);
 
-    return vec2(metallic, rougness);
+    return vec2(metallic, roughness);
 }
 
 float GetAmbientOcclusion()

@@ -105,6 +105,10 @@ Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+    // auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    // PointLight pointLight(glm::vec3(0.0f, 6.0f, 0.0), glm::vec3(1.0f, 0.0f, 0.5f));
+    // registry.emplace<LightComponent>(registry.create(), pointLight);
 }
 
 Renderer::~Renderer() = default;
@@ -147,12 +151,14 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
 void Renderer::BuildSkyboxCubeMap() const
 {
     static Texture skyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/day_pure_sky.hdr");
+    // static Texture skyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/night_pure_sky.hdr");
 
     const Shader& shader = *m_SkyboxConversionShader;
 
     shader.Use();
     shader.Set("u_Projection", CaptureProjection);
     shader.Set("u_EquirectangularMap", 6);
+    shader.Set("u_Strength", 1.0f);
 
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, skyboxTexture.Id);
@@ -416,16 +422,12 @@ void Renderer::Render(const Shader& shader)
 
 void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shader, const glm::mat4& modelMatrix)
 {
-    glCullFace(GL_FRONT);
-
     shader.Set(mesh.Material);
     shader.SetModel(modelMatrix);
 
     glBindVertexArray(mesh.VertexArray);
     glDrawElements(GL_TRIANGLES, mesh.Indices.size(), GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
-
-    glCullFace(GL_BACK);
 }
 
 void Renderer::DrawLights(const PerspectiveCamera& camera) const

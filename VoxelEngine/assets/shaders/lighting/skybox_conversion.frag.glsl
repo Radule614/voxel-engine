@@ -8,6 +8,7 @@ in VertexOut
 } i_Fragment;
 
 uniform sampler2D u_EquirectangularMap;
+uniform float u_Strength;
 
 const vec2 InvAtan = vec2(0.1591, 0.3183);
 
@@ -22,7 +23,7 @@ vec2 SampleSphericalMap(vec3 v)
 void main()
 {
     vec2 uv = SampleSphericalMap(normalize(i_Fragment.LocalPosition));
-    vec3 color = texture(u_EquirectangularMap, uv).rgb;
+    vec3 color = texture(u_EquirectangularMap, uv).rgb * u_Strength;
 
     o_Color = vec4(color, 1.0);
 }
