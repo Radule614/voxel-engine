@@ -2,6 +2,8 @@
 
 #include "imgui.h"
 #include "Ecs/Ecs.hpp"
+#include "Ecs/Scene.hpp"
+#include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Utils/Utils.hpp"
 
@@ -10,6 +12,8 @@ using namespace GLCore::Utils;
 
 namespace VoxelEngine
 {
+
+static void DisplayEntity(entt::entity entity);
 
 UserInterface::UserInterface(EngineState& state) : m_State(state)
 {
@@ -52,9 +56,6 @@ void UserInterface::OnEvent(Event& event)
 
 void UserInterface::OnImGuiRender()
 {
-    if (!m_State.MenuActive)
-        return;
-
     DrawEntityViewer();
 }
 
@@ -66,6 +67,8 @@ void UserInterface::OnUpdate(Timestep ts)
 
 void UserInterface::DrawEntityViewer() const
 {
+    static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
     constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
                                              ImGuiWindowFlags_NoMove;
@@ -74,18 +77,53 @@ void UserInterface::DrawEntityViewer() const
 
     ImGui::Begin("Entity Viewer", nullptr, windowFlags);
     ImGui::Text("Entity Tree");
+    ImGui::Separator();
 
-    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    const auto view = registry.view<TransformComponent>();
+    const auto view = registry.view<TransformComponent>(entt::exclude<ParentComponent>);
+
     for (const auto& entity: view)
-    {
-        auto& transform = view.get<TransformComponent>(entity);
-
-        std::string position = VecToString(transform.Position);
-        ImGui::Text(std::format("Transform: {0}", position).c_str());
-    }
+        DisplayEntity(entity);
 
     ImGui::End();
+}
+
+static void DisplayEntity(const entt::entity entity)
+{
+    static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    ImGui::PushID((int32_t) entity);
+
+    std::string entityName = "Entity";
+
+    const MetadataComponent* metadata = registry.try_get<MetadataComponent>(entity);
+
+    if (metadata != nullptr)
+        entityName = metadata->Name;
+
+    if (ImGui::TreeNode(entityName.c_str()))
+    {
+        const TransformComponent* transform = registry.try_get<TransformComponent>(entity);
+
+        if (transform != nullptr)
+        {
+            std::string position = VecToString(transform->Position);
+            ImGui::Text(std::format("Transform: {0}", position).c_str());
+        }
+
+        const ChildrenComponent* children = registry.try_get<ChildrenComponent>(entity);
+
+        if (children != nullptr)
+        {
+            ImGui::Text("Children:");
+
+            for (const auto& childEntity: children->Entities)
+                DisplayEntity(childEntity);
+        }
+
+        ImGui::TreePop();
+    }
+
+    ImGui::PopID();
 }
 
 }

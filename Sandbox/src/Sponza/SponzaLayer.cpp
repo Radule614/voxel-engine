@@ -7,6 +7,7 @@
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 
 using namespace GLCore;
@@ -38,6 +39,7 @@ void SponzaLayer::OnAttach()
 
     registry.emplace<MeshComponent>(entity, *model);
     registry.emplace<TransformComponent>(entity, transform);
+    registry.emplace<MetadataComponent>(entity, "Sponza");
 }
 
 }

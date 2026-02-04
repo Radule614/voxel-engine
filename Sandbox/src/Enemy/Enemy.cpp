@@ -8,6 +8,7 @@
 #include "Ecs/Ecs.hpp"
 #include "Ecs/Components/ColliderComponent.hpp"
 #include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 
 using namespace JPH;
@@ -33,6 +34,7 @@ Enemy::Enemy(const glm::vec3 position)
     registry.emplace<MeshComponent>(m_Entity, *capsuleModel);
     registry.emplace<TransformComponent>(m_Entity, TransformComponent{});
     registry.emplace<ColliderComponent>(m_Entity, ColliderComponent(character->GetBodyID()));
+    registry.emplace<MetadataComponent>(m_Entity, "Enemy");
 }
 
 Enemy::~Enemy() = default;

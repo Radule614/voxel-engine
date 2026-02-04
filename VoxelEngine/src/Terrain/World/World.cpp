@@ -6,6 +6,7 @@
 #include <vector>
 #include "../../Ecs/Ecs.hpp"
 #include "../../Ecs/Components/TransformComponent.hpp"
+#include "../../Ecs/Components/MetadataComponent.hpp"
 
 namespace VoxelEngine
 {
@@ -21,6 +22,7 @@ World::World(
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     m_Entity = registry.create();
     registry.emplace<TransformComponent>(m_Entity);
+    registry.emplace<MetadataComponent>(m_Entity, "Voxel World");
 }
 
 World::~World() { StopGeneration(); }

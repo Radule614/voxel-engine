@@ -12,6 +12,7 @@
 #include "../../Ecs/Components/LightComponent.hpp"
 #include "../../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../../Ecs/Components/TransformComponent.hpp"
+#include "../../Ecs/Components/MetadataComponent.hpp"
 #include "../../Ecs/Scene.hpp"
 
 namespace VoxelEngine
@@ -45,6 +46,7 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     transform.Position = worldPosition;
 
     registry.emplace<TransformComponent>(m_EntityId, transform);
+    registry.emplace<MetadataComponent>(m_EntityId, "Chunk");
 
     ParentComponent parent(world.GetEntity());
     parent.AddChild(m_EntityId);
@@ -69,7 +71,6 @@ Chunk::~Chunk()
             light.DepthCubeMap = 0;
         }
 
-
         registry.destroy(entityId);
     }
 
@@ -88,7 +89,10 @@ Chunk::~Chunk()
     }
 
     if (registry.all_of<ParentComponent>(m_EntityId))
+    {
+        registry.get<ParentComponent>(m_EntityId).RemoveChild(m_EntityId);
         registry.remove<ParentComponent>(m_EntityId);
+    }
 
     if (registry.valid(m_EntityId))
         registry.destroy(m_EntityId);

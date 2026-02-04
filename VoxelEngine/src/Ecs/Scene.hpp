@@ -24,27 +24,27 @@ struct ParentComponent
 
     void RemoveChild(const entt::entity child) const
     {
-        auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-        auto& view = registry.get<ChildrenComponent>(Entity).Entities;
+        static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-        view.erase(std::ranges::remove(view, child).begin(), view.end());
+        ChildrenComponent* children = registry.try_get<ChildrenComponent>(Entity);
+        if (children == nullptr)
+            return;
+
+        auto& entities = children->Entities;
+
+        entities.erase(std::ranges::remove(entities, child).begin(), entities.end());
     }
 
     void AddChild(const entt::entity entity) const
     {
-        auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+        static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-        auto children = registry.try_get<ChildrenComponent>(Entity);
+        ChildrenComponent* children = registry.try_get<ChildrenComponent>(Entity);
         if (children == nullptr)
             children = &registry.emplace<ChildrenComponent>(Entity);
 
         children->Entities.emplace_back(entity);
     }
-};
-
-struct MetadatComponent
-{
-    std::string Name;
 };
 
 }
