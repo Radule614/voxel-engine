@@ -404,9 +404,9 @@ void Renderer::Render(const Shader& shader)
         auto& mesh = view.get<TerrainMeshComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
 
-        shader.Set(GetCloseLights(transform.Position, lightView, true));
+        shader.Set(GetCloseLights(transform.WorldPosition, lightView, true));
 
-        DrawTerrain(mesh, shader, transform.World);
+        DrawTerrain(mesh, shader, transform.WorldMatrix);
     }
 
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
@@ -414,9 +414,9 @@ void Renderer::Render(const Shader& shader)
         auto& mesh = view.get<MeshComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
 
-        shader.Set(GetCloseLights(transform.Position, lightView));
+        shader.Set(GetCloseLights(transform.WorldPosition, lightView));
 
-        mesh.Model.Draw(shader, transform.World);
+        mesh.Model.Draw(shader, transform.WorldMatrix);
     }
 }
 

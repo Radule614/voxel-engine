@@ -43,7 +43,7 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     worldPosition.z = m_Position.y * CHUNK_WIDTH;
 
     TransformComponent transform{};
-    transform.Position = worldPosition;
+    transform.LocalPosition = worldPosition;
 
     registry.emplace<TransformComponent>(m_EntityId, transform);
     registry.emplace<MetadataComponent>(m_EntityId, "Chunk");

@@ -21,7 +21,9 @@ World::World(
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     m_Entity = registry.create();
-    registry.emplace<TransformComponent>(m_Entity);
+
+    TransformComponent transform;
+    registry.emplace<TransformComponent>(m_Entity, transform);
     registry.emplace<MetadataComponent>(m_Entity, "Voxel World");
 }
 

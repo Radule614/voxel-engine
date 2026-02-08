@@ -33,12 +33,9 @@ void BallLayer::OnAttach()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    TransformComponent transform{};
-    transform.Scale = glm::vec3(1.0f);
-
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();
-    registry.emplace<TransformComponent>(entity, transform);
+    registry.emplace<TransformComponent>(entity);
     registry.emplace<MetadataComponent>(entity, "Player");
 
     const auto& cameraController = m_State.CameraController;
@@ -78,7 +75,7 @@ void BallLayer::OnEvent(Event& event)
                 BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
                 bodyInterface.AddLinearVelocity(bodyId, 20 * Vec3(front.x, front.y, front.z));
                 TransformComponent transform{};
-                transform.Scale = glm::vec3(0.4);
+                transform.LocalScale = glm::vec3(0.4);
 
                 auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
                 const auto entity = registry.create();

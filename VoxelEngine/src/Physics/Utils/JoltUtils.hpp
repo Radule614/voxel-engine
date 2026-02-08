@@ -15,6 +15,10 @@ public:
     static glm::vec3 JoltToGlmVec3(const JPH::Vec3 v) { return glm::vec3(v.GetX(), v.GetY(), v.GetZ()); }
 
     static JPH::Vec3 GlmToJoltVec3(const glm::vec3 v) { return JPH::Vec3(v.x, v.y, v.z); }
+
+    static glm::quat JoltToGlmQuat(const JPH::Quat& q) { return glm::quat(q.GetW(), q.GetX(), q.GetY(), q.GetZ()); }
+
+    static JPH::Quat GlmToJoltQuat(const glm::quat& q) { return JPH::Quat(q.x, q.y, q.z, q.w); }
 };
 
 }

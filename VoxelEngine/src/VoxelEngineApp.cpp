@@ -1,4 +1,4 @@
-#include "VoxelEngine.hpp"
+#include "VoxelEngineApp.hpp"
 
 #define FMT_COMPILE
 
@@ -9,6 +9,7 @@
 #include "Physics/PhysicsLayer.hpp"
 #include "Physics/PhysicsEngine.hpp"
 #include "Ecs/Ecs.hpp"
+#include "Ecs/EcsLayer.hpp"
 #include "Renderer/RendererLayer.hpp"
 
 using namespace GLCore;
@@ -37,6 +38,7 @@ void VoxelEngineApp::Init()
     EntityComponentSystem::Init();
 
     PushLayer(new PhysicsLayer(m_State));
+    PushLayer(new EcsLayer(m_State));
     PushLayer(new RendererLayer(m_State));
     PushOverlay(new UserInterface(m_State));
 }

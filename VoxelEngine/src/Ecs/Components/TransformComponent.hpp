@@ -1,36 +1,24 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include "glm/detail/type_quat.hpp"
 
 namespace VoxelEngine
 {
 
 struct TransformComponent
 {
-    glm::vec3 Position = glm::vec3(0.0f);
-    float_t RotationAngle = 0.0f;
-    glm::vec3 RotationAxis = glm::vec3(0.0f, 1.0f, 0.0f);
-    glm::vec3 Scale = glm::vec3(1.0f);
-    glm::vec3 PreviousPosition = glm::vec3(0.0f);
+    glm::vec3 LocalPosition{0};
+    glm::quat LocalRotation{1, 0, 0, 0};
+    glm::vec3 LocalScale{1};
 
-    glm::mat4 World = glm::mat4(1.0f);
+    glm::mat4 LocalMatrix{1};
+    glm::mat4 WorldMatrix{1};
 
-    TransformComponent operator+=(const TransformComponent other) const
-    {
-        TransformComponent result;
+    glm::vec3 WorldPosition{0};
+    glm::vec3 PreviousWorldPosition{0};
 
-        result.Position = Position + other.Position;
-        result.RotationAngle = RotationAngle + other.RotationAngle;
-        result.Scale = Scale + other.Scale;
-        result.PreviousPosition = Position;
-
-        if (other.RotationAxis != glm::vec3(0.0f))
-            result.RotationAxis = RotationAxis + other.RotationAxis;
-        else
-            result.RotationAxis = glm::vec3(0.0f, 1.0f, 0.0f);
-
-        return result;
-    }
+    bool IsDirty = true;
 };
 
 }

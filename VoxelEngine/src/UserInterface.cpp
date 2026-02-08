@@ -72,7 +72,7 @@ void UserInterface::DrawEntityViewer() const
     constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
                                              ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
                                              ImGuiWindowFlags_NoMove;
-    ImGui::SetNextWindowSize(ImVec2(350.0, m_State.Application->GetWindow().GetHeight()));
+    ImGui::SetNextWindowSize(ImVec2(400.0, m_State.Application->GetWindow().GetHeight()));
     ImGui::SetNextWindowPos(ImVec2(0, 0));
 
     ImGui::Begin("Entity Viewer", nullptr, windowFlags);
@@ -100,13 +100,13 @@ static void DisplayEntity(const entt::entity entity)
     if (metadata != nullptr)
         entityName = metadata->Name;
 
-    if (ImGui::TreeNode(entityName.c_str()))
+    if (ImGui::TreeNodeEx(entityName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
     {
         const TransformComponent* transform = registry.try_get<TransformComponent>(entity);
 
         if (transform != nullptr)
         {
-            std::string position = VecToString(transform->Position);
+            std::string position = VecToString(transform->LocalPosition);
             ImGui::Text(std::format("Transform: {0}", position).c_str());
         }
 
