@@ -6,6 +6,7 @@
 
 #include "Renderer.hpp"
 #include "../Ecs/Ecs.hpp"
+#include "Target/ScreenRenderTarget.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -15,7 +16,7 @@ namespace VoxelEngine
 
 static void DrawDepthMap(GLuint depthMap);
 
-RendererLayer::RendererLayer(EngineState& state) : m_State(state), m_Renderer(state.Application->GetWindow())
+RendererLayer::RendererLayer(EngineState& state) : m_State(state)
 {
 }
 
@@ -33,7 +34,10 @@ void RendererLayer::OnAttach()
 
 void RendererLayer::OnUpdate(const Timestep ts)
 {
-    m_Renderer.RenderScene(m_State.CameraController->GetCamera());
+    static RenderTarget* renderTarget = new ScreenRenderTarget(m_State.Application->GetWindow().GetWidth(),
+                                                               m_State.Application->GetWindow().GetHeight());
+
+    m_Renderer.RenderScene(m_State.CameraController->GetCamera(), *renderTarget);
 
     if (m_AccumulatedTime > 0.5f)
     {

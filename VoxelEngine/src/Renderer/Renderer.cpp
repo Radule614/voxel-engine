@@ -38,7 +38,7 @@ static glm::mat4 CaptureViews[] =
 
 static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.3f), 2.0f, glm::vec3(1.0f, 0.97f, 0.92f));
 
-Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview)
+Renderer::Renderer() : m_ShadeType(Preview)
 {
     m_PointDepthShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.vert.glsl"))
@@ -105,10 +105,6 @@ Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-    // auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    // PointLight pointLight(glm::vec3(0.0f, 6.0f, 0.0), glm::vec3(1.0f, 0.0f, 0.5f));
-    // registry.emplace<LightComponent>(registry.create(), pointLight);
 }
 
 Renderer::~Renderer() = default;
@@ -135,14 +131,14 @@ void Renderer::Init() const
     BuildBrdfTexture();
 }
 
-void Renderer::RenderScene(const PerspectiveCamera& camera) const
+void Renderer::RenderScene(const PerspectiveCamera& camera, const RenderTarget& renderTarget) const
 {
     Clear();
 
     DepthPass(camera);
     PointDepthPass(camera);
 
-    RenderPass(camera);
+    RenderPass(camera, renderTarget);
     DrawLights(camera);
 
     DrawSkybox(camera);
@@ -151,7 +147,6 @@ void Renderer::RenderScene(const PerspectiveCamera& camera) const
 void Renderer::BuildSkyboxCubeMap() const
 {
     static Texture skyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/day_pure_sky.hdr");
-    // static Texture skyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/night_pure_sky.hdr");
 
     const Shader& shader = *m_SkyboxConversionShader;
 
@@ -362,12 +357,11 @@ void Renderer::PointDepthPass(const PerspectiveCamera& camera) const
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::RenderPass(const PerspectiveCamera& camera) const
+void Renderer::RenderPass(const PerspectiveCamera& camera, const RenderTarget& renderTarget) const
 {
     const Shader& shader = *m_PbrShader;
 
-    glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderTarget.Bind();
 
     shader.Use();
     shader.SetViewProjection(camera.GetViewProjectionMatrix());
