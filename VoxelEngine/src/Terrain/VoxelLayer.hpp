@@ -43,7 +43,7 @@ private:
     void RemoveDistantChunks() const;
 
     void CreateTerrainCollider() const;
-    void OnColliderLocationChanged(glm::vec3 pos);
+    void OnColliderLocationChanged(glm::vec3 worldPosition);
     void OptimizeColliders();
 
 private:

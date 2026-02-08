@@ -21,10 +21,7 @@ namespace VoxelEngine
 VoxelLayer::VoxelLayer(EngineState& state)
     : Layer("VoxelLayer"),
       m_EngineState(state),
-      m_ColliderPositions({})
-{
-    m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
-}
+      m_ColliderPositions({}) { m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f)); }
 
 VoxelLayer::~VoxelLayer() = default;
 
@@ -39,10 +36,7 @@ void VoxelLayer::OnAttach()
     m_World->StartGeneration();
 }
 
-void VoxelLayer::OnDetach()
-{
-    m_World->StopGeneration();
-}
+void VoxelLayer::OnDetach() { m_World->StopGeneration(); }
 
 void VoxelLayer::OnEvent(Event& event)
 {
@@ -180,11 +174,11 @@ void VoxelLayer::CreateTerrainCollider() const
     const ShapeRefC shape = compoundSettings.Create().Get();
 
     ColliderComponent* collider = nullptr;
-    if (const auto c = registry.try_get<ColliderComponent>(m_World->GetEntity()))
+    if (const auto colliderComponent = registry.try_get<ColliderComponent>(m_World->GetEntity()))
     {
-        bodyInterface.RemoveBody(c->BodyId);
-        bodyInterface.DestroyBody(c->BodyId);
-        collider = c;
+        bodyInterface.RemoveBody(colliderComponent->BodyId);
+        bodyInterface.DestroyBody(colliderComponent->BodyId);
+        collider = colliderComponent;
     }
     else { collider = &registry.emplace<ColliderComponent>(m_World->GetEntity()); }
 
@@ -198,10 +192,10 @@ void VoxelLayer::CreateTerrainCollider() const
     collider->BodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
 }
 
-void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
+void VoxelLayer::OnColliderLocationChanged(const glm::vec3 worldPosition)
 {
     auto& chunkMap = m_World->GetChunkMap();
-    if (!chunkMap.contains(World::GlobalToChunkSpace(pos)))
+    if (!chunkMap.contains(World::GlobalToChunkSpace(worldPosition)))
         return;
 
     constexpr int32_t r = 2;
@@ -211,18 +205,19 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
         {
             for (int32_t y = -r; y <= r; ++y)
             {
-                auto p = glm::i32vec3(glm::round(pos)) + glm::i32vec3(x, y, z);
-                auto [chunkPosition, voxelPosition] = World::GlobalToWorldSpace(p);
+                auto position = glm::i32vec3(glm::round(worldPosition)) + glm::i32vec3(x, y, z);
+                auto [chunkPosition, voxelPosition] = World::GlobalToWorldSpace(position);
 
                 auto it = chunkMap.find(chunkPosition);
-                if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
+                if (it == chunkMap.end() || !InRange(position.y, 0, CHUNK_HEIGHT - 1))
                     continue;
 
-                Voxel& v = it->second->GetVoxelFromGrid(voxelPosition);
-                if (v.GetVoxelType() == AIR || m_ColliderPositions.contains(p))
+                Voxel& voxel = it->second->GetVoxelFromGrid(voxelPosition);
+
+                if (voxel.GetVoxelType() == AIR || m_ColliderPositions.contains(position))
                     continue;
 
-                m_ColliderPositions.insert(p);
+                m_ColliderPositions.insert(position);
             }
         }
     }

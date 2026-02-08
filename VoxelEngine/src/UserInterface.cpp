@@ -100,7 +100,8 @@ static void DisplayEntity(const entt::entity entity)
     if (metadata != nullptr)
         entityName = metadata->Name;
 
-    if (ImGui::TreeNodeEx(entityName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+    // if (ImGui::TreeNodeEx(entityName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::TreeNodeEx(entityName.c_str()))
     {
         const TransformComponent* transform = registry.try_get<TransformComponent>(entity);
 
