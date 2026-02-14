@@ -6,6 +6,7 @@
 
 #include "Renderer.hpp"
 #include "../EngineState.hpp"
+#include "Target/TextureRenderTarget.hpp"
 
 namespace VoxelEngine
 {
@@ -19,7 +20,10 @@ public:
     void OnUpdate(GLCore::Timestep ts) override;
     void OnImGuiRender() override;
 
+    void ResizeTextureRenderTarget();
+
 private:
+    TextureRenderTarget m_TextureRenderTarget;
     EngineState& m_State;
     Renderer m_Renderer;
 

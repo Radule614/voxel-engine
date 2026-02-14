@@ -81,18 +81,7 @@ void VoxelLayer::OnUpdate(const Timestep ts)
 
 void VoxelLayer::OnImGuiRender()
 {
-    constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
-                                             ImGuiWindowFlags_NoMove;
-    const auto& io = ImGui::GetIO();
-
-    if (!m_EngineState.MenuActive)
-        return;
-
-    ImGui::SetNextWindowSize(ImVec2(400.0, 600.0));
-    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 400.0, 0));
-
-    ImGui::Begin("Terrain", nullptr, windowFlags);
+    ImGui::Begin("Right Panel");
     ImGui::Text("Terrain Settings");
 
     const char* polygonModes[] = {"Fill", "Line"};

@@ -48,7 +48,7 @@ private:
 
     void DepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void PointDepthPass(const GLCore::Utils::PerspectiveCamera& camera) const;
-    void RenderPass(const GLCore::Utils::PerspectiveCamera& camera, const RenderTarget& renderTarget) const;
+    void RenderPass(const GLCore::Utils::PerspectiveCamera& camera) const;
     void DrawLights(const GLCore::Utils::PerspectiveCamera& camera) const;
 
     static void DrawTerrain(const TerrainMeshComponent& mesh,

@@ -103,8 +103,6 @@ Renderer::Renderer() : m_ShadeType(Preview)
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_CaptureRbo);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 Renderer::~Renderer() = default;
@@ -123,6 +121,7 @@ void Renderer::Init() const
     m_PbrShader->Set("u_PrefilterMap", 5);
     m_PbrShader->Set("u_BrdfLut", 4);
 
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glCullFace(GL_FRONT);
     BuildSkyboxCubeMap();
     BuildIrradianceCubeMap();
@@ -138,10 +137,13 @@ void Renderer::RenderScene(const PerspectiveCamera& camera, const RenderTarget& 
     DepthPass(camera);
     PointDepthPass(camera);
 
-    RenderPass(camera, renderTarget);
-    DrawLights(camera);
+    renderTarget.Bind();
 
+    RenderPass(camera);
+    DrawLights(camera);
     DrawSkybox(camera);
+
+    renderTarget.Unbind();
 }
 
 void Renderer::BuildSkyboxCubeMap() const
@@ -283,9 +285,13 @@ void Renderer::DrawSkybox(const PerspectiveCamera& camera) const
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_SkyboxCubeMap);
 
     glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_FALSE);
     glCullFace(GL_FRONT);
+
     AssetManager::Instance().GetCubeModel().Draw(shader, glm::mat4(1.0f));
+
     glCullFace(GL_BACK);
+    glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
 }
 
@@ -357,11 +363,9 @@ void Renderer::PointDepthPass(const PerspectiveCamera& camera) const
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::RenderPass(const PerspectiveCamera& camera, const RenderTarget& renderTarget) const
+void Renderer::RenderPass(const PerspectiveCamera& camera) const
 {
     const Shader& shader = *m_PbrShader;
-
-    renderTarget.Bind();
 
     shader.Use();
     shader.SetViewProjection(camera.GetViewProjectionMatrix());

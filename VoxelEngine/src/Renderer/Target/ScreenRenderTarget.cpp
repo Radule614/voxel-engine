@@ -24,4 +24,8 @@ int ScreenRenderTarget::GetWidth() const { return m_Width; }
 
 int ScreenRenderTarget::GetHeight() const { return m_Height; }
 
+void ScreenRenderTarget::Unbind() const
+{
+}
+
 }

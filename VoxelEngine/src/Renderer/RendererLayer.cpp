@@ -7,6 +7,7 @@
 #include "Renderer.hpp"
 #include "../Ecs/Ecs.hpp"
 #include "Target/ScreenRenderTarget.hpp"
+#include "Target/TextureRenderTarget.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -14,9 +15,9 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-static void DrawDepthMap(GLuint depthMap);
+static void DrawTextureInViewport(GLuint texture, int32_t width, int32_t height);
 
-RendererLayer::RendererLayer(EngineState& state) : m_State(state)
+RendererLayer::RendererLayer(EngineState& state) : m_TextureRenderTarget(1280, 720), m_State(state)
 {
 }
 
@@ -34,10 +35,7 @@ void RendererLayer::OnAttach()
 
 void RendererLayer::OnUpdate(const Timestep ts)
 {
-    static RenderTarget* renderTarget = new ScreenRenderTarget(m_State.Application->GetWindow().GetWidth(),
-                                                               m_State.Application->GetWindow().GetHeight());
-
-    m_Renderer.RenderScene(m_State.CameraController->GetCamera(), *renderTarget);
+    m_Renderer.RenderScene(m_State.CameraController->GetCamera(), m_TextureRenderTarget);
 
     if (m_AccumulatedTime > 0.5f)
     {
@@ -52,21 +50,40 @@ void RendererLayer::OnUpdate(const Timestep ts)
 
 void RendererLayer::OnImGuiRender()
 {
-    // DrawDepthMap(m_Renderer.m_DepthMap);
+    DrawTextureInViewport(m_TextureRenderTarget.GetTexture(),
+                          m_TextureRenderTarget.GetWidth(),
+                          m_TextureRenderTarget.GetHeight());
+
+    ResizeTextureRenderTarget();
 }
 
-static void DrawDepthMap(const GLuint depthMap)
+void RendererLayer::ResizeTextureRenderTarget()
 {
-    ImGui::Begin("Directional Light Depth Texture");
+    ImGui::Begin("Viewport");
+    const ImVec2 viewportSize = ImGui::GetWindowSize();
+    ImGui::End();
 
-    ImGui::Image(
-        (ImTextureID) (intptr_t) depthMap,
-        ImVec2(256, 256),
-        ImVec2(0, 1),
-        ImVec2(1, 0)
-    );
+    const int32_t width = viewportSize.x;
+    const int32_t height = viewportSize.y;
+
+    if (width != m_TextureRenderTarget.GetWidth() || height != m_TextureRenderTarget.GetHeight())
+    {
+        const float_t aspectRatio = width / (float_t) height;
+        m_State.CameraController->GetCamera().SetProjection(45.0f, aspectRatio);
+
+        m_TextureRenderTarget.Resize(width, height);
+    }
+}
+
+static void DrawTextureInViewport(const GLuint texture, const int32_t width, const int32_t height)
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    ImGui::Begin("Viewport");
+
+    ImGui::Image((ImTextureID) texture, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
 
     ImGui::End();
+    ImGui::PopStyleVar();
 }
 
 }

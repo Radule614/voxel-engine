@@ -17,6 +17,8 @@ public:
     ScreenRenderTarget(int32_t width, int32_t height);
 
     void Bind() const override;
+    void Unbind() const override;
+
     int GetWidth() const override;
     int GetHeight() const override;
 
