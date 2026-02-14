@@ -7,6 +7,7 @@
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 
 using namespace GLCore;
@@ -31,13 +32,14 @@ void SponzaLayer::OnAttach()
     const auto cameraPosition = cameraController->GetCamera().GetPosition();
 
     TransformComponent transform{};
-    transform.Position = cameraPosition + glm::vec3(0.0f, 5.0f, 0.0f);
+    transform.LocalPosition = cameraPosition + glm::vec3(0.0f, 5.0f, 0.0f);
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();
 
     registry.emplace<MeshComponent>(entity, *model);
     registry.emplace<TransformComponent>(entity, transform);
+    registry.emplace<MetadataComponent>(entity, "Sponza");
 }
 
 }

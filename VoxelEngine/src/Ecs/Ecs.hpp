@@ -2,6 +2,9 @@
 
 #include <entt.hpp>
 #include <mutex>
+#include <glm/glm.hpp>
+
+#include "Components/TransformComponent.hpp"
 
 namespace VoxelEngine
 {

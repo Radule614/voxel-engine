@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "VoxelEngine.hpp"
+#include "VoxelEngineApp.hpp"
 
 namespace Sandbox
 {

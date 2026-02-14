@@ -12,6 +12,8 @@
 #include "../../Ecs/Components/LightComponent.hpp"
 #include "../../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../../Ecs/Components/TransformComponent.hpp"
+#include "../../Ecs/Components/MetadataComponent.hpp"
+#include "../../Ecs/Scene.hpp"
 
 namespace VoxelEngine
 {
@@ -41,9 +43,15 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     worldPosition.z = m_Position.y * CHUNK_WIDTH;
 
     TransformComponent transform{};
-    transform.Position = worldPosition;
+    transform.LocalPosition = worldPosition;
 
     registry.emplace<TransformComponent>(m_EntityId, transform);
+    registry.emplace<MetadataComponent>(m_EntityId, "Chunk");
+
+    ParentComponent parent(world.GetEntity());
+    parent.AddChild(m_EntityId);
+
+    registry.emplace<ParentComponent>(m_EntityId, parent);
 }
 
 Chunk::~Chunk()
@@ -78,6 +86,12 @@ Chunk::~Chunk()
         glDeleteVertexArrays(1, &terrainMesh.VertexArray);
 
         registry.remove<TerrainMeshComponent>(m_EntityId);
+    }
+
+    if (registry.all_of<ParentComponent>(m_EntityId))
+    {
+        registry.get<ParentComponent>(m_EntityId).RemoveChild(m_EntityId);
+        registry.remove<ParentComponent>(m_EntityId);
     }
 
     if (registry.valid(m_EntityId))
@@ -356,13 +370,15 @@ void Chunk::CreateTerrainMeshComponent() const
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    const Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
+    const Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png");
+    const Texture roughnessTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas_roughness.png");
+    const Texture normalTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas_normal.png");
 
     Material terrainMaterial{};
-    terrainMaterial.AlbedoFactor = glm::vec4(1.0f);
+
     terrainMaterial.AlbedoTextureId = albedoTexture.Id;
-    terrainMaterial.MetallicFactor = 0.0f;
-    terrainMaterial.RoughnessFactor = 0.85f;
+    terrainMaterial.MetallicRoughnessTextureId = roughnessTexture.Id;
+    terrainMaterial.NormalTextureId = normalTexture.Id;
 
     TerrainMeshComponent terrainMeshComponent(m_Position, terrainMaterial);
 
@@ -388,6 +404,13 @@ void Chunk::CreateTerrainMeshComponent() const
                           GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, TexCoords)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3,
+                          4,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(VoxelVertex),
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, Tangent)));
 
     glCreateBuffers(1, &terrainMeshComponent.IndexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainMeshComponent.IndexBuffer);

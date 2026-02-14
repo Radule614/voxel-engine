@@ -9,6 +9,7 @@
 #include "../Ecs/Components/LightComponent.hpp"
 #include "../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../Ecs/Components/MeshComponent.hpp"
+#include "Target/RenderTarget.hpp"
 
 namespace VoxelEngine
 {
@@ -28,10 +29,10 @@ enum ShadeType
 class Renderer
 {
 public:
-    explicit Renderer(GLCore::Window& window);
+    explicit Renderer();
     ~Renderer();
 
-    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera) const;
+    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera, const RenderTarget& renderTarget) const;
     void Init() const;
 
 private:
@@ -56,7 +57,6 @@ private:
     static void Clear();
 
 private:
-    GLCore::Window& m_Window;
     ShadeType m_ShadeType;
 
     GLuint m_DepthMapFbo = 0;

@@ -5,6 +5,7 @@
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/ColliderComponent.hpp"
 #include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Enemy/Enemy.hpp"
 #include "Physics/Utils/BodyBuilder.hpp"
@@ -32,12 +33,10 @@ void BallLayer::OnAttach()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    TransformComponent transform{};
-    transform.Scale = glm::vec3(1.0f);
-
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();
-    registry.emplace<TransformComponent>(entity, transform);
+    registry.emplace<TransformComponent>(entity);
+    registry.emplace<MetadataComponent>(entity, "Player");
 
     const auto& cameraController = m_State.CameraController;
     if (!cameraController->IsFreeFly())
@@ -76,13 +75,14 @@ void BallLayer::OnEvent(Event& event)
                 BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
                 bodyInterface.AddLinearVelocity(bodyId, 20 * Vec3(front.x, front.y, front.z));
                 TransformComponent transform{};
-                transform.Scale = glm::vec3(0.4);
+                transform.LocalScale = glm::vec3(0.4);
 
                 auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
                 const auto entity = registry.create();
                 registry.emplace<MeshComponent>(entity, AssetManager::Instance().GetSphereModel());
                 registry.emplace<TransformComponent>(entity, transform);
                 registry.emplace<ColliderComponent>(entity, ColliderComponent(bodyId));
+                registry.emplace<MetadataComponent>(entity, "Ball");
                 m_SphereEntities.emplace_back(entity, 0);
             }
             return false;

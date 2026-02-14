@@ -1,5 +1,7 @@
 #include "ECS.hpp"
 
+#include "GLCore/Core/Core.hpp"
+
 namespace VoxelEngine
 {
 

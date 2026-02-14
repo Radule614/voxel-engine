@@ -23,7 +23,7 @@ public:
 
     Model* LoadModel(std::string filename);
 
-    Texture& LoadTexture(const std::string& path, const std::string& type);
+    Texture& LoadTexture(const std::string& path);
     Texture& LoadHdrTexture(const std::string& path);
 
     const Model& GetSphereModel() const;

@@ -38,6 +38,8 @@ public:
     std::mutex& GetLock();
     std::map<Position2D, std::queue<Voxel> >& GetDeferredUpdateQueueMap();
 
+    entt::entity GetEntity() const;
+
 private:
     static void SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk* >& neighbours);
     static void SyncMeshWithNeighbour(Voxel& v1, Voxel& v2, VoxelFace face);
@@ -62,6 +64,7 @@ private:
     std::mutex m_Lock;
 
     WorldSettings m_Settings;
+    entt::entity m_Entity;
 };
 
 };

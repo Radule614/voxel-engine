@@ -16,7 +16,6 @@ static constexpr uint32_t MaxPointLights = 16;
 namespace VoxelEngine
 {
 
-static glm::mat4 CalculateModelMatrix(const TransformComponent& transform);
 static void CreateEnvCubeMap(GLuint* envCubeMap, uint32_t size);
 static void CreatePreFilterMap(GLuint* preFilterMap);
 static void CreateDepthMap(GLuint* depthMap);
@@ -39,7 +38,7 @@ static glm::mat4 CaptureViews[] =
 
 static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.3f), 2.0f, glm::vec3(1.0f, 0.97f, 0.92f));
 
-Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview)
+Renderer::Renderer() : m_ShadeType(Preview)
 {
     m_PointDepthShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.vert.glsl"))
@@ -104,8 +103,6 @@ Renderer::Renderer(Window& window) : m_Window(window), m_ShadeType(Preview)
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_CaptureRbo);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 Renderer::~Renderer() = default;
@@ -124,6 +121,7 @@ void Renderer::Init() const
     m_PbrShader->Set("u_PrefilterMap", 5);
     m_PbrShader->Set("u_BrdfLut", 4);
 
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glCullFace(GL_FRONT);
     BuildSkyboxCubeMap();
     BuildIrradianceCubeMap();
@@ -132,17 +130,20 @@ void Renderer::Init() const
     BuildBrdfTexture();
 }
 
-void Renderer::RenderScene(const PerspectiveCamera& camera) const
+void Renderer::RenderScene(const PerspectiveCamera& camera, const RenderTarget& renderTarget) const
 {
     Clear();
 
     DepthPass(camera);
     PointDepthPass(camera);
 
+    renderTarget.Bind();
+
     RenderPass(camera);
     DrawLights(camera);
-
     DrawSkybox(camera);
+
+    renderTarget.Unbind();
 }
 
 void Renderer::BuildSkyboxCubeMap() const
@@ -154,6 +155,7 @@ void Renderer::BuildSkyboxCubeMap() const
     shader.Use();
     shader.Set("u_Projection", CaptureProjection);
     shader.Set("u_EquirectangularMap", 6);
+    shader.Set("u_Strength", 1.0f);
 
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, skyboxTexture.Id);
@@ -283,9 +285,13 @@ void Renderer::DrawSkybox(const PerspectiveCamera& camera) const
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_SkyboxCubeMap);
 
     glDepthFunc(GL_LEQUAL);
+    glDepthMask(GL_FALSE);
     glCullFace(GL_FRONT);
+
     AssetManager::Instance().GetCubeModel().Draw(shader, glm::mat4(1.0f));
+
     glCullFace(GL_BACK);
+    glDepthMask(GL_TRUE);
     glDepthFunc(GL_LESS);
 }
 
@@ -361,9 +367,6 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
 {
     const Shader& shader = *m_PbrShader;
 
-    glViewport(0, 0, m_Window.GetWidth(), m_Window.GetHeight());
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     shader.Use();
     shader.SetViewProjection(camera.GetViewProjectionMatrix());
     shader.Set("u_CameraPosition", camera.GetPosition());
@@ -399,9 +402,9 @@ void Renderer::Render(const Shader& shader)
         auto& mesh = view.get<TerrainMeshComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
 
-        shader.Set(GetCloseLights(transform.Position, lightView, true));
+        shader.Set(GetCloseLights(transform.WorldPosition, lightView, true));
 
-        DrawTerrain(mesh, shader, CalculateModelMatrix(transform));
+        DrawTerrain(mesh, shader, transform.WorldMatrix);
     }
 
     for (const auto view = registry.view<MeshComponent, TransformComponent>(); const auto entity: view)
@@ -409,24 +412,20 @@ void Renderer::Render(const Shader& shader)
         auto& mesh = view.get<MeshComponent>(entity);
         auto& transform = view.get<TransformComponent>(entity);
 
-        shader.Set(GetCloseLights(transform.Position, lightView));
+        shader.Set(GetCloseLights(transform.WorldPosition, lightView));
 
-        mesh.Model.Draw(shader, CalculateModelMatrix(transform));
+        mesh.Model.Draw(shader, transform.WorldMatrix);
     }
 }
 
 void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shader, const glm::mat4& modelMatrix)
 {
-    glCullFace(GL_FRONT);
-
     shader.Set(mesh.Material);
     shader.SetModel(modelMatrix);
 
     glBindVertexArray(mesh.VertexArray);
     glDrawElements(GL_TRIANGLES, mesh.Indices.size(), GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
-
-    glCullFace(GL_BACK);
 }
 
 void Renderer::DrawLights(const PerspectiveCamera& camera) const
@@ -460,17 +459,6 @@ void Renderer::Clear()
     glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-static glm::mat4 CalculateModelMatrix(const TransformComponent& transform)
-{
-    auto model = glm::mat4(1.0);
-
-    model = glm::translate(model, transform.Position);
-    model = glm::rotate(model, transform.RotationAngle, transform.RotationAxis);
-    model = glm::scale(model, transform.Scale);
-
-    return model;
 }
 
 static void CreateDepthCubeMap(GLuint* depthCubeMap)

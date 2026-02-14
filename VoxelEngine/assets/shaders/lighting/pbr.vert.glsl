@@ -26,9 +26,10 @@ void main()
 
     vec3 N = normalize(normal);
     vec3 T = normalize(normalMatrix * i_Tangent.xyz);
-    vec3 B = normalize(cross(N, T)) * i_Tangent.w;
+    T = normalize(T - dot(T, N) * N);
+    vec3 B = cross(N, T) * i_Tangent.w;
 
-    o_VertexOut.FragNormal = normal;
+    o_VertexOut.FragNormal = N;
     o_VertexOut.FragPosition = vec3(position);
     o_VertexOut.FragTexCoords = i_TexCoords;
     o_VertexOut.TBN = mat3(T, B, N);
