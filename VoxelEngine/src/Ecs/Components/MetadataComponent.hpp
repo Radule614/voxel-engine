@@ -13,7 +13,7 @@ struct MetadataComponent
 {
     std::string Name;
 
-    explicit MetadataComponent(const std::string& name) : Name(name)
+    explicit MetadataComponent(std::string name) : Name(std::move(name))
     {
     }
 };

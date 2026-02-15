@@ -6,9 +6,9 @@
 
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
-#include "Ecs/Components/MeshComponent.hpp"
-#include "Ecs/Components/MetadataComponent.hpp"
+#include "Ecs/ModelEntity.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
+#include "glm/ext/quaternion_trigonometric.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -27,27 +27,19 @@ static entt::entity AnimatedModelEntity;
 
 void SponzaLayer::OnAttach()
 {
-    // static Model* sponzaModel = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
+    static Model* sponzaModel = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
     // static Model* model = AssetManager::Instance().LoadModel("assets/models/EnvironmentTest.glb");
     static Model* animatedModel = AssetManager::Instance().LoadModel("assets/models/BoxAnimated.glb");
 
-    const auto& cameraController = m_State.CameraController;
-    const auto cameraPosition = cameraController->GetCamera().GetPosition();
-
-    TransformComponent transform{};
-    transform.LocalPosition = cameraPosition + glm::vec3(0.0f, 0.0f, -3.0f);
-
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    // const auto sponzaEntity = registry.create();
-    // registry.emplace<MeshComponent>(sponzaEntity, *sponzaModel);
-    // registry.emplace<TransformComponent>(sponzaEntity, TransformComponent{});
-    // registry.emplace<MetadataComponent>(sponzaEntity, "Sponza");
+    const auto sponzaEntity = CreateEntityFromModel(*sponzaModel);
+    auto& transform = registry.get<TransformComponent>(sponzaEntity);
+    transform.LocalPosition = glm::vec3(0, -1, 0);
+    transform.LocalRotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    transform.IsDirty = true;
 
-    AnimatedModelEntity = registry.create();
-    registry.emplace<MeshComponent>(AnimatedModelEntity, *animatedModel);
-    registry.emplace<TransformComponent>(AnimatedModelEntity, transform);
-    registry.emplace<MetadataComponent>(AnimatedModelEntity, "BoxAnimated");
+    AnimatedModelEntity = CreateEntityFromModel(*animatedModel);
 }
 
 void SponzaLayer::OnEvent(Event& event)

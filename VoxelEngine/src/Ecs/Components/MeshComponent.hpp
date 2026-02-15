@@ -7,9 +7,10 @@ namespace VoxelEngine
 
 struct MeshComponent
 {
-    const Model& Model;
+    std::string Name;
+    const std::vector<RenderPrimitive> Primitives;
 
-    explicit MeshComponent(const VoxelEngine::Model& model) : Model(model)
+    explicit MeshComponent(const std::vector<RenderPrimitive>& primitives) : Primitives(primitives)
     {
     }
 };

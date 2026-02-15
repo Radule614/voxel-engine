@@ -13,8 +13,6 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-#define BUFFER_OFFSET(i) reinterpret_cast<void*>(i)
-
 static std::map<std::string, GLuint> VertexAttributeIndexMap = {
     {"POSITION", 0},
     {"NORMAL", 1},
@@ -50,6 +48,13 @@ void Model::Load()
 
         LoadNodes(model.nodes[node]);
     }
+}
+
+const tinygltf::Model& Model::GetRawModel() const { return *m_GltfModel; }
+
+const std::vector<RenderPrimitive>& Model::GetMeshPrimitives(const int32_t meshIndex) const
+{
+    return m_MeshPrimitiveMap.at(meshIndex);
 }
 
 void Model::LoadNodes(const tinygltf::Node& node)
@@ -110,7 +115,7 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
 
             const GLuint index = VertexAttributeIndexMap[primitiveType];
 
-            const auto offset = BUFFER_OFFSET(accessor.byteOffset);
+            const auto offset = (void*)accessor.byteOffset;
             const int32_t isNormalized = accessor.normalized ? GL_TRUE : GL_FALSE;
             const int32_t size = tinygltf::GetNumComponentsInType(accessor.type);
             const int32_t byteStride = accessor.ByteStride(model.bufferViews[accessor.bufferView]);
@@ -127,7 +132,7 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
         renderPrimitive.Mode = primitive.mode;
         renderPrimitive.IndexCount = indexBufferAccessor.count;
         renderPrimitive.IndexType = indexBufferAccessor.componentType;
-        renderPrimitive.IndexOffset = BUFFER_OFFSET(indexBufferAccessor.byteOffset);
+        renderPrimitive.IndexOffset = (void*)indexBufferAccessor.byteOffset;
 
         if (primitive.material >= 0)
         {

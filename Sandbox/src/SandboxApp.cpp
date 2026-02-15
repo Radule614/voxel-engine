@@ -19,7 +19,7 @@ void SandboxApp::Setup()
 {
     // constexpr auto cameraPosition = glm::vec3(-140.5f * CHUNK_WIDTH, CHUNK_HEIGHT - 24, 30.5f * CHUNK_WIDTH);
     // constexpr auto cameraPosition = glm::vec3(0.0f, 70.0f, 0.0f);
-    constexpr auto cameraPosition = glm::vec3(2.0f, 2.0f, 0.0f);
+    constexpr auto cameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
 
     m_State.CameraController->SetFreeFly(true);
     m_State.CameraController->GetCamera().SetPosition(cameraPosition);

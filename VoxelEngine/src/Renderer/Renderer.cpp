@@ -1,12 +1,12 @@
 #include "Renderer.hpp"
 
 #include "DirectionalLight.hpp"
-#include "Quad.hpp"
 #include "../Config.hpp"
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Ecs.hpp"
 #include "../Ecs/Components/TransformComponent.hpp"
 #include "GLCore/Utils/ShaderBuilder.hpp"
+#include "Utils/RenderUtils.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -146,6 +146,23 @@ void Renderer::RenderScene(const PerspectiveCamera& camera, const RenderTarget& 
     renderTarget.Unbind();
 }
 
+void Renderer::DrawPrimitives(const Shader& shader,
+                              const std::vector<RenderPrimitive>& primitives,
+                              const glm::mat4& model)
+{
+    for (auto [Vao, Mode, IndexCount, IndexType, IndexOffset, Material]: primitives)
+    {
+        glBindVertexArray(Vao);
+
+        shader.SetModel(model);
+        shader.Set(Material);
+
+        glDrawElements(Mode, IndexCount, IndexType, IndexOffset);
+    }
+
+    glBindVertexArray(0);
+}
+
 void Renderer::BuildSkyboxCubeMap() const
 {
     static Texture skyboxTexture = AssetManager::Instance().LoadHdrTexture("assets/hdr/day_pure_sky.hdr");
@@ -173,7 +190,7 @@ void Renderer::BuildSkyboxCubeMap() const
                                0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        AssetManager::Instance().GetCubeModel().Draw(shader, glm::mat4(1.0));
+        DrawPrimitives(shader, AssetManager::Instance().GetCubeModel().GetMeshPrimitives(0), glm::mat4(1.0));
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -207,7 +224,7 @@ void Renderer::BuildIrradianceCubeMap() const
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        AssetManager::Instance().GetCubeModel().Draw(shader, glm::mat4(1.0f));
+        RenderUtils::DrawCube(shader, glm::mat4(1.0));
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -249,7 +266,7 @@ void Renderer::BuildPreFilterCubeMap() const
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            AssetManager::Instance().GetCubeModel().Draw(shader, glm::mat4(1.0f));
+            RenderUtils::DrawCube(shader, glm::mat4(1.0));
         }
     }
 
@@ -267,7 +284,7 @@ void Renderer::BuildBrdfTexture() const
 
     glViewport(0, 0, 512, 512);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    Quad::Draw();
+    RenderUtils::DrawQuad();
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -288,7 +305,7 @@ void Renderer::DrawSkybox(const PerspectiveCamera& camera) const
     glDepthMask(GL_FALSE);
     glCullFace(GL_FRONT);
 
-    AssetManager::Instance().GetCubeModel().Draw(shader, glm::mat4(1.0f));
+    RenderUtils::DrawCube(shader, glm::mat4(1.0));
 
     glCullFace(GL_BACK);
     glDepthMask(GL_TRUE);
@@ -414,7 +431,7 @@ void Renderer::Render(const Shader& shader)
 
         shader.Set(GetCloseLights(transform.WorldPosition, lightView));
 
-        mesh.Model.Draw(shader, transform.WorldMatrix);
+        DrawPrimitives(shader, mesh.Primitives, transform.WorldMatrix);
     }
 }
 
@@ -450,7 +467,7 @@ void Renderer::DrawLights(const PerspectiveCamera& camera) const
         model = glm::translate(model, light.Position);
         model = glm::scale(model, glm::vec3(0.07f));
 
-        AssetManager::Instance().GetSphereModel().Draw(shader, model);
+        RenderUtils::DrawSphere(shader, glm::mat4(1.0));
     }
 }
 

@@ -1,10 +1,10 @@
 #include "BallLayer.hpp"
 #include "Physics/PhysicsEngine.hpp"
 #include "Assets/AssetManager.hpp"
+#include "Ecs/ModelEntity.hpp"
 #include "Ecs/Components/CameraComponent.hpp"
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/ColliderComponent.hpp"
-#include "Ecs/Components/MeshComponent.hpp"
 #include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Enemy/Enemy.hpp"
@@ -78,9 +78,8 @@ void BallLayer::OnEvent(Event& event)
                 transform.LocalScale = glm::vec3(0.4);
 
                 auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-                const auto entity = registry.create();
-                registry.emplace<MeshComponent>(entity, AssetManager::Instance().GetSphereModel());
-                registry.emplace<TransformComponent>(entity, transform);
+
+                const auto entity = CreateEntityFromModel(AssetManager::Instance().GetSphereModel());
                 registry.emplace<ColliderComponent>(entity, ColliderComponent(bodyId));
                 registry.emplace<MetadataComponent>(entity, "Ball");
                 m_SphereEntities.emplace_back(entity, 0);

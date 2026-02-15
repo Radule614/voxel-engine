@@ -4,6 +4,7 @@
 #include "imgui_internal.h"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/Scene.hpp"
+#include "Ecs/Components/MeshComponent.hpp"
 #include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Utils/Utils.hpp"
@@ -14,8 +15,8 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-static void DrawEntityViewer();
-static void DisplayEntity(entt::entity entity);
+static void DrawSceneViewer();
+static void DrawNode(entt::entity entity);
 
 UserInterface::UserInterface(EngineState& state) : m_State(state)
 {
@@ -148,7 +149,7 @@ void UserInterface::OnImGuiRender()
         ImGui::DockBuilderFinish(dockspaceId);
     }
 
-    DrawEntityViewer();
+    DrawSceneViewer();
 }
 
 void UserInterface::OnUpdate(Timestep ts)
@@ -157,7 +158,7 @@ void UserInterface::OnUpdate(Timestep ts)
         m_State.CameraController->OnUpdate(ts);
 }
 
-void DrawEntityViewer()
+void DrawSceneViewer()
 {
     static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
@@ -168,42 +169,44 @@ void DrawEntityViewer()
     const auto view = registry.view<TransformComponent>(entt::exclude<ParentComponent>);
 
     for (const auto& entity: view)
-        DisplayEntity(entity);
+        DrawNode(entity);
 
     ImGui::End();
 }
 
-static void DisplayEntity(const entt::entity entity)
+static void DrawNode(const entt::entity entity)
 {
     static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     ImGui::PushID((int32_t) entity);
 
-    std::string entityName = "Entity";
+    std::string nodeName = "Node";
 
     const MetadataComponent* metadata = registry.try_get<MetadataComponent>(entity);
 
     if (metadata != nullptr)
-        entityName = metadata->Name;
+        nodeName += std::format(": {}", metadata->Name);
 
-    if (ImGui::TreeNodeEx(entityName.c_str()))
+    if (ImGui::TreeNodeEx(nodeName.c_str()))
     {
         const TransformComponent* transform = registry.try_get<TransformComponent>(entity);
-
         if (transform != nullptr)
         {
             std::string position = VecToString(transform->LocalPosition);
             ImGui::Text(std::format("Transform: {0}", position).c_str());
         }
 
-        const ChildrenComponent* children = registry.try_get<ChildrenComponent>(entity);
+        const MeshComponent* mesh = registry.try_get<MeshComponent>(entity);
+        if (mesh != nullptr)
+        {
 
+        }
+
+        const ChildrenComponent* children = registry.try_get<ChildrenComponent>(entity);
         if (children != nullptr)
         {
-            ImGui::Text("Children:");
-
             for (const auto& childEntity: children->Entities)
-                DisplayEntity(childEntity);
+                DrawNode(childEntity);
         }
 
         ImGui::TreePop();
