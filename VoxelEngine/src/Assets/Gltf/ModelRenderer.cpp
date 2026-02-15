@@ -19,21 +19,6 @@ namespace VoxelEngine
 
 static glm::mat4 GetLocalTransformMatrix(const tinygltf::Node& node);
 
-void Model::DrawNodes(const Shader& shader,
-                      glm::mat4 modelMatrix,
-                      const tinygltf::Node& node) const
-{
-    const tinygltf::Model& model = *m_GltfModel;
-
-    modelMatrix = modelMatrix * GetLocalTransformMatrix(node);
-
-    if (node.mesh >= 0 && node.mesh < model.meshes.size())
-        DrawMesh(shader, modelMatrix, model.meshes[node.mesh], node.mesh);
-
-    for (const int32_t childNode: node.children)
-        DrawNodes(shader, modelMatrix, model.nodes[childNode]);
-}
-
 void Model::Draw(const Shader& shader, const glm::mat4& modelMatrix) const
 {
     const tinygltf::Model& model = *m_GltfModel;
@@ -41,6 +26,20 @@ void Model::Draw(const Shader& shader, const glm::mat4& modelMatrix) const
 
     for (const int32_t node: scene.nodes)
         DrawNodes(shader, modelMatrix, model.nodes[node]);
+}
+
+void Model::DrawNodes(const Shader& shader,
+                      glm::mat4 modelMatrix,
+                      const tinygltf::Node& node) const
+{
+    const tinygltf::Model& model = *m_GltfModel;
+    modelMatrix = modelMatrix * GetLocalTransformMatrix(node);
+
+    if (node.mesh >= 0 && node.mesh < model.meshes.size())
+        DrawMesh(shader, modelMatrix, model.meshes[node.mesh], node.mesh);
+
+    for (const int32_t childNode: node.children)
+        DrawNodes(shader, modelMatrix, model.nodes[childNode]);
 }
 
 void Model::DrawMesh(const Shader& shader,
@@ -53,14 +52,14 @@ void Model::DrawMesh(const Shader& shader,
 
     for (size_t i = 0; i < mesh.primitives.size(); ++i)
     {
-        auto [Vao, Mode, IndexCount, IndexType, Material] = renderPrimitives[i];
+        auto [Vao, Mode, IndexCount, IndexType, IndexOffset, Material] = renderPrimitives[i];
 
         glBindVertexArray(Vao);
 
         shader.SetModel(modelMatrix);
         shader.Set(Material);
 
-        glDrawElements(Mode, IndexCount, IndexType, nullptr);
+        glDrawElements(Mode, IndexCount, IndexType, IndexOffset);
     }
 
     glBindVertexArray(0);

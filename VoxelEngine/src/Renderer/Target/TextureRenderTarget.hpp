@@ -37,7 +37,6 @@ private:
     GLuint m_RenderBufferObject = 0;
 
     GLuint m_Texture = 0;
-
 };
 
 }

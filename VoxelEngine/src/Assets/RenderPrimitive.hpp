@@ -15,6 +15,7 @@ struct RenderPrimitive
     GLenum Mode;
     GLsizei IndexCount;
     GLenum IndexType;
+    void* IndexOffset;
 
     Material Material;
 };
