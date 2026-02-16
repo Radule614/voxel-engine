@@ -57,16 +57,62 @@ void UserInterface::OnEvent(Event& event)
         });
 }
 
+static void SetupDockspace()
+{
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImGuiID dockspaceId = ImGui::GetID("Dockspace");
+
+    ImGuiDockNodeFlags flags = ImGuiDockNodeFlags_NoUndocking | ImGuiDockNodeFlags_NoResize |
+                               ImGuiDockNodeFlags_HiddenTabBar;
+
+    ImGui::DockBuilderAddNode(dockspaceId, flags);
+    ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->Size);
+    ImGui::DockBuilderSetNodePos(dockspaceId, ImVec2(0, 0));
+
+    ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Left, 0.2f, nullptr, &dockspaceId);
+    ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Right, 0.2f, nullptr, &dockspaceId);
+    ImGuiID dockTop = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Up, 0.2f, nullptr, &dockspaceId);
+    ImGuiID dockBottom = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Down, 0.2f, nullptr, &dockspaceId);
+
+    ImGui::SetNextWindowDockID(dockLeft, ImGuiCond_Always);
+    ImGui::Begin("Left Panel");
+    ImGui::End();
+    ImGui::SetNextWindowDockID(dockRight, ImGuiCond_Always);
+    ImGui::Begin("Right Panel");
+    ImGui::End();
+    ImGui::SetNextWindowDockID(dockTop, ImGuiCond_Always);
+    ImGui::Begin("Top Panel");
+    ImGui::Text("123");
+    ImGui::End();
+    ImGui::SetNextWindowDockID(dockBottom, ImGuiCond_Always);
+    ImGui::Begin("Bottom Panel");
+    ImGui::End();
+    ImGui::SetNextWindowDockID(dockspaceId, ImGuiCond_Always);
+    ImGui::Begin("Viewport");
+    ImGui::End();
+
+    ImGui::DockBuilderFinish(dockspaceId);
+}
+
 void UserInterface::OnImGuiRender()
 {
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    static bool dockspaceInitialized = false;
+
+    if (!dockspaceInitialized)
+    {
+        dockspaceInitialized = true;
+
+        SetupDockspace();
+    }
+
+    ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->Pos);
     ImGui::SetNextWindowSize(viewport->Size);
     ImGui::SetNextWindowViewport(viewport->ID);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
 
-    constexpr ImGuiWindowFlags hostFlags =
+    ImGuiWindowFlags hostFlags =
             ImGuiWindowFlags_NoDocking |
             ImGuiWindowFlags_NoTitleBar |
             ImGuiWindowFlags_NoCollapse |
@@ -78,76 +124,11 @@ void UserInterface::OnImGuiRender()
     ImGui::Begin("DockSpaceWindow", nullptr, hostFlags);
     ImGui::PopStyleVar(2);
 
-    const ImGuiID dockspaceId = ImGui::GetID("Dockspace");
-    ImGui::DockSpace(dockspaceId, ImVec2(0, 0), ImGuiDockNodeFlags_PassthruCentralNode);
+    ImGui::End();
 
-    ImGui::DockBuilderAddNode(dockspaceId, ImGuiDockNodeFlags_NoTabBar);
+    ImGuiID dockspaceId = ImGui::GetID("Dockspace");
     ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->Size);
     ImGui::DockBuilderSetNodePos(dockspaceId, ImVec2(0, 0));
-
-    ImGui::End();
-
-    ImGui::Begin("Left Panel");
-    ImGui::End();
-    ImGui::Begin("Right Panel");
-    ImGui::End();
-    ImGui::Begin("Top Panel");
-    ImGui::End();
-    ImGui::Begin("Bottom Panel");
-    ImGui::End();
-    ImGui::Begin("Viewport");
-    ImGui::End();
-
-    ImGuiDockNode* dockspaceNode = ImGui::DockBuilderGetNode(dockspaceId);
-
-    if (!dockspaceNode->ChildNodes[0])
-    {
-        const ImGuiID dockIdLeft = ImGui::DockBuilderSplitNode(dockspaceId,
-                                                               ImGuiDir_Left,
-                                                               0.2f,
-                                                               nullptr,
-                                                               (ImGuiID*) &dockspaceId);
-        const ImGuiID dockIdRight = ImGui::DockBuilderSplitNode(dockspaceId,
-                                                                ImGuiDir_Right,
-                                                                0.2f,
-                                                                nullptr,
-                                                                (ImGuiID*) &dockspaceId);
-
-        const ImGuiID dockIdUp = ImGui::DockBuilderSplitNode(dockspaceId,
-                                                             ImGuiDir_Up,
-                                                             40.0f / viewport->Size.y,
-                                                             nullptr,
-                                                             (ImGuiID*) &dockspaceId);
-
-        const ImGuiID dockIdDown = ImGui::DockBuilderSplitNode(dockspaceId,
-                                                               ImGuiDir_Down,
-                                                               0.2f,
-                                                               nullptr,
-                                                               (ImGuiID*) &dockspaceId);
-
-        ImGui::DockBuilderDockWindow("Left Panel", dockIdLeft);
-        ImGui::DockBuilderDockWindow("Right Panel", dockIdRight);
-        ImGui::DockBuilderDockWindow("Top Panel", dockIdUp);
-        ImGui::DockBuilderDockWindow("Bottom Panel", dockIdDown);
-        ImGui::DockBuilderDockWindow("Viewport", dockspaceId);
-
-        if (ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockIdLeft))
-            node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
-
-        if (ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockIdRight))
-            node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
-
-        if (ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockIdUp))
-            node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
-
-        if (ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockIdDown))
-            node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
-
-        if (ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspaceId))
-            node->LocalFlags |= ImGuiDockNodeFlags_NoTabBar;
-
-        ImGui::DockBuilderFinish(dockspaceId);
-    }
 
     DrawSceneViewer();
 }
@@ -189,17 +170,24 @@ static void DrawNode(const entt::entity entity)
 
     if (ImGui::TreeNodeEx(nodeName.c_str()))
     {
-        const TransformComponent* transform = registry.try_get<TransformComponent>(entity);
+        TransformComponent* transform = registry.try_get<TransformComponent>(entity);
         if (transform != nullptr)
         {
-            std::string position = VecToString(transform->LocalPosition);
-            ImGui::Text(std::format("Transform: {0}", position).c_str());
+            ImGui::Columns(2);
+            ImGui::Dummy(ImVec2(0.0f, 1.0f));
+            ImGui::SetColumnWidth(0, 80);
+
+            ImGui::Text("Transform");
+
+            ImGui::NextColumn();
+            ImGui::DragFloat3(ImGui::GetVersion(), &transform->LocalPosition.x, 0.1f);
+
+            ImGui::Columns(1);
         }
 
         const MeshComponent* mesh = registry.try_get<MeshComponent>(entity);
         if (mesh != nullptr)
         {
-
         }
 
         const ChildrenComponent* children = registry.try_get<ChildrenComponent>(entity);
