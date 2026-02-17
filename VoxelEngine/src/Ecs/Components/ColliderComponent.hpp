@@ -1,21 +1,22 @@
 #pragma once
 
 #include "../../Physics/PhysicsEngine.hpp"
+#include "../ComponentGui.hpp"
 
 namespace VoxelEngine
 {
 
-struct ColliderComponent
+struct ColliderComponent : ComponentGui
 {
     JPH::BodyID BodyId;
+    JPH::EShapeType ShapeType;
+    JPH::EShapeSubType ShapeSubType;
 
-    ColliderComponent()
-    {
-    }
+    explicit ColliderComponent(JPH::BodyID bodyId, JPH::EShapeType type, JPH::EShapeSubType subType);
+    ~ColliderComponent() override = default;
 
-    explicit ColliderComponent(const JPH::BodyID bodyId) : BodyId(bodyId)
-    {
-    }
+    std::string GetName() override;
+    void DrawGui() override;
 };
 
 }

@@ -1,18 +1,14 @@
 //
-// Created by RadU on 2/1/2026.
+// Created by RadU on 2/17/2026.
 //
 
 #pragma once
 
-#include "entt.hpp"
+#include "../Ecs.hpp"
+#include "ChildrenComponent.hpp"
 
 namespace VoxelEngine
 {
-
-struct ChildrenComponent
-{
-    std::vector<entt::entity> Entities{};
-};
 
 struct ParentComponent
 {
@@ -22,7 +18,7 @@ struct ParentComponent
     {
     }
 
-    void RemoveChild(const entt::entity child) const
+    void RemoveChild(const entt::entity entity) const
     {
         static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
@@ -32,7 +28,7 @@ struct ParentComponent
 
         auto& entities = children->Entities;
 
-        entities.erase(std::ranges::remove(entities, child).begin(), entities.end());
+        entities.erase(std::ranges::remove(entities, entity).begin(), entities.end());
     }
 
     void AddChild(const entt::entity entity) const

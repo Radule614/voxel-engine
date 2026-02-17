@@ -1,17 +1,21 @@
 #pragma once
 
+#include "../ComponentGui.hpp"
 #include "../../Assets/Gltf/Model.hpp"
 
 namespace VoxelEngine
 {
 
-struct MeshComponent
+struct MeshComponent : ComponentGui
 {
-    const Model& Model;
+    std::string Name;
+    const std::vector<RenderPrimitive> Primitives;
 
-    explicit MeshComponent(const VoxelEngine::Model& model) : Model(model)
-    {
-    }
+    explicit MeshComponent(std::string name, const std::vector<RenderPrimitive>& primitives);
+    ~MeshComponent() override = default;
+
+    std::string GetName() override;
+    void DrawGui() override;
 };
 
 }

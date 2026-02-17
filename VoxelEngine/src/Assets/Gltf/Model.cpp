@@ -4,7 +4,6 @@
 
 #include "Model.hpp"
 #include "GLCoreUtils.hpp"
-#include "stb_image.hpp"
 #include <ranges>
 #include <glm/glm.hpp>
 
@@ -13,8 +12,6 @@ using namespace GLCore::Utils;
 
 namespace VoxelEngine
 {
-
-#define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 static std::map<std::string, GLuint> VertexAttributeIndexMap = {
     {"POSITION", 0},
@@ -53,6 +50,28 @@ void Model::Load()
     }
 }
 
+const tinygltf::Model& Model::GetRawModel() const { return *m_GltfModel; }
+
+const std::vector<RenderPrimitive>& Model::GetMeshPrimitives(const int32_t meshIndex) const
+{
+    return m_MeshPrimitiveMap.at(meshIndex);
+}
+
+void Model::LoadNodes(const tinygltf::Node& node)
+{
+    const tinygltf::Model& model = *m_GltfModel;
+
+    if (node.mesh >= 0 && node.mesh < model.meshes.size())
+        LoadMesh(model.meshes[node.mesh], node.mesh);
+
+    for (const int32_t childNode: node.children)
+    {
+        GLCORE_ASSERT(node.children[i] >= 0 && node.children[i] < model.nodes.size());
+
+        LoadNodes(model.nodes[childNode]);
+    }
+}
+
 GLuint Model::LoadBuffer(const int32_t bufferViewIndex)
 {
     if (m_AllocatedBuffers.contains(bufferViewIndex))
@@ -73,21 +92,6 @@ GLuint Model::LoadBuffer(const int32_t bufferViewIndex)
     m_AllocatedBuffers[bufferViewIndex] = glBuffer;
 
     return glBuffer;
-}
-
-void Model::LoadNodes(const tinygltf::Node& node)
-{
-    const tinygltf::Model& model = *m_GltfModel;
-
-    if (node.mesh >= 0 && node.mesh < model.meshes.size())
-        LoadMesh(model.meshes[node.mesh], node.mesh);
-
-    for (const int32_t childNode: node.children)
-    {
-        GLCORE_ASSERT(node.children[i] >= 0 && node.children[i] < model.nodes.size());
-
-        LoadNodes(model.nodes[childNode]);
-    }
 }
 
 void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
@@ -111,9 +115,9 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
 
             const GLuint index = VertexAttributeIndexMap[primitiveType];
 
-            const auto& offset = BUFFER_OFFSET(accessor.byteOffset);
+            const auto offset = (void*)accessor.byteOffset;
             const int32_t isNormalized = accessor.normalized ? GL_TRUE : GL_FALSE;
-            const int32_t size = accessor.type != TINYGLTF_TYPE_SCALAR ? accessor.type : 1;
+            const int32_t size = tinygltf::GetNumComponentsInType(accessor.type);
             const int32_t byteStride = accessor.ByteStride(model.bufferViews[accessor.bufferView]);
 
             glEnableVertexAttribArray(index);
@@ -128,6 +132,7 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
         renderPrimitive.Mode = primitive.mode;
         renderPrimitive.IndexCount = indexBufferAccessor.count;
         renderPrimitive.IndexType = indexBufferAccessor.componentType;
+        renderPrimitive.IndexOffset = (void*)indexBufferAccessor.byteOffset;
 
         if (primitive.material >= 0)
         {

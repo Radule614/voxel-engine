@@ -18,21 +18,22 @@ using namespace GLCore;
 void SandboxApp::Setup()
 {
     // constexpr auto cameraPosition = glm::vec3(-140.5f * CHUNK_WIDTH, CHUNK_HEIGHT - 24, 30.5f * CHUNK_WIDTH);
-    constexpr auto cameraPosition = glm::vec3(0.0f, 70.0f, 0.0f);
-    // constexpr auto cameraPosition = glm::vec3(0.0f);
+    // constexpr auto cameraPosition = glm::vec3(0.0f, 70.0f, 0.0f);
+    constexpr auto cameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
 
     m_State.CameraController->SetFreeFly(true);
     m_State.CameraController->GetCamera().SetPosition(cameraPosition);
+    m_State.CameraController->SetSpeed(10.0f);
 
     WorldSettings settings{};
     settings.m_Biome = std::make_unique<Biome>(6512u);
     // settings.m_Biome->AddGenerator(PLAINS, std::make_unique<ShrineGenerator>());
 
-    auto* voxelLayer = new VoxelLayer(m_State);
-    voxelLayer->Init(std::move(settings));
+    // auto* voxelLayer = new VoxelLayer(m_State);
+    // voxelLayer->Init(std::move(settings));
+    // PushLayer(voxelLayer);
+    // PushLayer(new BallLayer(m_State));
 
-    PushLayer(voxelLayer);
-    PushLayer(new BallLayer(m_State));
     PushLayer(new SponzaLayer(m_State));
 }
 

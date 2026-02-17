@@ -32,8 +32,12 @@ public:
     explicit Renderer();
     ~Renderer();
 
-    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera, const RenderTarget& renderTarget) const;
     void Init() const;
+
+    void RenderScene(const GLCore::Utils::PerspectiveCamera& camera, const RenderTarget& renderTarget) const;
+    static void DrawPrimitives(const GLCore::Utils::Shader& shader,
+                               const std::vector<RenderPrimitive>& primitives,
+                               const glm::mat4& model);
 
 private:
     static void Render(const GLCore::Utils::Shader& shader);

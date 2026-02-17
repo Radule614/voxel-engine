@@ -52,9 +52,11 @@ glm::vec3 PerspectiveCameraController::CalculateMovementDirection() const
                : glm::normalize(direction);
 }
 
-void PerspectiveCameraController::SetFreeFly(bool value) { m_FreeFly = value; }
+void PerspectiveCameraController::SetFreeFly(const bool value) { m_FreeFly = value; }
 
 bool PerspectiveCameraController::IsFreeFly() const { return m_FreeFly; }
+
+void PerspectiveCameraController::SetSpeed(const float_t speed) { m_CameraTranslationSpeed = speed; }
 
 void PerspectiveCameraController::OnEvent(Event& e)
 {

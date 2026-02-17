@@ -2,12 +2,19 @@
 
 #include <entt.hpp>
 #include <mutex>
-#include <glm/glm.hpp>
 
+#include "Components/ColliderComponent.hpp"
+#include "Components/MeshComponent.hpp"
 #include "Components/TransformComponent.hpp"
 
 namespace VoxelEngine
 {
+
+using ComponentsWithGui = std::tuple<
+    TransformComponent,
+    MeshComponent,
+    ColliderComponent
+>;
 
 class EntityComponentSystem
 {
@@ -19,6 +26,8 @@ public:
 
     entt::registry& GetEntityRegistry() const;
     entt::entity SafeCreateEntity();
+
+    void DestroyEntityRecursive(entt::entity entity) const;
 
 private:
     EntityComponentSystem();

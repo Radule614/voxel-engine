@@ -10,7 +10,7 @@
 #include "../Ecs/Components/TransformComponent.hpp"
 #include "../Ecs/Components/ColliderComponent.hpp"
 #include "../Ecs/Components/CharacterComponent.hpp"
-#include "../Ecs/Scene.hpp"
+#include "../Ecs/Components/ParentComponent.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 
 using namespace GLCore;

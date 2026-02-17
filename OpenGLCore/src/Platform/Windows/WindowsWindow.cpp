@@ -43,6 +43,7 @@ void WindowsWindow::Init(const WindowProps &props)
     }
 
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    glfwWindowHint(GLFW_MAXIMIZED, GL_TRUE);
 
     m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
     glfwMakeContextCurrent(m_Window);

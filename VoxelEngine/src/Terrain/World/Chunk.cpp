@@ -13,7 +13,7 @@
 #include "../../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../../Ecs/Components/TransformComponent.hpp"
 #include "../../Ecs/Components/MetadataComponent.hpp"
-#include "../../Ecs/Scene.hpp"
+#include "../../Ecs/Components/ParentComponent.hpp"
 
 namespace VoxelEngine
 {

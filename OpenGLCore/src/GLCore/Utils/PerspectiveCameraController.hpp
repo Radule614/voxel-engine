@@ -26,6 +26,7 @@ public:
     glm::vec3 CalculateMovementDirection() const;
     void SetFreeFly(bool value);
     bool IsFreeFly() const;
+    void SetSpeed(float_t speed);
 
 private:
     bool OnMouseScrolled(MouseScrolledEvent& e);
