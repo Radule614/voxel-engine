@@ -15,9 +15,6 @@ using namespace GLCore::Utils;
 namespace VoxelEngine
 {
 
-static void DrawSceneViewer();
-static void DrawNode(entt::entity entity);
-
 UserInterface::UserInterface(EngineState& state) : m_State(state)
 {
 }
@@ -59,78 +56,46 @@ void UserInterface::OnEvent(Event& event)
 
 static void SetupDockspace()
 {
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGuiID dockspaceId = ImGui::GetID("Dockspace");
 
-    ImGuiDockNodeFlags flags = ImGuiDockNodeFlags_NoUndocking | ImGuiDockNodeFlags_NoResize |
-                               ImGuiDockNodeFlags_HiddenTabBar;
+    if (ImGui::DockBuilderGetNode(dockspaceId) == nullptr)
+    {
+        ImGuiDockNodeFlags flags = ImGuiDockNodeFlags_NoUndocking |
+                                   ImGuiDockNodeFlags_NoResize |
+                                   ImGuiDockNodeFlags_HiddenTabBar |
+                                   ImGuiDockNodeFlags_DockSpace;
 
-    ImGui::DockBuilderAddNode(dockspaceId, flags);
-    ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->Size);
-    ImGui::DockBuilderSetNodePos(dockspaceId, ImVec2(0, 0));
+        ImGui::DockBuilderAddNode(dockspaceId, flags);
+        ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->Size);
+        ImGui::DockBuilderSetNodePos(dockspaceId, ImVec2(0, 0));
 
-    ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Left, 0.2f, nullptr, &dockspaceId);
-    ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Right, 0.2f, nullptr, &dockspaceId);
-    ImGuiID dockTop = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Up, 0.2f, nullptr, &dockspaceId);
-    ImGuiID dockBottom = ImGui::DockBuilderSplitNode(dockspaceId, ImGuiDir_Down, 0.2f, nullptr, &dockspaceId);
+        ImGuiID dockIdLeft;
+        ImGuiID dockIdMain = dockspaceId;
 
-    ImGui::SetNextWindowDockID(dockLeft, ImGuiCond_Always);
-    ImGui::Begin("Left Panel");
-    ImGui::End();
-    ImGui::SetNextWindowDockID(dockRight, ImGuiCond_Always);
-    ImGui::Begin("Right Panel");
-    ImGui::End();
-    ImGui::SetNextWindowDockID(dockTop, ImGuiCond_Always);
-    ImGui::Begin("Top Panel");
-    ImGui::Text("123");
-    ImGui::End();
-    ImGui::SetNextWindowDockID(dockBottom, ImGuiCond_Always);
-    ImGui::Begin("Bottom Panel");
-    ImGui::End();
-    ImGui::SetNextWindowDockID(dockspaceId, ImGuiCond_Always);
-    ImGui::Begin("Viewport");
-    ImGui::End();
+        ImGui::DockBuilderSplitNode(dockIdMain, ImGuiDir_Left, 0.20f, &dockIdLeft, &dockIdMain);
 
-    ImGui::DockBuilderFinish(dockspaceId);
+        ImGuiID dockIdRight;
+
+        ImGui::DockBuilderSplitNode(dockIdMain, ImGuiDir_Right, 0.20f, &dockIdRight, &dockIdMain);
+
+        ImGui::DockBuilderDockWindow("Viewport", dockIdMain);
+        ImGui::DockBuilderDockWindow("Entity Explorer", dockIdLeft);
+        ImGui::DockBuilderDockWindow("Entity Component", dockIdRight);
+        ImGui::DockBuilderDockWindow("Voxel Layer", dockIdRight);
+
+        ImGui::DockBuilderFinish(dockspaceId);
+    }
+
+    ImGui::DockSpaceOverViewport(dockspaceId, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
 }
 
 void UserInterface::OnImGuiRender()
 {
-    static bool dockspaceInitialized = false;
-
-    if (!dockspaceInitialized)
-    {
-        dockspaceInitialized = true;
-
-        SetupDockspace();
-    }
-
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
-    ImGui::SetNextWindowViewport(viewport->ID);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-
-    ImGuiWindowFlags hostFlags =
-            ImGuiWindowFlags_NoDocking |
-            ImGuiWindowFlags_NoTitleBar |
-            ImGuiWindowFlags_NoCollapse |
-            ImGuiWindowFlags_NoResize |
-            ImGuiWindowFlags_NoMove |
-            ImGuiWindowFlags_NoBringToFrontOnFocus |
-            ImGuiWindowFlags_NoNavFocus;
-
-    ImGui::Begin("DockSpaceWindow", nullptr, hostFlags);
-    ImGui::PopStyleVar(2);
-
-    ImGui::End();
-
-    ImGuiID dockspaceId = ImGui::GetID("Dockspace");
-    ImGui::DockBuilderSetNodeSize(dockspaceId, viewport->Size);
-    ImGui::DockBuilderSetNodePos(dockspaceId, ImVec2(0, 0));
+    SetupDockspace();
 
     DrawSceneViewer();
+    DrawComponentViewer();
 }
 
 void UserInterface::OnUpdate(Timestep ts)
@@ -139,11 +104,11 @@ void UserInterface::OnUpdate(Timestep ts)
         m_State.CameraController->OnUpdate(ts);
 }
 
-void DrawSceneViewer()
+void UserInterface::DrawSceneViewer()
 {
     static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    ImGui::Begin("Left Panel");
+    ImGui::Begin("Entity Explorer");
     ImGui::Text("Entity Tree");
     ImGui::Separator();
 
@@ -155,42 +120,34 @@ void DrawSceneViewer()
     ImGui::End();
 }
 
-static void DrawNode(const entt::entity entity)
+void UserInterface::DrawNode(const entt::entity entity)
 {
     static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     ImGui::PushID((int32_t) entity);
 
-    std::string nodeName = "Node";
-
     const MetadataComponent* metadata = registry.try_get<MetadataComponent>(entity);
+    const ChildrenComponent* children = registry.try_get<ChildrenComponent>(entity);
 
+    std::string nodeName = "Node";
     if (metadata != nullptr)
         nodeName += std::format(": {}", metadata->Name);
 
-    if (ImGui::TreeNodeEx(nodeName.c_str()))
+    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+
+    if (entity == m_SelectedEntity)
+        flags |= ImGuiTreeNodeFlags_Selected;
+
+    if (children == nullptr || children->Entities.empty())
+        flags |= ImGuiTreeNodeFlags_Leaf;
+
+    bool opened = ImGui::TreeNodeEx((void*) entity, flags, "%s", nodeName.c_str());
+
+    if (ImGui::IsItemClicked())
+        m_SelectedEntity = entity;
+
+    if (opened)
     {
-        TransformComponent* transform = registry.try_get<TransformComponent>(entity);
-        if (transform != nullptr)
-        {
-            ImGui::Columns(2);
-            ImGui::Dummy(ImVec2(0.0f, 1.0f));
-            ImGui::SetColumnWidth(0, 80);
-
-            ImGui::Text("Transform");
-
-            ImGui::NextColumn();
-            ImGui::DragFloat3(ImGui::GetVersion(), &transform->LocalPosition.x, 0.1f);
-
-            ImGui::Columns(1);
-        }
-
-        const MeshComponent* mesh = registry.try_get<MeshComponent>(entity);
-        if (mesh != nullptr)
-        {
-        }
-
-        const ChildrenComponent* children = registry.try_get<ChildrenComponent>(entity);
         if (children != nullptr)
         {
             for (const auto& childEntity: children->Entities)
@@ -201,6 +158,47 @@ static void DrawNode(const entt::entity entity)
     }
 
     ImGui::PopID();
+}
+
+void UserInterface::DrawComponentViewer() const
+{
+    static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    ImGui::Begin("Entity Component");
+    ImGui::Text("Component");
+
+    if (m_SelectedEntity == entt::null)
+    {
+        ImGui::End();
+
+        return;
+    }
+
+    TransformComponent* transform = registry.try_get<TransformComponent>(m_SelectedEntity);
+    if (transform != nullptr)
+    {
+        if (ImGui::BeginTable("EntityTable", 2, ImGuiTableFlags_SizingStretchSame))
+        {
+            ImGui::TableNextRow();
+
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextUnformatted("Position");
+
+            ImGui::TableSetColumnIndex(1);
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            if (ImGui::DragFloat3("##Position", &transform->LocalPosition.x, 0.1f))
+                transform->IsDirty = true;
+
+            ImGui::EndTable();
+        }
+    }
+
+    const MeshComponent* mesh = registry.try_get<MeshComponent>(m_SelectedEntity);
+    if (mesh != nullptr)
+    {
+    }
+
+    ImGui::End();
 }
 
 }

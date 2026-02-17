@@ -467,13 +467,13 @@ void Renderer::DrawLights(const PerspectiveCamera& camera) const
         model = glm::translate(model, light.Position);
         model = glm::scale(model, glm::vec3(0.07f));
 
-        RenderUtils::DrawSphere(shader, glm::mat4(1.0));
+        RenderUtils::DrawSphere(shader, model);
     }
 }
 
 void Renderer::Clear()
 {
-    glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
+    glClearColor(0, 0, 0, 1.0f);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }

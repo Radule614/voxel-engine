@@ -81,7 +81,7 @@ void BallLayer::OnEvent(Event& event)
 
                 const auto entity = CreateEntityFromModel(AssetManager::Instance().GetSphereModel());
                 registry.emplace<ColliderComponent>(entity, ColliderComponent(bodyId));
-                registry.emplace<MetadataComponent>(entity, "Ball");
+                registry.get<MetadataComponent>(entity).Name = "Ball";
                 m_SphereEntities.emplace_back(entity, 0);
             }
             return false;

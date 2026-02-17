@@ -81,8 +81,8 @@ void VoxelLayer::OnUpdate(const Timestep ts)
 
 void VoxelLayer::OnImGuiRender()
 {
-    ImGui::Begin("Right Panel");
-    ImGui::Text("Terrain Settings");
+    ImGui::Begin("Voxel Layer");
+    ImGui::Text("Voxel Layer");
 
     const char* polygonModes[] = {"Fill", "Line"};
     ImGui::Combo("Polygon Mode", &m_UIState.PolygonMode, polygonModes, IM_ARRAYSIZE(polygonModes));
