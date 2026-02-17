@@ -3,12 +3,8 @@
 #include <entt.hpp>
 #include <mutex>
 
-#include "Components/CameraComponent.hpp"
-#include "Components/CharacterComponent.hpp"
 #include "Components/ColliderComponent.hpp"
-#include "Components/LightComponent.hpp"
 #include "Components/MeshComponent.hpp"
-#include "Components/TerrainMeshComponent.hpp"
 #include "Components/TransformComponent.hpp"
 
 namespace VoxelEngine

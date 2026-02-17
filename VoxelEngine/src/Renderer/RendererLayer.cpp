@@ -41,7 +41,7 @@ void RendererLayer::OnUpdate(const Timestep ts)
     {
         m_Fps = 1.0f / ts;
 
-        m_State.Application->AppendToWindowTitle(std::format("Fps: {0}", m_Fps));
+        m_State.Application->AppendToWindowTitle(fmt::format("Fps: {0}", m_Fps));
 
         m_AccumulatedTime = 0.0f;
     }
@@ -64,7 +64,7 @@ void RendererLayer::ResizeTextureRenderTarget()
     ImGui::End();
 
     const int32_t width = viewportSize.x;
-    const int32_t height = viewportSize.y;
+    const int32_t height = viewportSize.y - 20;
 
     if (width != m_TextureRenderTarget.GetWidth() || height != m_TextureRenderTarget.GetHeight())
     {
@@ -80,7 +80,7 @@ static void DrawTextureInViewport(const GLuint texture, const int32_t width, con
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::Begin("Viewport");
 
-    ImGui::Image((ImTextureID) texture, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
+    ImGui::Image(texture, ImVec2(width, height), ImVec2(0, 1), ImVec2(1, 0));
 
     ImGui::End();
     ImGui::PopStyleVar();

@@ -29,7 +29,9 @@ void DrawEntityComponentsImpl(entt::registry& registry, const entt::entity entit
             if (c == nullptr)
                 return;
 
-            if (ImGui::TreeNodeEx(c->GetName().c_str(), ImGuiTreeNodeFlags_SpanAvailWidth))
+            const auto flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+
+            if (ImGui::TreeNodeEx(c->GetName().c_str(), flags))
             {
                 c->DrawGui();
 
@@ -101,22 +103,34 @@ static void SetupDockspace()
 
         ImGuiID dockIdLeft;
         ImGuiID dockIdMain = dockspaceId;
-
-        ImGui::DockBuilderSplitNode(dockIdMain, ImGuiDir_Left, 0.20f, &dockIdLeft, &dockIdMain);
+        ImGui::DockBuilderSplitNode(dockIdMain, ImGuiDir_Left, 0.2f, &dockIdLeft, &dockIdMain);
 
         ImGuiID dockIdRight;
+        ImGui::DockBuilderSplitNode(dockIdMain, ImGuiDir_Right, 0.2f, &dockIdRight, &dockIdMain);
 
-        ImGui::DockBuilderSplitNode(dockIdMain, ImGuiDir_Right, 0.20f, &dockIdRight, &dockIdMain);
+        ImGuiID dockIdUp;
+        ImGui::DockBuilderSplitNode(dockIdMain, ImGuiDir_Up, 60.0f / viewport->Size.y, &dockIdUp, &dockIdMain);
+
+        ImGuiID dockIdDown;
+        ImGui::DockBuilderSplitNode(dockIdMain, ImGuiDir_Down, 0.2f, &dockIdDown, &dockIdMain);
 
         ImGui::DockBuilderDockWindow("Viewport", dockIdMain);
-        ImGui::DockBuilderDockWindow("Entity Explorer", dockIdLeft);
+        ImGui::DockBuilderDockWindow("Scene Explorer", dockIdLeft);
         ImGui::DockBuilderDockWindow("Entity Component", dockIdRight);
         ImGui::DockBuilderDockWindow("Voxel Layer", dockIdRight);
+        ImGui::DockBuilderDockWindow("Scene Controls", dockIdUp);
+        ImGui::DockBuilderDockWindow("Resource Explorer", dockIdDown);
 
         ImGui::DockBuilderFinish(dockspaceId);
     }
 
     ImGui::DockSpaceOverViewport(dockspaceId, viewport, ImGuiDockNodeFlags_PassthruCentralNode);
+
+    ImGui::Begin("Scene Controls");
+    ImGui::End();
+
+    ImGui::Begin("Resource Explorer");
+    ImGui::End();
 }
 
 void UserInterface::OnImGuiRender()
@@ -127,7 +141,7 @@ void UserInterface::OnImGuiRender()
     DrawComponentViewer();
 }
 
-void UserInterface::OnUpdate(Timestep ts)
+void UserInterface::OnUpdate(const Timestep ts)
 {
     if (!m_State.MenuActive)
         m_State.CameraController->OnUpdate(ts);
@@ -135,9 +149,9 @@ void UserInterface::OnUpdate(Timestep ts)
 
 void UserInterface::DrawSceneViewer()
 {
-    static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    ImGui::Begin("Entity Explorer");
+    ImGui::Begin("Scene Explorer");
 
     const auto view = registry.view<TransformComponent>(entt::exclude<ParentComponent>);
 
@@ -149,7 +163,7 @@ void UserInterface::DrawSceneViewer()
 
 void UserInterface::DrawNode(const entt::entity entity)
 {
-    static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     ImGui::PushID((int32_t) entity);
 
@@ -168,7 +182,7 @@ void UserInterface::DrawNode(const entt::entity entity)
     if (children == nullptr || children->Entities.empty())
         flags |= ImGuiTreeNodeFlags_Leaf;
 
-    bool opened = ImGui::TreeNodeEx((void*) entity, flags, "%s", nodeName.c_str());
+    const bool opened = ImGui::TreeNodeEx((void*) entity, flags, "%s", nodeName.c_str());
 
     if (ImGui::IsItemClicked())
         m_SelectedEntity = entity;
@@ -189,7 +203,7 @@ void UserInterface::DrawNode(const entt::entity entity)
 
 void UserInterface::DrawComponentViewer() const
 {
-    static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     ImGui::Begin("Entity Component");
 
