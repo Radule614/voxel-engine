@@ -4,9 +4,9 @@
 
 #include "ModelEntity.hpp"
 
-#include "Scene.hpp"
 #include "Components/MeshComponent.hpp"
 #include "Components/MetadataComponent.hpp"
+#include "Components/ParentComponent.hpp"
 
 namespace VoxelEngine
 {

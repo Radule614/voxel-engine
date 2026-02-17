@@ -101,14 +101,18 @@ void BallLayer::OnUpdate(const Timestep ts)
         const entt::entity& sphere = it->first;
         float_t& accumulatedTime = it->second;
         accumulatedTime += ts;
-        if (accumulatedTime > 5.0f)
+
+        if (accumulatedTime > 10.0f)
         {
+            auto& ecs = EntityComponentSystem::Instance();
+            auto& collider = ecs.GetEntityRegistry().view<ColliderComponent>().get<ColliderComponent>(sphere);
+
             BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
-            auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-            auto& collider = registry.view<ColliderComponent>().get<ColliderComponent>(sphere);
             bodyInterface.RemoveBody(collider.BodyId);
             bodyInterface.DestroyBody(collider.BodyId);
-            registry.destroy(sphere);
+
+            ecs.DestroyEntityRecursive(sphere);
+
             it = m_SphereEntities.erase(it);
         }
         else

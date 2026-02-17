@@ -3,7 +3,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "Ecs/Ecs.hpp"
-#include "Ecs/Scene.hpp"
+#include "Ecs/Components/ParentComponent.hpp"
 #include "Ecs/Components/ColliderComponent.hpp"
 #include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
@@ -138,8 +138,6 @@ void UserInterface::DrawSceneViewer()
     static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     ImGui::Begin("Entity Explorer");
-    ImGui::Text("Entity Tree");
-    ImGui::Separator();
 
     const auto view = registry.view<TransformComponent>(entt::exclude<ParentComponent>);
 

@@ -5,7 +5,7 @@
 #include "EcsLayer.hpp"
 
 #include "Ecs.hpp"
-#include "Scene.hpp"
+#include "Components/ParentComponent.hpp"
 #include "glm/gtc/quaternion.hpp"
 
 namespace VoxelEngine
