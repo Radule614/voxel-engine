@@ -35,7 +35,10 @@ static void CreateComponents(const Model& model, const entt::entity& entity, con
     registry.emplace<TransformComponent>(entity, transform);
 
     if (node.mesh >= 0)
-        registry.emplace<MeshComponent>(entity, model.GetMeshPrimitives(node.mesh));
+    {
+        std::string meshName = model.GetRawModel().meshes[node.mesh].name;
+        registry.emplace<MeshComponent>(entity, meshName, model.GetMeshPrimitives(node.mesh));
+    }
 
     if (!node.name.empty())
         registry.emplace<MetadataComponent>(entity, node.name);

@@ -49,6 +49,7 @@ target_include_directories(VoxelEngine PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/PerlinNoise
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/Entt
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/AssetUtils
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/MagicEnum
 )
 
 # Link with other libraries

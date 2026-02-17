@@ -4,16 +4,45 @@
 #include "imgui_internal.h"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/Scene.hpp"
-#include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/ColliderComponent.hpp"
 #include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Utils/Utils.hpp"
+#include "Ecs/ComponentGui.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
 
 namespace VoxelEngine
 {
+
+template<std::size_t... Indices>
+void DrawEntityComponentsImpl(entt::registry& registry, const entt::entity entity, std::index_sequence<Indices...>)
+{
+    (([&] {
+        using ComponentType = std::tuple_element_t<Indices, ComponentsWithGui>;
+
+        if (auto* component = registry.try_get<ComponentType>(entity))
+        {
+            auto* c = dynamic_cast<ComponentGui*>(component);
+
+            if (c == nullptr)
+                return;
+
+            if (ImGui::TreeNodeEx(c->GetName().c_str(), ImGuiTreeNodeFlags_SpanAvailWidth))
+            {
+                c->DrawGui();
+
+                ImGui::TreePop();
+            }
+        }
+    }()), ...);
+}
+
+void DrawEntityComponents(entt::registry& registry, const entt::entity entity)
+{
+    DrawEntityComponentsImpl(registry, entity, std::make_index_sequence<std::tuple_size_v<ComponentsWithGui> >{});
+}
 
 UserInterface::UserInterface(EngineState& state) : m_State(state)
 {
@@ -165,7 +194,6 @@ void UserInterface::DrawComponentViewer() const
     static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     ImGui::Begin("Entity Component");
-    ImGui::Text("Component");
 
     if (m_SelectedEntity == entt::null)
     {
@@ -174,29 +202,7 @@ void UserInterface::DrawComponentViewer() const
         return;
     }
 
-    TransformComponent* transform = registry.try_get<TransformComponent>(m_SelectedEntity);
-    if (transform != nullptr)
-    {
-        if (ImGui::BeginTable("EntityTable", 2, ImGuiTableFlags_SizingStretchSame))
-        {
-            ImGui::TableNextRow();
-
-            ImGui::TableSetColumnIndex(0);
-            ImGui::TextUnformatted("Position");
-
-            ImGui::TableSetColumnIndex(1);
-            ImGui::SetNextItemWidth(-FLT_MIN);
-            if (ImGui::DragFloat3("##Position", &transform->LocalPosition.x, 0.1f))
-                transform->IsDirty = true;
-
-            ImGui::EndTable();
-        }
-    }
-
-    const MeshComponent* mesh = registry.try_get<MeshComponent>(m_SelectedEntity);
-    if (mesh != nullptr)
-    {
-    }
+    DrawEntityComponents(registry, m_SelectedEntity);
 
     ImGui::End();
 }

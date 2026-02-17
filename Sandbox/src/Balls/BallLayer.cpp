@@ -74,14 +74,17 @@ void BallLayer::OnEvent(Event& event)
 
                 BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
                 bodyInterface.AddLinearVelocity(bodyId, 20 * Vec3(front.x, front.y, front.z));
-                TransformComponent transform{};
-                transform.LocalScale = glm::vec3(0.4);
 
                 auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
                 const auto entity = CreateEntityFromModel(AssetManager::Instance().GetSphereModel());
-                registry.emplace<ColliderComponent>(entity, ColliderComponent(bodyId));
+                registry.emplace<ColliderComponent>(entity, bodyId, shape->GetType(), shape->GetSubType());
                 registry.get<MetadataComponent>(entity).Name = "Ball";
+
+                auto& transform = registry.get<TransformComponent>(entity);
+                transform.LocalScale = glm::vec3(0.4f);
+                transform.IsDirty = true;
+
                 m_SphereEntities.emplace_back(entity, 0);
             }
             return false;
@@ -98,7 +101,7 @@ void BallLayer::OnUpdate(const Timestep ts)
         const entt::entity& sphere = it->first;
         float_t& accumulatedTime = it->second;
         accumulatedTime += ts;
-        if (accumulatedTime > 10.0f)
+        if (accumulatedTime > 5.0f)
         {
             BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
             auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();

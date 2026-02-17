@@ -162,15 +162,6 @@ void VoxelLayer::CreateTerrainCollider() const
 
     const ShapeRefC shape = compoundSettings.Create().Get();
 
-    ColliderComponent* collider = nullptr;
-    if (const auto colliderComponent = registry.try_get<ColliderComponent>(m_World->GetEntity()))
-    {
-        bodyInterface.RemoveBody(colliderComponent->BodyId);
-        bodyInterface.DestroyBody(colliderComponent->BodyId);
-        collider = colliderComponent;
-    }
-    else { collider = &registry.emplace<ColliderComponent>(m_World->GetEntity()); }
-
     auto bodySettings = BodyCreationSettings(shape,
                                              Vec3::sZero(),
                                              Quat::sIdentity(),
@@ -178,7 +169,19 @@ void VoxelLayer::CreateTerrainCollider() const
                                              Layers::NON_MOVING);
 
     bodySettings.mEnhancedInternalEdgeRemoval = true;
-    collider->BodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
+    BodyID bodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
+
+    ColliderComponent* collider = registry.try_get<ColliderComponent>(m_World->GetEntity());
+    if (collider != nullptr)
+    {
+        bodyInterface.RemoveBody(collider->BodyId);
+        bodyInterface.DestroyBody(collider->BodyId);
+        collider->BodyId = bodyId;
+    }
+    else
+    {
+        registry.emplace<ColliderComponent>(m_World->GetEntity(), bodyId, shape->GetType(), shape->GetSubType());
+    }
 }
 
 void VoxelLayer::OnColliderLocationChanged(const glm::vec3 worldPosition)

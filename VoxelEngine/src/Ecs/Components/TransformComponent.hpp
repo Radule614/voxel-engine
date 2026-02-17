@@ -1,12 +1,14 @@
 #pragma once
 
 #include <glm/glm.hpp>
+
+#include "../ComponentGui.hpp"
 #include "glm/detail/type_quat.hpp"
 
 namespace VoxelEngine
 {
 
-struct TransformComponent
+struct TransformComponent : ComponentGui
 {
     glm::vec3 LocalPosition{0};
     glm::quat LocalRotation{1, 0, 0, 0};
@@ -19,6 +21,12 @@ struct TransformComponent
     glm::vec3 PreviousWorldPosition{0};
 
     bool IsDirty = true;
+
+    TransformComponent() = default;
+    ~TransformComponent() override = default;
+
+    std::string GetName() override;
+    void DrawGui() override;
 };
 
 }

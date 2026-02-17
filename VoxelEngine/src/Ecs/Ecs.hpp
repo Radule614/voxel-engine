@@ -2,12 +2,23 @@
 
 #include <entt.hpp>
 #include <mutex>
-#include <glm/glm.hpp>
 
+#include "Components/CameraComponent.hpp"
+#include "Components/CharacterComponent.hpp"
+#include "Components/ColliderComponent.hpp"
+#include "Components/LightComponent.hpp"
+#include "Components/MeshComponent.hpp"
+#include "Components/TerrainMeshComponent.hpp"
 #include "Components/TransformComponent.hpp"
 
 namespace VoxelEngine
 {
+
+using ComponentsWithGui = std::tuple<
+    TransformComponent,
+    MeshComponent,
+    ColliderComponent
+>;
 
 class EntityComponentSystem
 {
