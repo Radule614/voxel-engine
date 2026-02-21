@@ -9,10 +9,6 @@ namespace VoxelEngine
 
 struct AnimationComponent
 {
-// TODO: Define animation structure and load it from model
-
-private:
-
 
 };
 
