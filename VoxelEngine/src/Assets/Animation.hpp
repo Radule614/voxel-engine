@@ -10,14 +10,14 @@
 namespace VoxelEngine
 {
 
-enum class AnimationInterpolation
+enum AnimationInterpolation
 {
     Linear,
     Step,
     CubicSpline
 };
 
-enum class AnimationTarget
+enum AnimationTarget
 {
     Translation,
     Rotation,
