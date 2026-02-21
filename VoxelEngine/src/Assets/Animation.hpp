@@ -22,7 +22,7 @@ enum class AnimationTarget
     Translation,
     Rotation,
     Scale,
-    Morph
+    Weights
 };
 
 struct AnimationTrack

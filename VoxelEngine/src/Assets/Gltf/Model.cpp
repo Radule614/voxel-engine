@@ -233,16 +233,25 @@ void Model::LoadAnimations()
         {
             AnimationTrack track;
 
-            if (channel.target_path == "translation")
-                track.Target = AnimationTarget::Translation;
-            else if (channel.target_path == "rotation")
+            const tinygltf::AnimationSampler& sampler = samplers[channel.sampler];
+
+            // Target
+
+            track.Target = AnimationTarget::Translation;
+            if (channel.target_path == "rotation")
                 track.Target = AnimationTarget::Rotation;
             else if (channel.target_path == "scale")
                 track.Target = AnimationTarget::Scale;
-            else
-                track.Target = AnimationTarget::Morph;
+            else if (channel.target_path == "weights")
+                track.Target = AnimationTarget::Weights;
 
-            const tinygltf::AnimationSampler& sampler = samplers[channel.sampler];
+            // Interpolation
+
+            track.Interpolation = AnimationInterpolation::Linear;
+            if (sampler.interpolation == "STEP")
+                track.Interpolation = AnimationInterpolation::Step;
+            else if (sampler.interpolation == "CUBICSPLINE")
+                track.Interpolation = AnimationInterpolation::CubicSpline;
 
             // Inputs
 
@@ -305,7 +314,6 @@ void Model::LoadAnimations()
 
         m_Animations.emplace_back(animation);
     }
-    LOG_INFO("LOADED");
 }
 
 static glm::vec4 Vec4FromVector(std::vector<double_t> vector)
