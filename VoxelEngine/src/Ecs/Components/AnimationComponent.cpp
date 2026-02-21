@@ -16,7 +16,7 @@ void AnimationComponent::DrawGui()
     if (!ImGui::BeginTable("Animation Table", 2, ImGuiTableFlags_SizingStretchSame))
         return;
 
-    for (const auto& [Name, NodeAnimations]: Animations)
+    for (auto& [Name, IsActive, Time, Duration, NodeAnimations]: Animations)
     {
         ImGui::TableNextRow();
 
@@ -25,7 +25,9 @@ void AnimationComponent::DrawGui()
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-        ImGui::Text("%s", Name.c_str());
+
+        if (ImGui::Button(IsActive ? "Deactivate" : "Activate"))
+            IsActive = !IsActive;
     }
 
     ImGui::EndTable();

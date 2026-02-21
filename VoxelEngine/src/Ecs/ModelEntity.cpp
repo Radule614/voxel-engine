@@ -82,7 +82,17 @@ static void CreateAnimationComponent(const Model& model,
         entityAnimation.Name = AnimationName;
 
         for (const auto& [nodeIndex, nodeAnimation]: NodeAnimations)
+        {
             entityAnimation.NodeAnimations[nodeEntityMap[nodeIndex]] = nodeAnimation;
+
+            for (auto track: nodeAnimation.Tracks)
+            {
+                const float_t lastTime = track.Times.back();
+
+                if (lastTime > entityAnimation.Duration)
+                    entityAnimation.Duration = lastTime;
+            }
+        }
 
         animationComponent.Animations.emplace_back(entityAnimation);
     }
