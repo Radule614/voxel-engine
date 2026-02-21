@@ -4,12 +4,28 @@
 
 #pragma once
 
+#include "entt.hpp"
+#include "../ComponentGui.hpp"
+#include "../../Assets/Animation.hpp"
+
 namespace VoxelEngine
 {
 
-struct AnimationComponent
+struct EntityAnimation
 {
+    std::string Name;
+    std::unordered_map<entt::entity, NodeAnimation> NodeAnimations{};
+};
 
+struct AnimationComponent : ComponentGui
+{
+    std::vector<EntityAnimation> Animations{};
+
+    AnimationComponent() = default;
+    ~AnimationComponent() override = default;
+
+    std::string GetName() override;
+    void DrawGui() override;
 };
 
 }

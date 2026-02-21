@@ -59,6 +59,8 @@ const std::vector<RenderPrimitive>& Model::GetMeshPrimitives(const int32_t meshI
     return m_MeshPrimitiveMap.at(meshIndex);
 }
 
+const std::vector<Animation>& Model::GetAnimations() const { return m_Animations; }
+
 void Model::LoadNodes(const tinygltf::Node& node)
 {
     const tinygltf::Model& model = *m_GltfModel;
@@ -237,21 +239,21 @@ void Model::LoadAnimations()
 
             // Target
 
-            track.Target = AnimationTarget::Translation;
+            track.Target = Translation;
             if (channel.target_path == "rotation")
-                track.Target = AnimationTarget::Rotation;
+                track.Target = Rotation;
             else if (channel.target_path == "scale")
-                track.Target = AnimationTarget::Scale;
+                track.Target = Scale;
             else if (channel.target_path == "weights")
-                track.Target = AnimationTarget::Weights;
+                track.Target = Weights;
 
             // Interpolation
 
-            track.Interpolation = AnimationInterpolation::Linear;
+            track.Interpolation = Linear;
             if (sampler.interpolation == "STEP")
-                track.Interpolation = AnimationInterpolation::Step;
+                track.Interpolation = Step;
             else if (sampler.interpolation == "CUBICSPLINE")
-                track.Interpolation = AnimationInterpolation::CubicSpline;
+                track.Interpolation = CubicSpline;
 
             // Inputs
 
@@ -281,7 +283,7 @@ void Model::LoadAnimations()
             const unsigned char* outputData =
                     outputBuffer.data.data() + outputBufferView.byteOffset + outputAccessor.byteOffset;
 
-            if (track.Target == AnimationTarget::Translation || track.Target == AnimationTarget::Scale)
+            if (track.Target == Translation || track.Target == Scale)
             {
                 track.VectorValues.resize(outputAccessor.count);
 
@@ -295,7 +297,7 @@ void Model::LoadAnimations()
                 }
             }
 
-            if (track.Target == AnimationTarget::Rotation)
+            if (track.Target == Rotation)
             {
                 track.QuatValues.resize(outputAccessor.count);
 

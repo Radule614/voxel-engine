@@ -24,6 +24,7 @@ public:
 
     const tinygltf::Model& GetRawModel() const;
     const std::vector<RenderPrimitive>& GetMeshPrimitives(int32_t meshIndex) const;
+    const std::vector<Animation>& GetAnimations() const;
 
 private:
     void LoadNodes(const tinygltf::Node& node);
@@ -36,7 +37,6 @@ private:
 
 private:
     std::unique_ptr<tinygltf::Model> m_GltfModel;
-
     std::map<int32_t, GLuint> m_AllocatedBuffers;
     std::map<int32_t, GLuint> m_Textures;
     std::map<int32_t, std::vector<RenderPrimitive> > m_MeshPrimitiveMap;
