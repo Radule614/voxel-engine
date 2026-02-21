@@ -14,9 +14,10 @@ namespace VoxelEngine
 struct EntityAnimation
 {
     std::string Name;
-    bool IsActive = false;
     float_t Time = 0.0f;
     float_t Duration = 0.0f;
+    bool IsActive = true;
+    bool ShouldRepeat = true;
 
     std::unordered_map<entt::entity, NodeAnimation> NodeAnimations{};
 };

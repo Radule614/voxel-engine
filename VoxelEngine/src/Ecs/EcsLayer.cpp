@@ -47,23 +47,22 @@ static void AdvanceNodeAnimation(const entt::entity& nodeEntity,
     auto& transform = registry.get<TransformComponent>(nodeEntity);
     transform.IsDirty = true;
 
-    for (const auto& track: nodeAnimation.Tracks)
+    for (const auto& [Target, Interpolation, Times, VectorValues, QuatValues]: nodeAnimation.Tracks)
     {
-        if (currentTime > track.Times.back())
+        if (currentTime > Times.back())
             continue;
 
-        const auto& times = track.Times;
-        const auto& vectorValues = track.VectorValues;
-        const auto& quatValues = track.QuatValues;
+        auto [previous, next, alpha] = FindAnimationIndices(Times, currentTime);
 
-        const auto [previous, next, alpha] = FindAnimationIndices(times, currentTime);
+        if (Interpolation == Step)
+            alpha = glm::round(alpha);
 
-        if (track.Target == Translation)
-            transform.LocalPosition = glm::mix(vectorValues[previous], vectorValues[next], alpha);
-        else if (track.Target == Rotation)
-            transform.LocalRotation = glm::normalize(glm::slerp(quatValues[previous], quatValues[next], alpha));
-        else if (track.Target == Scale)
-            transform.LocalScale = glm::mix(vectorValues[previous], vectorValues[next], alpha);
+        if (Target == Translation)
+            transform.LocalPosition = glm::mix(VectorValues[previous], VectorValues[next], alpha);
+        else if (Target == Rotation)
+            transform.LocalRotation = glm::normalize(glm::slerp(QuatValues[previous], QuatValues[next], alpha));
+        else if (Target == Scale)
+            transform.LocalScale = glm::mix(VectorValues[previous], VectorValues[next], alpha);
     }
 }
 
@@ -89,8 +88,10 @@ static void UpdateAnimations(const GLCore::Timestep ts)
 
             if (animation.Time > animation.Duration)
             {
-                animation.IsActive = false;
                 animation.Time = 0.0f;
+
+                if (!animation.ShouldRepeat)
+                    animation.IsActive = false;
             }
         }
     }
