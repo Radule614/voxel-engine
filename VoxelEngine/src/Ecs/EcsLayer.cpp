@@ -36,7 +36,52 @@ static std::tuple<int32_t, int32_t, float_t> FindAnimationIndices(const std::vec
 
     float alpha = (t1 > t0) ? (currentTime - t0) / (t1 - t0) : 0.0f;
 
-    return std::tuple(previousIndex, nextIndex, alpha);
+    return {previousIndex, nextIndex, alpha};
+}
+
+static glm::vec3 CubicVec3(
+    const glm::vec3& p0,
+    const glm::vec3& m0,
+    const glm::vec3& p1,
+    const glm::vec3& m1,
+    const float_t t,
+    const float_t dt)
+{
+    const float_t t2 = t * t;
+    const float_t t3 = t2 * t;
+
+    const float_t h00 = 2 * t3 - 3 * t2 + 1;
+    const float_t h10 = t3 - 2 * t2 + t;
+    const float_t h01 = -2 * t3 + 3 * t2;
+    const float_t h11 = t3 - t2;
+
+    return h00 * p0 + h10 * (dt * m0) + h01 * p1 + h11 * (dt * m1);
+}
+
+static glm::quat CubicQuat(
+    const glm::quat& p0,
+    const glm::quat& m0,
+    const glm::quat& p1,
+    const glm::quat& m1,
+    const float_t t,
+    const float_t dt)
+{
+    const float_t t2 = t * t;
+    const float_t t3 = t2 * t;
+
+    const float_t h00 = 2 * t3 - 3 * t2 + 1;
+    const float_t h10 = t3 - 2 * t2 + t;
+    const float_t h01 = -2 * t3 + 3 * t2;
+    const float_t h11 = t3 - t2;
+
+    glm::vec4 P0(p0.x, p0.y, p0.z, p0.w);
+    glm::vec4 M0(m0.x, m0.y, m0.z, m0.w);
+    glm::vec4 P1(p1.x, p1.y, p1.z, p1.w);
+    glm::vec4 M1(m1.x, m1.y, m1.z, m1.w);
+
+    glm::vec4 r = h00 * P0 + h10 * (dt * M0) + h01 * P1 + h11 * (dt * M1);
+
+    return glm::normalize(glm::quat(r.w, r.x, r.y, r.z));
 }
 
 static void AdvanceNodeAnimation(const entt::entity& nodeEntity,
@@ -57,12 +102,46 @@ static void AdvanceNodeAnimation(const entt::entity& nodeEntity,
         if (Interpolation == Step)
             alpha = glm::round(alpha);
 
-        if (Target == Translation)
-            transform.LocalPosition = glm::mix(VectorValues[previous], VectorValues[next], alpha);
+        if (Interpolation == Linear || Interpolation == Step)
+        {
+            if (Target == Translation)
+                transform.LocalPosition = glm::mix(VectorValues[previous], VectorValues[next], alpha);
+            else if (Target == Rotation)
+                transform.LocalRotation = glm::normalize(glm::slerp(QuatValues[previous], QuatValues[next], alpha));
+            else if (Target == Scale)
+                transform.LocalScale = glm::mix(VectorValues[previous], VectorValues[next], alpha);
+
+            continue;
+        }
+
+        const float_t dt = Times[next] - Times[previous];
+
+        const int32_t pBase = previous * 3;
+        const int32_t nBase = next * 3;
+
+        if (Target == Translation || Target == Scale)
+        {
+            const glm::vec3& p0 = VectorValues[pBase + 1];
+            const glm::vec3& m0 = VectorValues[pBase + 2];
+            const glm::vec3& p1 = VectorValues[nBase + 1];
+            const glm::vec3& m1 = VectorValues[nBase + 0];
+
+            const glm::vec3 result = CubicVec3(p0, m0, p1, m1, alpha, dt);
+
+            if (Target == Translation)
+                transform.LocalPosition = result;
+            else
+                transform.LocalScale = result;
+        }
         else if (Target == Rotation)
-            transform.LocalRotation = glm::normalize(glm::slerp(QuatValues[previous], QuatValues[next], alpha));
-        else if (Target == Scale)
-            transform.LocalScale = glm::mix(VectorValues[previous], VectorValues[next], alpha);
+        {
+            const glm::quat& p0 = QuatValues[pBase + 1];
+            const glm::quat& m0 = QuatValues[pBase + 2];
+            const glm::quat& p1 = QuatValues[nBase + 1];
+            const glm::quat& m1 = QuatValues[nBase + 0];
+
+            transform.LocalRotation = glm::normalize(CubicQuat(p0, m0, p1, m1, alpha, dt));
+        }
     }
 }
 
