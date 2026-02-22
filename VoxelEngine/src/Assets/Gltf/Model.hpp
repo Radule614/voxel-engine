@@ -9,6 +9,7 @@
 #include "../RenderPrimitive.hpp"
 #include "tiny_gltf.hpp"
 #include "glad/glad.h"
+#include "../Animation.hpp"
 
 namespace VoxelEngine
 {
@@ -23,6 +24,7 @@ public:
 
     const tinygltf::Model& GetRawModel() const;
     const std::vector<RenderPrimitive>& GetMeshPrimitives(int32_t meshIndex) const;
+    const std::vector<Animation>& GetAnimations() const;
 
 private:
     void LoadNodes(const tinygltf::Node& node);
@@ -31,11 +33,14 @@ private:
     GLuint LoadBuffer(int32_t bufferViewIndex);
     GLuint LoadTexture(int32_t textureIndex);
 
-    std::unique_ptr<tinygltf::Model> m_GltfModel;
+    void LoadAnimations();
 
+private:
+    std::unique_ptr<tinygltf::Model> m_GltfModel;
     std::map<int32_t, GLuint> m_AllocatedBuffers;
     std::map<int32_t, GLuint> m_Textures;
     std::map<int32_t, std::vector<RenderPrimitive> > m_MeshPrimitiveMap;
+    std::vector<Animation> m_Animations{};
 };
 
 }

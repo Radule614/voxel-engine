@@ -48,6 +48,8 @@ void Model::Load()
 
         LoadNodes(model.nodes[node]);
     }
+
+    LoadAnimations();
 }
 
 const tinygltf::Model& Model::GetRawModel() const { return *m_GltfModel; }
@@ -56,6 +58,8 @@ const std::vector<RenderPrimitive>& Model::GetMeshPrimitives(const int32_t meshI
 {
     return m_MeshPrimitiveMap.at(meshIndex);
 }
+
+const std::vector<Animation>& Model::GetAnimations() const { return m_Animations; }
 
 void Model::LoadNodes(const tinygltf::Node& node)
 {
@@ -115,7 +119,7 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
 
             const GLuint index = VertexAttributeIndexMap[primitiveType];
 
-            const auto offset = (void*)accessor.byteOffset;
+            const auto offset = (void*) accessor.byteOffset;
             const int32_t isNormalized = accessor.normalized ? GL_TRUE : GL_FALSE;
             const int32_t size = tinygltf::GetNumComponentsInType(accessor.type);
             const int32_t byteStride = accessor.ByteStride(model.bufferViews[accessor.bufferView]);
@@ -132,7 +136,7 @@ void Model::LoadMesh(const tinygltf::Mesh& mesh, const int32_t meshIndex)
         renderPrimitive.Mode = primitive.mode;
         renderPrimitive.IndexCount = indexBufferAccessor.count;
         renderPrimitive.IndexType = indexBufferAccessor.componentType;
-        renderPrimitive.IndexOffset = (void*)indexBufferAccessor.byteOffset;
+        renderPrimitive.IndexOffset = (void*) indexBufferAccessor.byteOffset;
 
         if (primitive.material >= 0)
         {
@@ -206,6 +210,112 @@ GLuint Model::LoadTexture(const int32_t textureIndex)
     m_Textures[textureIndex] = textureId;
 
     return textureId;
+}
+
+void Model::LoadAnimations()
+{
+    const tinygltf::Model& model = *m_GltfModel;
+
+    if (model.animations.empty())
+        return;
+
+    const auto& buffers = model.buffers;
+    const auto& bufferViews = model.bufferViews;
+    const auto& accessors = model.accessors;
+
+    for (const auto& gltfAnimation: model.animations)
+    {
+        Animation animation;
+        animation.Name = gltfAnimation.name;
+
+        const auto& channels = gltfAnimation.channels;
+        const auto& samplers = gltfAnimation.samplers;
+
+        for (const tinygltf::AnimationChannel& channel: channels)
+        {
+            AnimationTrack track;
+
+            const tinygltf::AnimationSampler& sampler = samplers[channel.sampler];
+
+            // Target
+
+            track.Target = Translation;
+            if (channel.target_path == "rotation")
+                track.Target = Rotation;
+            else if (channel.target_path == "scale")
+                track.Target = Scale;
+            else if (channel.target_path == "weights")
+                track.Target = Weights;
+
+            // Interpolation
+
+            track.Interpolation = Linear;
+            if (sampler.interpolation == "STEP")
+                track.Interpolation = Step;
+            else if (sampler.interpolation == "CUBICSPLINE")
+                track.Interpolation = CubicSpline;
+
+            // Inputs
+
+            const tinygltf::Accessor& inputAccessor = accessors[sampler.input];
+            const tinygltf::BufferView& inputBufferView = bufferViews[inputAccessor.bufferView];
+            const tinygltf::Buffer& inputBuffer = buffers[inputBufferView.buffer];
+
+            const unsigned char* inputData =
+                    inputBuffer.data.data() + inputBufferView.byteOffset + inputAccessor.byteOffset;
+
+            track.Times.resize(inputAccessor.count);
+
+            for (size_t i = 0; i < inputAccessor.count; ++i)
+            {
+                const size_t stride = inputBufferView.byteStride > 0
+                                          ? inputBufferView.byteStride
+                                          : sizeof(float);
+                track.Times[i] = *reinterpret_cast<const float*>(inputData + i * stride);
+            }
+
+            // Outputs
+
+            const tinygltf::Accessor& outputAccessor = accessors[sampler.output];
+            const tinygltf::BufferView& outputBufferView = bufferViews[outputAccessor.bufferView];
+            const tinygltf::Buffer& outputBuffer = buffers[outputBufferView.buffer];
+
+            const unsigned char* outputData =
+                    outputBuffer.data.data() + outputBufferView.byteOffset + outputAccessor.byteOffset;
+
+            if (track.Target == Translation || track.Target == Scale)
+            {
+                track.VectorValues.resize(outputAccessor.count);
+
+                for (size_t i = 0; i < outputAccessor.count; ++i)
+                {
+                    const size_t stride = outputBufferView.byteStride > 0
+                                              ? outputBufferView.byteStride
+                                              : sizeof(float) * 3;
+                    const auto* fptr = reinterpret_cast<const float*>(outputData + i * stride);
+                    track.VectorValues[i] = glm::vec3(fptr[0], fptr[1], fptr[2]);
+                }
+            }
+
+            if (track.Target == Rotation)
+            {
+                track.QuatValues.resize(outputAccessor.count);
+
+                for (size_t i = 0; i < outputAccessor.count; ++i)
+                {
+                    const size_t stride = outputBufferView.byteStride > 0
+                                              ? outputBufferView.byteStride
+                                              : sizeof(float) * 4;
+                    const auto* fptr = reinterpret_cast<const float*>(outputData + i * stride);
+                    track.QuatValues[i] = glm::normalize(glm::quat(fptr[3], fptr[0], fptr[1], fptr[2]));
+                }
+            }
+
+            animation.NodeAnimations[channel.target_node].Tracks.emplace_back(track);
+        }
+
+        m_Animations.emplace_back(animation);
+    }
 }
 
 static glm::vec4 Vec4FromVector(std::vector<double_t> vector)

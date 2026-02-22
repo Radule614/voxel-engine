@@ -4,6 +4,7 @@
 
 #include "ModelEntity.hpp"
 
+#include "Components/AnimationComponent.hpp"
 #include "Components/MeshComponent.hpp"
 #include "Components/MetadataComponent.hpp"
 #include "Components/ParentComponent.hpp"
@@ -44,7 +45,10 @@ static void CreateComponents(const Model& model, const entt::entity& entity, con
         registry.emplace<MetadataComponent>(entity, node.name);
 }
 
-static void CreateNodes(const Model& model, const entt::entity& parentEntity, const tinygltf::Node& node)
+static void CreateNodes(const Model& model,
+                        const entt::entity& parentEntity,
+                        const int32_t nodeIndex,
+                        std::unordered_map<int32_t, entt::entity>& nodeEntityMap)
 {
     entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
@@ -54,11 +58,46 @@ static void CreateNodes(const Model& model, const entt::entity& parentEntity, co
     registry.emplace<ParentComponent>(childEntity, parent);
 
     const tinygltf::Model& gltfModel = model.GetRawModel();
+    const tinygltf::Node& node = gltfModel.nodes[nodeIndex];
 
     CreateComponents(model, childEntity, node);
 
+    nodeEntityMap[nodeIndex] = childEntity;
+
     for (const int32_t childNode: node.children)
-        CreateNodes(model, childEntity, gltfModel.nodes[childNode]);
+        CreateNodes(model, childEntity, childNode, nodeEntityMap);
+}
+
+static void CreateAnimationComponent(const Model& model,
+                                     const entt::entity& entity,
+                                     std::unordered_map<int32_t, entt::entity>& nodeEntityMap)
+{
+    entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    AnimationComponent animationComponent;
+
+    for (const auto& [AnimationName, NodeAnimations]: model.GetAnimations())
+    {
+        EntityAnimation entityAnimation;
+        entityAnimation.Name = AnimationName;
+
+        for (const auto& [nodeIndex, nodeAnimation]: NodeAnimations)
+        {
+            entityAnimation.NodeAnimations[nodeEntityMap[nodeIndex]] = nodeAnimation;
+
+            for (auto track: nodeAnimation.Tracks)
+            {
+                const float_t lastTime = track.Times.back();
+
+                if (lastTime > entityAnimation.Duration)
+                    entityAnimation.Duration = lastTime;
+            }
+        }
+
+        animationComponent.Animations.emplace_back(entityAnimation);
+    }
+
+    registry.emplace<AnimationComponent>(entity, animationComponent);
 }
 
 entt::entity CreateEntityFromModel(const Model& model)
@@ -71,11 +110,16 @@ entt::entity CreateEntityFromModel(const Model& model)
     const tinygltf::Model& gltfModel = model.GetRawModel();
     const tinygltf::Scene& scene = gltfModel.scenes[gltfModel.defaultScene];
 
+    std::unordered_map<int32_t, entt::entity> nodeEntityMap{};
+
     if (!scene.name.empty())
         registry.emplace<MetadataComponent>(entity, scene.name);
 
     for (const int32_t node: scene.nodes)
-        CreateNodes(model, entity, gltfModel.nodes[node]);
+        CreateNodes(model, entity, node, nodeEntityMap);
+
+    if (!model.GetAnimations().empty())
+        CreateAnimationComponent(model, entity, nodeEntityMap);
 
     return entity;
 }

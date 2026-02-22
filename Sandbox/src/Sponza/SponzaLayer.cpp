@@ -23,23 +23,22 @@ SponzaLayer::SponzaLayer(EngineState& state) : m_State(state)
 
 SponzaLayer::~SponzaLayer() = default;
 
-static entt::entity AnimatedModelEntity;
-
 void SponzaLayer::OnAttach()
 {
-    static Model* sponzaModel = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
-    // static Model* model = AssetManager::Instance().LoadModel("assets/models/EnvironmentTest.glb");
-    static Model* animatedModel = AssetManager::Instance().LoadModel("assets/models/BoxAnimated.glb");
-
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    const auto sponzaEntity = CreateEntityFromModel(*sponzaModel);
-    auto& transform = registry.get<TransformComponent>(sponzaEntity);
-    transform.LocalPosition = glm::vec3(0, -1, 0);
-    transform.LocalRotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    transform.IsDirty = true;
+    // static Model* sponzaModel = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
+    // const auto sponzaEntity = CreateEntityFromModel(*sponzaModel);
+    // auto& transform = registry.get<TransformComponent>(sponzaEntity);
+    // transform.LocalPosition = glm::vec3(0, -1, 0);
+    // transform.LocalRotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    // transform.IsDirty = true;
 
-    AnimatedModelEntity = CreateEntityFromModel(*animatedModel);
+    // static Model* animatedModel = AssetManager::Instance().LoadModel("assets/models/BoxAnimated.glb");
+    // CreateEntityFromModel(*animatedModel);
+
+    static Model* interpolationTestModel = AssetManager::Instance().LoadModel("assets/models/InterpolationTest.glb");
+    CreateEntityFromModel(*interpolationTestModel);
 }
 
 void SponzaLayer::OnEvent(Event& event)
