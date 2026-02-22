@@ -37,8 +37,14 @@ void SponzaLayer::OnAttach()
     // static Model* animatedModel = AssetManager::Instance().LoadModel("assets/models/BoxAnimated.glb");
     // CreateEntityFromModel(*animatedModel);
 
-    static Model* interpolationTestModel = AssetManager::Instance().LoadModel("assets/models/InterpolationTest.glb");
-    CreateEntityFromModel(*interpolationTestModel);
+    // static Model* interpolationTestModel = AssetManager::Instance().LoadModel("assets/models/InterpolationTest.glb");
+    // CreateEntityFromModel(*interpolationTestModel);
+
+    static Model* brainStemModel = AssetManager::Instance().LoadModel("assets/models/BrainStem.glb");
+    const auto brainStemEntity = CreateEntityFromModel(*brainStemModel);
+    auto& transform = registry.get<TransformComponent>(brainStemEntity);
+    transform.LocalRotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    transform.IsDirty = true;
 }
 
 void SponzaLayer::OnEvent(Event& event)
