@@ -4,6 +4,8 @@ layout (location = 0) in vec3 i_Position;
 layout (location = 1) in vec3 i_Normal;
 layout (location = 2) in vec2 i_TexCoords;
 layout (location = 3) in vec4 i_Tangent;
+layout (location = 4) in vec4 i_Joints;
+layout (location = 5) in vec4 i_Weights;
 
 out o_Vertex
 {
@@ -18,14 +20,39 @@ uniform mat4 u_ViewProjection;
 uniform mat4 u_Model;
 uniform mat4 u_LightSpaceMatrix;
 
+uniform mat4 u_JointMatrices[128];
+uniform bool u_IsSkinned;
+
+mat4 CalculateSkinMatrix()
+{
+    mat4 matrix = mat4(0.0);
+
+    matrix += u_JointMatrices[int(i_Joints.x)] * i_Weights.x;
+    matrix += u_JointMatrices[int(i_Joints.y)] * i_Weights.y;
+    matrix += u_JointMatrices[int(i_Joints.z)] * i_Weights.z;
+    matrix += u_JointMatrices[int(i_Joints.w)] * i_Weights.w;
+
+    return matrix;
+}
+
 void main()
 {
-    vec4 position = u_Model * vec4(i_Position, 1.0f);
+    mat4 skin = mat4(1.0);
+    if (u_IsSkinned) {
+        skin = CalculateSkinMatrix();
+    }
+
+    vec4 skinnedPos = skin * vec4(i_Position, 1.0);
+    vec3 skinnedNormal = mat3(skin) * i_Normal;
+    vec3 skinnedTangent = mat3(skin) * i_Tangent.xyz;
+
+    vec4 position = u_Model * skinnedPos;
+
     mat3 normalMatrix = transpose(inverse(mat3(u_Model)));
-    vec3 normal = normalMatrix * i_Normal;
+    vec3 normal = normalMatrix * skinnedNormal;
 
     vec3 N = normalize(normal);
-    vec3 T = normalize(normalMatrix * i_Tangent.xyz);
+    vec3 T = normalize(normalMatrix * skinnedTangent);
     T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T) * i_Tangent.w;
 

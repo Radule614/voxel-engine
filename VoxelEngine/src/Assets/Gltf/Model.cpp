@@ -17,7 +17,9 @@ static std::map<std::string, GLuint> VertexAttributeIndexMap = {
     {"POSITION", 0},
     {"NORMAL", 1},
     {"TEXCOORD_0", 2},
-    {"TANGENT", 3}
+    {"TANGENT", 3},
+    {"JOINTS_0", 4},
+    {"WEIGHTS_0", 5}
 };
 
 static glm::vec4 Vec4FromVector(std::vector<double_t> vector);
