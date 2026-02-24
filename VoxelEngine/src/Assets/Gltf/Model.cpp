@@ -7,6 +7,8 @@
 #include <ranges>
 #include <glm/glm.hpp>
 
+#include "glm/gtc/type_ptr.hpp"
+
 using namespace GLCore;
 using namespace GLCore::Utils;
 
@@ -52,6 +54,7 @@ void Model::Load()
     }
 
     LoadAnimations();
+    LoadSkins();
 }
 
 const tinygltf::Model& Model::GetRawModel() const { return *m_GltfModel; }
@@ -62,6 +65,8 @@ const std::vector<RenderPrimitive>& Model::GetMeshPrimitives(const int32_t meshI
 }
 
 const std::vector<Animation>& Model::GetAnimations() const { return m_Animations; }
+
+const std::vector<Skin>& Model::GetSkins() const { return m_Skins; }
 
 void Model::LoadNodes(const tinygltf::Node& node)
 {
@@ -263,7 +268,7 @@ void Model::LoadAnimations()
             const tinygltf::BufferView& inputBufferView = bufferViews[inputAccessor.bufferView];
             const tinygltf::Buffer& inputBuffer = buffers[inputBufferView.buffer];
 
-            const unsigned char* inputData =
+            const uint8_t* inputData =
                     inputBuffer.data.data() + inputBufferView.byteOffset + inputAccessor.byteOffset;
 
             track.Times.resize(inputAccessor.count);
@@ -282,7 +287,7 @@ void Model::LoadAnimations()
             const tinygltf::BufferView& outputBufferView = bufferViews[outputAccessor.bufferView];
             const tinygltf::Buffer& outputBuffer = buffers[outputBufferView.buffer];
 
-            const unsigned char* outputData =
+            const uint8_t* outputData =
                     outputBuffer.data.data() + outputBufferView.byteOffset + outputAccessor.byteOffset;
 
             if (track.Target == Translation || track.Target == Scale)
@@ -317,6 +322,50 @@ void Model::LoadAnimations()
         }
 
         m_Animations.emplace_back(animation);
+    }
+}
+
+void Model::LoadSkins()
+{
+    const tinygltf::Model& model = *m_GltfModel;
+
+    if (model.skins.empty())
+        return;
+
+    int32_t skinIndex = 0;
+    for (const auto& gltfSkin: model.skins)
+    {
+        const tinygltf::Accessor& accessor = model.accessors[gltfSkin.inverseBindMatrices];
+        const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+
+        Skin skin{};
+        skin.InverseBindMatrices.resize(accessor.count);
+        skin.JointIndexes = gltfSkin.joints;
+
+        const uint8_t* data = buffer.data.data() + bufferView.byteOffset + accessor.byteOffset;
+
+        for (size_t i = 0; i < accessor.count; ++i)
+        {
+            const size_t stride = bufferView.byteStride > 0 ? bufferView.byteStride : sizeof(float_t) * 16;
+            skin.InverseBindMatrices[i] = glm::make_mat4(reinterpret_cast<const float_t*>(data + i * stride));
+        }
+
+        int nodeIndex = 0;
+        for (const auto& node: model.nodes)
+        {
+            if (node.skin == skinIndex)
+            {
+                skin.NodeIndex = nodeIndex;
+                break;
+            }
+
+            ++nodeIndex;
+        }
+
+        m_Skins.emplace_back(skin);
+
+        ++skinIndex;
     }
 }
 

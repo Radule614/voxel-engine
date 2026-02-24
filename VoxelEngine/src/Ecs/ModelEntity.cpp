@@ -8,6 +8,7 @@
 #include "Components/MeshComponent.hpp"
 #include "Components/MetadataComponent.hpp"
 #include "Components/ParentComponent.hpp"
+#include "Components/SkinComponent.hpp"
 
 namespace VoxelEngine
 {
@@ -100,6 +101,24 @@ static void CreateAnimationComponent(const Model& model,
     registry.emplace<AnimationComponent>(entity, animationComponent);
 }
 
+void CreateSkinComponents(const Model& model, std::unordered_map<int32_t, entt::entity>& nodeEntityMap)
+{
+    entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    for (const auto& [NodeIndex, JointIndexes, InverseBindMatrices]: model.GetSkins())
+    {
+        const entt::entity rootEntity = nodeEntityMap[NodeIndex];
+
+        SkinComponent skinComponent;
+        skinComponent.InverseBindMatrices = InverseBindMatrices;
+
+        for (auto jointIndex: JointIndexes)
+            skinComponent.JointEntities.push_back(nodeEntityMap[jointIndex]);
+
+        registry.emplace<SkinComponent>(rootEntity, skinComponent);
+    }
+}
+
 entt::entity CreateEntityFromModel(const Model& model)
 {
     entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
@@ -120,6 +139,9 @@ entt::entity CreateEntityFromModel(const Model& model)
 
     if (!model.GetAnimations().empty())
         CreateAnimationComponent(model, entity, nodeEntityMap);
+
+    if (!model.GetSkins().empty())
+        CreateSkinComponents(model, nodeEntityMap);
 
     return entity;
 }
