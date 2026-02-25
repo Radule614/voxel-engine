@@ -28,7 +28,6 @@ void AnimationComponent::DrawGui()
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
-
         if (ImGui::Button(IsActive ? "Deactivate" : "Activate"))
             IsActive = !IsActive;
 

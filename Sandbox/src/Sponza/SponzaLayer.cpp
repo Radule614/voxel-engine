@@ -7,6 +7,7 @@
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/ModelEntity.hpp"
+#include "Ecs/Components/LightComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "glm/ext/quaternion_trigonometric.hpp"
 
@@ -27,12 +28,12 @@ void SponzaLayer::OnAttach()
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    // static Model* sponzaModel = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
-    // const auto sponzaEntity = CreateEntityFromModel(*sponzaModel);
-    // auto& transform = registry.get<TransformComponent>(sponzaEntity);
-    // transform.LocalPosition = glm::vec3(0, -1, 0);
-    // transform.LocalRotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    // transform.IsDirty = true;
+    static Model* sponzaModel = AssetManager::Instance().LoadModel("assets/models/sponza/Sponza.glb");
+    const auto sponzaEntity = CreateEntityFromModel(*sponzaModel);
+    auto& sponzaTransform = registry.get<TransformComponent>(sponzaEntity);
+    sponzaTransform.LocalPosition = glm::vec3(0, -1, 0);
+    sponzaTransform.LocalRotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    sponzaTransform.IsDirty = true;
 
     // static Model* animatedModel = AssetManager::Instance().LoadModel("assets/models/BoxAnimated.glb");
     // CreateEntityFromModel(*animatedModel);
@@ -42,9 +43,14 @@ void SponzaLayer::OnAttach()
 
     static Model* brainStemModel = AssetManager::Instance().LoadModel("assets/models/BrainStem.glb");
     const auto brainStemEntity = CreateEntityFromModel(*brainStemModel);
-    auto& transform = registry.get<TransformComponent>(brainStemEntity);
-    transform.LocalRotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    transform.IsDirty = true;
+    auto& brainStemTransform = registry.get<TransformComponent>(brainStemEntity);
+    brainStemTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
+    brainStemTransform.LocalRotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    brainStemTransform.IsDirty = true;
+
+    const entt::entity lightEntity = registry.create();
+    PointLight pointLight(glm::vec3(1, 1, 1), glm::vec3(1, 0.5, 0.5));
+    registry.emplace<LightComponent>(lightEntity, pointLight);
 }
 
 void SponzaLayer::OnEvent(Event& event)

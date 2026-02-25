@@ -491,7 +491,7 @@ void Chunk::AddPointLight(const glm::vec3 position, const glm::vec3 color)
     const glm::vec3 globalPosition = (glm::vec3) GetWorldPosition() + position;
 
     PointLight pointLight(globalPosition, color);
-    registry.emplace<LightComponent>(entityId, std::move(pointLight));
+    registry.emplace<LightComponent>(entityId, pointLight);
     m_Entities.push_back(entityId);
 }
 

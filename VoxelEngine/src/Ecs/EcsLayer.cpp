@@ -6,6 +6,7 @@
 
 #include "Ecs.hpp"
 #include "Components/ParentComponent.hpp"
+#include "Components/SkinComponent.hpp"
 #include "glm/gtc/quaternion.hpp"
 
 namespace VoxelEngine
@@ -180,16 +181,37 @@ static void UpdateTransforms()
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    const auto rootView = registry.view<TransformComponent>(entt::exclude<ParentComponent>);
+    const auto& rootView = registry.view<TransformComponent>(entt::exclude<ParentComponent>);
 
-    for (const auto rootEntity: rootView)
+    for (const auto& rootEntity: rootView)
         UpdateTransformRecursive(rootEntity, TransformComponent{});
+}
+
+static void UpdateSkins()
+{
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    for (const auto& skinnedEntity: registry.view<SkinComponent>())
+    {
+        auto& skin = registry.get<SkinComponent>(skinnedEntity);
+
+        if (!skin.IsEnabled)
+            continue;
+
+        for (int32_t i = 0; i < skin.JointEntities.size(); ++i)
+        {
+            const TransformComponent& jointTransform = registry.get<TransformComponent>(skin.JointEntities[i]);
+
+            skin.JointMatrices[i] = jointTransform.WorldMatrix * skin.InverseBindMatrices[i];
+        }
+    }
 }
 
 void EcsLayer::OnUpdate(const GLCore::Timestep ts)
 {
     UpdateAnimations(ts);
     UpdateTransforms();
+    UpdateSkins();
 }
 
 static void CalculateTransform(TransformComponent& transform, const TransformComponent& parentTransform)
@@ -210,7 +232,7 @@ static void CalculateTransform(TransformComponent& transform, const TransformCom
 
 static void UpdateTransformRecursive(const entt::entity entity, const TransformComponent& parentTransform)
 {
-    static auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     auto transform = registry.try_get<TransformComponent>(entity);
     if (transform == nullptr)

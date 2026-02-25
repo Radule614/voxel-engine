@@ -111,6 +111,7 @@ void CreateSkinComponents(const Model& model, std::unordered_map<int32_t, entt::
 
         SkinComponent skinComponent;
         skinComponent.InverseBindMatrices = InverseBindMatrices;
+        skinComponent.JointMatrices.resize(InverseBindMatrices.size());
 
         for (auto jointIndex: JointIndexes)
             skinComponent.JointEntities.push_back(nodeEntityMap[jointIndex]);

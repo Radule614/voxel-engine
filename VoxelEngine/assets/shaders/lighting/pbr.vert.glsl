@@ -37,22 +37,27 @@ mat4 CalculateSkinMatrix()
 
 void main()
 {
-    mat4 skin = mat4(1.0);
-    if (u_IsSkinned) {
-        skin = CalculateSkinMatrix();
+    vec4 position;
+    vec3 normal;
+    vec3 tangent;
+
+    if (u_IsSkinned)
+    {
+        mat4 skin = CalculateSkinMatrix();
+
+        position = skin * vec4(i_Position, 1.0);
+        normal = mat3(skin) * i_Normal;
+        tangent = mat3(skin) * i_Tangent.xyz;
+    }
+    else
+    {
+        position = u_Model * vec4(i_Position, 1.0);
+        normal = mat3(u_Model) * i_Normal;
+        tangent = mat3(u_Model) * i_Tangent.xyz;
     }
 
-    vec4 skinnedPos = skin * vec4(i_Position, 1.0);
-    vec3 skinnedNormal = mat3(skin) * i_Normal;
-    vec3 skinnedTangent = mat3(skin) * i_Tangent.xyz;
-
-    vec4 position = u_Model * skinnedPos;
-
-    mat3 normalMatrix = transpose(inverse(mat3(u_Model)));
-    vec3 normal = normalMatrix * skinnedNormal;
-
     vec3 N = normalize(normal);
-    vec3 T = normalize(normalMatrix * skinnedTangent);
+    vec3 T = normalize(tangent);
     T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T) * i_Tangent.w;
 

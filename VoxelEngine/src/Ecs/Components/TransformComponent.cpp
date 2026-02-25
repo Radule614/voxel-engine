@@ -33,7 +33,7 @@ void TransformComponent::DrawGui()
 
     ImGui::TableSetColumnIndex(1);
     ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::DragFloat3("TransformRotation", &LocalRotation.x, 0.1f))
+    if (ImGui::DragFloat4("TransformRotation", &LocalRotation.x, 0.1f))
         IsDirty = true;
 
     ImGui::TableNextRow();

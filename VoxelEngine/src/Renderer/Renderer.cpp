@@ -38,7 +38,7 @@ static glm::mat4 CaptureViews[] =
 
 static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.3f), 2.0f, glm::vec3(1.0f, 0.97f, 0.92f));
 
-Renderer::Renderer() : m_ShadeType(Preview)
+Renderer::Renderer() : m_ShadeType(Full)
 {
     m_PointDepthShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, AssetManager::GetShaderPath("shadows/point_shadows_depth.vert.glsl"))
@@ -148,11 +148,16 @@ void Renderer::RenderScene(const PerspectiveCamera& camera, const RenderTarget& 
 
 void Renderer::DrawPrimitives(const Shader& shader,
                               const std::vector<RenderPrimitive>& primitives,
-                              const glm::mat4& model)
+                              const glm::mat4& model,
+                              const std::vector<glm::mat4>* jointMatrices)
 {
     for (auto [Vao, Mode, IndexCount, IndexType, IndexOffset, Material]: primitives)
     {
         glBindVertexArray(Vao);
+
+        shader.Set("u_IsSkinned", jointMatrices != nullptr);
+        if (jointMatrices != nullptr)
+            shader.Set("u_JointMatrices", *jointMatrices);
 
         shader.SetModel(model);
         shader.Set(Material);
@@ -389,8 +394,8 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     shader.Set("u_CameraPosition", camera.GetPosition());
     shader.Set("u_ShadowFarPlane", Config::PointShadowFarPlane);
 
-    shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition()));
-    shader.Set(DirLight);
+    // shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition()));
+    // shader.Set(DirLight);
 
     shader.Set<int32_t>("u_ShadeType", m_ShadeType);
 
@@ -431,7 +436,12 @@ void Renderer::Render(const Shader& shader)
 
         shader.Set(GetCloseLights(transform.WorldPosition, lightView));
 
-        DrawPrimitives(shader, mesh.Primitives, transform.WorldMatrix);
+        const std::vector<glm::mat4>* jointMatrices = nullptr;
+        const SkinComponent* skinComponent = registry.try_get<SkinComponent>(entity);
+        if (skinComponent != nullptr && skinComponent->IsEnabled)
+            jointMatrices = &skinComponent->JointMatrices;
+
+        DrawPrimitives(shader, mesh.Primitives, transform.WorldMatrix, jointMatrices);
     }
 }
 
@@ -702,6 +712,12 @@ void Shader::Set<VoxelEngine::Material>(const VoxelEngine::Material& value) cons
         Set("u_NormalTexture", 3);
     }
     else Set("u_HasNormalTexture", false);
+}
+
+template<>
+void Shader::Set<std::vector<glm::mat4> >(const std::string& uniform, const std::vector<glm::mat4>& value) const
+{
+    for (int32_t i = 0; i < value.size(); ++i) { Set<glm::mat4>(fmt::format("{}[{}]", uniform, i), value[i]); }
 }
 
 }
