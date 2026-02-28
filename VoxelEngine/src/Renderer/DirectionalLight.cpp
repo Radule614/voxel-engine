@@ -22,7 +22,7 @@ glm::mat4 DirectionalLight::GetLightSpaceTransform(const glm::vec3 cameraPositio
     const float farPlane = Config::ShadowFarPlane;
     const float size = Config::ShadowFrustumSize;
 
-    const glm::vec3 position = cameraPosition + glm::vec3(0.0f, 50.0f, 0.0f);
+    const glm::vec3 position = cameraPosition + glm::vec3(0.0f, 15.0f, 0.0f);
     const glm::vec3 center = position + Direction;
 
     glm::vec3 up;

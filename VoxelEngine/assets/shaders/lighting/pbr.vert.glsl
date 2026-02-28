@@ -23,49 +23,22 @@ uniform mat4 u_LightSpaceMatrix;
 uniform mat4 u_JointMatrices[128];
 uniform bool u_IsSkinned;
 
-mat4 CalculateSkinMatrix()
-{
-    mat4 matrix = mat4(0.0);
-
-    matrix += u_JointMatrices[int(i_Joints.x)] * i_Weights.x;
-    matrix += u_JointMatrices[int(i_Joints.y)] * i_Weights.y;
-    matrix += u_JointMatrices[int(i_Joints.z)] * i_Weights.z;
-    matrix += u_JointMatrices[int(i_Joints.w)] * i_Weights.w;
-
-    return matrix;
-}
+#include "common.vert.glsl"
 
 void main()
 {
-    vec4 position;
-    vec3 normal;
-    vec3 tangent;
+    VertexData data = CalculateWorldVertexData();
 
-    if (u_IsSkinned)
-    {
-        mat4 skin = CalculateSkinMatrix();
-
-        position = skin * vec4(i_Position, 1.0);
-        normal = mat3(skin) * i_Normal;
-        tangent = mat3(skin) * i_Tangent.xyz;
-    }
-    else
-    {
-        position = u_Model * vec4(i_Position, 1.0);
-        normal = mat3(u_Model) * i_Normal;
-        tangent = mat3(u_Model) * i_Tangent.xyz;
-    }
-
-    vec3 N = normalize(normal);
-    vec3 T = normalize(tangent);
+    vec3 N = normalize(data.Normal);
+    vec3 T = normalize(data.Tangent);
     T = normalize(T - dot(T, N) * N);
     vec3 B = cross(N, T) * i_Tangent.w;
 
     o_VertexOut.FragNormal = N;
-    o_VertexOut.FragPosition = vec3(position);
+    o_VertexOut.FragPosition = vec3(data.Position);
     o_VertexOut.FragTexCoords = i_TexCoords;
     o_VertexOut.TBN = mat3(T, B, N);
-    o_VertexOut.FragLightSpacePosition = u_LightSpaceMatrix * position;
+    o_VertexOut.FragLightSpacePosition = u_LightSpaceMatrix * data.Position;
 
-    gl_Position = u_ViewProjection * position;
+    gl_Position = u_ViewProjection * data.Position;
 }

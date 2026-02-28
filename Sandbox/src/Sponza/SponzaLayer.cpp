@@ -49,7 +49,7 @@ void SponzaLayer::OnAttach()
     brainStemTransform.IsDirty = true;
 
     const entt::entity lightEntity = registry.create();
-    PointLight pointLight(glm::vec3(1, 1, 1), glm::vec3(1, 0.5, 0.5));
+    PointLight pointLight(glm::vec3(0, 0.5, 3), glm::vec3(0, 0.5, 1));
     registry.emplace<LightComponent>(lightEntity, pointLight);
 }
 

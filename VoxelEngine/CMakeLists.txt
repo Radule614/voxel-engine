@@ -52,6 +52,8 @@ target_include_directories(VoxelEngine PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor/MagicEnum
 )
 
+target_compile_definitions(OpenGLCore PRIVATE ROOT_SHADER_PATH=\"assets/shaders\")
+
 # Link with other libraries
 target_link_libraries(VoxelEngine PUBLIC
         OpenGLCore
