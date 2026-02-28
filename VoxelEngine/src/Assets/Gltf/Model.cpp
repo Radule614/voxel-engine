@@ -351,16 +351,10 @@ void Model::LoadSkins()
             skin.InverseBindMatrices[i] = glm::make_mat4(reinterpret_cast<const float_t*>(data + i * stride));
         }
 
-        int nodeIndex = 0;
-        for (const auto& node: model.nodes)
+        for (int32_t i = 0; i < model.nodes.size(); ++i)
         {
-            if (node.skin == skinIndex)
-            {
-                skin.NodeIndex = nodeIndex;
-                break;
-            }
-
-            ++nodeIndex;
+            if (model.nodes[i].skin == skinIndex)
+                skin.RootIndexes.push_back(i);
         }
 
         m_Skins.emplace_back(skin);

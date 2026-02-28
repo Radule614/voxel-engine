@@ -105,10 +105,8 @@ void CreateSkinComponents(const Model& model, std::unordered_map<int32_t, entt::
 {
     entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    for (const auto& [NodeIndex, JointIndexes, InverseBindMatrices]: model.GetSkins())
+    for (const auto& [RootIndexes, JointIndexes, InverseBindMatrices]: model.GetSkins())
     {
-        const entt::entity rootEntity = nodeEntityMap[NodeIndex];
-
         SkinComponent skinComponent;
         skinComponent.InverseBindMatrices = InverseBindMatrices;
         skinComponent.JointMatrices.resize(InverseBindMatrices.size());
@@ -116,7 +114,11 @@ void CreateSkinComponents(const Model& model, std::unordered_map<int32_t, entt::
         for (auto jointIndex: JointIndexes)
             skinComponent.JointEntities.push_back(nodeEntityMap[jointIndex]);
 
-        registry.emplace<SkinComponent>(rootEntity, skinComponent);
+        for (int32_t nodeIndex: RootIndexes)
+        {
+            const entt::entity rootEntity = nodeEntityMap[nodeIndex];
+            registry.emplace<SkinComponent>(rootEntity, skinComponent);
+        }
     }
 }
 

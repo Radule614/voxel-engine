@@ -11,7 +11,7 @@ namespace VoxelEngine
 
 struct Skin
 {
-    int32_t NodeIndex = -1;
+    std::vector<int32_t> RootIndexes{};
     std::vector<int32_t> JointIndexes{};
     std::vector<glm::mat4> InverseBindMatrices{};
 };

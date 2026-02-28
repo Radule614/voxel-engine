@@ -41,16 +41,22 @@ void SponzaLayer::OnAttach()
     // static Model* interpolationTestModel = AssetManager::Instance().LoadModel("assets/models/InterpolationTest.glb");
     // CreateEntityFromModel(*interpolationTestModel);
 
-    static Model* brainStemModel = AssetManager::Instance().LoadModel("assets/models/BrainStem.glb");
-    const auto brainStemEntity = CreateEntityFromModel(*brainStemModel);
-    auto& brainStemTransform = registry.get<TransformComponent>(brainStemEntity);
-    brainStemTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
-    brainStemTransform.LocalRotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    brainStemTransform.IsDirty = true;
+    // static Model* brainStemModel = AssetManager::Instance().LoadModel("assets/models/BrainStem.glb");
+    // const auto brainStemEntity = CreateEntityFromModel(*brainStemModel);
+    // auto& brainStemTransform = registry.get<TransformComponent>(brainStemEntity);
+    // brainStemTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
+    // brainStemTransform.LocalRotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    // brainStemTransform.IsDirty = true;
 
     const entt::entity lightEntity = registry.create();
     PointLight pointLight(glm::vec3(0, 0.5, 3), glm::vec3(0, 0.5, 1));
     registry.emplace<LightComponent>(lightEntity, pointLight);
+
+    static Model* paladinModel = AssetManager::Instance().LoadModel("assets/models/Paladin.glb");
+    const auto paladinEntity = CreateEntityFromModel(*paladinModel);
+    auto& paladinTransform = registry.get<TransformComponent>(paladinEntity);
+    paladinTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
+    paladinTransform.IsDirty = true;
 }
 
 void SponzaLayer::OnEvent(Event& event)
