@@ -10,6 +10,7 @@
 #include "tiny_gltf.hpp"
 #include "glad/glad.h"
 #include "../Animation.hpp"
+#include "../Skin.hpp"
 
 namespace VoxelEngine
 {
@@ -25,6 +26,7 @@ public:
     const tinygltf::Model& GetRawModel() const;
     const std::vector<RenderPrimitive>& GetMeshPrimitives(int32_t meshIndex) const;
     const std::vector<Animation>& GetAnimations() const;
+    const std::vector<Skin>& GetSkins() const;
 
 private:
     void LoadNodes(const tinygltf::Node& node);
@@ -34,6 +36,7 @@ private:
     GLuint LoadTexture(int32_t textureIndex);
 
     void LoadAnimations();
+    void LoadSkins();
 
 private:
     std::unique_ptr<tinygltf::Model> m_GltfModel;
@@ -41,6 +44,7 @@ private:
     std::map<int32_t, GLuint> m_Textures;
     std::map<int32_t, std::vector<RenderPrimitive> > m_MeshPrimitiveMap;
     std::vector<Animation> m_Animations{};
+    std::vector<Skin> m_Skins{};
 };
 
 }

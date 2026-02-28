@@ -110,8 +110,6 @@ const Model& AssetManager::GetSphereModel() const { return *m_SphereModel; }
 
 const Model& AssetManager::GetCubeModel() const { return *m_CubeModel; }
 
-std::string AssetManager::GetShaderPath(const std::string& shaderName) { return "assets/shaders/" + shaderName; }
-
 static uint32_t LoadTextureFromFile(const std::string& fullpath, const int32_t type, const bool flip)
 {
     uint32_t id;

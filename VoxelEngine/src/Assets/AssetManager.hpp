@@ -28,7 +28,6 @@ public:
 
     const Model& GetSphereModel() const;
     const Model& GetCubeModel() const;
-    static std::string GetShaderPath(const std::string& shaderName);
 
 private:
     std::unique_ptr<Model> m_SphereModel;

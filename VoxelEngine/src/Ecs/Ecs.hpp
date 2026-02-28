@@ -6,6 +6,7 @@
 #include "Components/AnimationComponent.hpp"
 #include "Components/ColliderComponent.hpp"
 #include "Components/MeshComponent.hpp"
+#include "Components/SkinComponent.hpp"
 #include "Components/TransformComponent.hpp"
 
 namespace VoxelEngine
@@ -15,7 +16,8 @@ using ComponentsWithGui = std::tuple<
     TransformComponent,
     MeshComponent,
     ColliderComponent,
-    AnimationComponent
+    AnimationComponent,
+    SkinComponent
 >;
 
 class EntityComponentSystem

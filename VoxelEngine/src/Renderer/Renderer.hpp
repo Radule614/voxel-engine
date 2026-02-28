@@ -37,7 +37,8 @@ public:
     void RenderScene(const GLCore::Utils::PerspectiveCamera& camera, const RenderTarget& renderTarget) const;
     static void DrawPrimitives(const GLCore::Utils::Shader& shader,
                                const std::vector<RenderPrimitive>& primitives,
-                               const glm::mat4& model);
+                               const glm::mat4& model,
+                               const std::vector<glm::mat4>* jointMatrices = nullptr);
 
 private:
     static void Render(const GLCore::Utils::Shader& shader);
@@ -103,5 +104,7 @@ template<>
 void Shader::Set<ViewType<VoxelEngine::LightComponent> >(const ViewType<VoxelEngine::LightComponent>& value) const;
 template<>
 void Shader::Set<VoxelEngine::Material>(const VoxelEngine::Material& value) const;
+template<>
+void Shader::Set<std::vector<glm::mat4> >(const std::string& uniform, const std::vector<glm::mat4>& value) const;
 
 }
