@@ -5,6 +5,7 @@
 #include "../Assets/AssetManager.hpp"
 #include "../Ecs/Ecs.hpp"
 #include "../Ecs/Components/TransformComponent.hpp"
+#include "../Ecs/Components/SkinComponent.hpp"
 #include "GLCore/Utils/ShaderBuilder.hpp"
 #include "Utils/RenderUtils.hpp"
 

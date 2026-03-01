@@ -7,7 +7,12 @@
 #include "Ecs.hpp"
 #include "Components/ParentComponent.hpp"
 #include "Components/SkinComponent.hpp"
+#include "Components/TransformComponent.hpp"
+#include "Components/AnimationComponent.hpp"
+#include "Components/ScriptComponent.hpp"
 #include "glm/gtc/quaternion.hpp"
+
+using namespace GLCore;
 
 namespace VoxelEngine
 {
@@ -146,7 +151,7 @@ static void AdvanceNodeAnimation(const entt::entity& nodeEntity,
     }
 }
 
-static void UpdateAnimations(const GLCore::Timestep ts)
+static void UpdateAnimations(const Timestep ts)
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
@@ -207,11 +212,34 @@ static void UpdateSkins()
     }
 }
 
-void EcsLayer::OnUpdate(const GLCore::Timestep ts)
+static void UpdateScripts(const Timestep ts)
+{
+    entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    for (const entt::entity& entity: registry.view<ScriptComponent>())
+    {
+        for (const auto& script: registry.get<ScriptComponent>(entity).Scripts)
+            script->OnUpdate(ts, {registry, entity});
+    }
+}
+
+void EcsLayer::OnUpdate(const Timestep ts)
 {
     UpdateAnimations(ts);
     UpdateTransforms();
     UpdateSkins();
+    UpdateScripts(ts);
+}
+
+void EcsLayer::OnEvent(Event& event)
+{
+    entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    for (const entt::entity& entity: registry.view<ScriptComponent>())
+    {
+        for (const auto& script: registry.get<ScriptComponent>(entity).Scripts)
+            script->OnEvent(event, {registry, entity});
+    }
 }
 
 static void CalculateTransform(TransformComponent& transform, const TransformComponent& parentTransform)

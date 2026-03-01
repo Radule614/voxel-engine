@@ -10,6 +10,7 @@
 #include "Ecs/Components/LightComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "glm/ext/quaternion_trigonometric.hpp"
+#include "Scripts/MutantScript.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -64,19 +65,8 @@ void SponzaLayer::OnAttach()
     mutantTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
     mutantTransform.IsDirty = true;
 
-    ScriptComponent scriptComponent;
-    Script script;
-    script.Name = "Mutant Script";
-    scriptComponent.Scripts.emplace_back(script);
-    registry.emplace<ScriptComponent>(mutantEntity, scriptComponent);
-
-}
-
-void SponzaLayer::OnEvent(Event& event)
-{
-    EventDispatcher dispatcher(event);
-    dispatcher.Dispatch<KeyPressedEvent>(
-        [&](const KeyPressedEvent& e) { return false; });
+    ScriptComponent& scriptComponent = registry.emplace<ScriptComponent>(mutantEntity);
+    scriptComponent.Scripts.emplace_back(std::make_unique<MutantScript>());
 }
 
 

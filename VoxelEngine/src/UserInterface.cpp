@@ -9,42 +9,16 @@
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Utils/Utils.hpp"
 #include "Ecs/ComponentGui.hpp"
+#include "Ecs/Components/AnimationComponent.hpp"
+#include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/ScriptComponent.hpp"
+#include "Ecs/Components/SkinComponent.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
 
 namespace VoxelEngine
 {
-
-template<std::size_t... Indices>
-void DrawEntityComponentsImpl(entt::registry& registry, const entt::entity entity, std::index_sequence<Indices...>)
-{
-    (([&] {
-        using ComponentType = std::tuple_element_t<Indices, ComponentsWithGui>;
-
-        if (auto* component = registry.try_get<ComponentType>(entity))
-        {
-            auto* c = dynamic_cast<ComponentGui*>(component);
-
-            if (c == nullptr)
-                return;
-
-            const auto flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
-
-            if (ImGui::TreeNodeEx(c->GetName().c_str(), flags))
-            {
-                c->DrawGui();
-
-                ImGui::TreePop();
-            }
-        }
-    }()), ...);
-}
-
-void DrawEntityComponents(entt::registry& registry, const entt::entity entity)
-{
-    DrawEntityComponentsImpl(registry, entity, std::make_index_sequence<std::tuple_size_v<ComponentsWithGui> >{});
-}
 
 UserInterface::UserInterface(EngineState& state) : m_State(state)
 {
@@ -201,6 +175,23 @@ void UserInterface::DrawNode(const entt::entity entity)
     ImGui::PopID();
 }
 
+template<typename T>
+void DrawComponent(entt::registry& registry, const entt::entity entity)
+{
+    auto* component = dynamic_cast<ComponentGui*>(registry.try_get<T>(entity));
+    if (component == nullptr)
+        return;
+
+    const auto flags = ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_DefaultOpen;
+
+    if (ImGui::TreeNodeEx(component->GetName().c_str(), flags))
+    {
+        component->DrawGui();
+
+        ImGui::TreePop();
+    }
+}
+
 void UserInterface::DrawComponentViewer() const
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
@@ -214,7 +205,12 @@ void UserInterface::DrawComponentViewer() const
         return;
     }
 
-    DrawEntityComponents(registry, m_SelectedEntity);
+    DrawComponent<TransformComponent>(registry, m_SelectedEntity);
+    DrawComponent<MeshComponent>(registry, m_SelectedEntity);
+    DrawComponent<ColliderComponent>(registry, m_SelectedEntity);
+    DrawComponent<AnimationComponent>(registry, m_SelectedEntity);
+    DrawComponent<SkinComponent>(registry, m_SelectedEntity);
+    DrawComponent<ScriptComponent>(registry, m_SelectedEntity);
 
     ImGui::End();
 }

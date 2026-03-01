@@ -9,7 +9,7 @@
 namespace VoxelEngine
 {
 
-std::string ScriptComponent::GetName() { return "ScriptComponent"; }
+std::string ScriptComponent::GetName() { return "Script Component"; }
 
 void ScriptComponent::DrawGui()
 {
@@ -17,14 +17,14 @@ void ScriptComponent::DrawGui()
         return;
 
     int i = 0;
-    for (const auto& [Name, OnUpdate]: Scripts)
+    for (const std::unique_ptr<Script>& script: Scripts)
     {
         ImGui::PushID(i++);
 
         ImGui::TableNextRow();
 
         ImGui::TableSetColumnIndex(0);
-        ImGui::TextUnformatted(Name.c_str());
+        ImGui::TextUnformatted(script->GetName().c_str());
 
         ImGui::PopID();
     }
