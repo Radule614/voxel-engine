@@ -64,8 +64,8 @@ int TextureRenderTarget::GetHeight() const { return m_Height; }
 
 void TextureRenderTarget::Resize(const int32_t width, const int32_t height)
 {
-    m_Width = width;
-    m_Height = height;
+    m_Width = std::max(width, 0);
+    m_Height = std::max(height, 0);
 
     // Resize color texture
     glBindTexture(GL_TEXTURE_2D, m_Texture);

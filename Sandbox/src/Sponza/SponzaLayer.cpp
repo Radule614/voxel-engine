@@ -52,11 +52,24 @@ void SponzaLayer::OnAttach()
     PointLight pointLight(glm::vec3(0, 0.5, 3), glm::vec3(0, 0.5, 1));
     registry.emplace<LightComponent>(lightEntity, pointLight);
 
-    static Model* paladinModel = AssetManager::Instance().LoadModel("assets/models/Paladin.glb");
-    const auto paladinEntity = CreateEntityFromModel(*paladinModel);
-    auto& paladinTransform = registry.get<TransformComponent>(paladinEntity);
-    paladinTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
-    paladinTransform.IsDirty = true;
+    // static Model* paladinModel = AssetManager::Instance().LoadModel("assets/models/Paladin.glb");
+    // const auto paladinEntity = CreateEntityFromModel(*paladinModel);
+    // auto& paladinTransform = registry.get<TransformComponent>(paladinEntity);
+    // paladinTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
+    // paladinTransform.IsDirty = true;
+
+    static Model* mutantModel = AssetManager::Instance().LoadModel("assets/models/Mutant.glb");
+    const auto mutantEntity = CreateEntityFromModel(*mutantModel);
+    auto& mutantTransform = registry.get<TransformComponent>(mutantEntity);
+    mutantTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
+    mutantTransform.IsDirty = true;
+
+    ScriptComponent scriptComponent;
+    Script script;
+    script.Name = "Mutant Script";
+    scriptComponent.Scripts.emplace_back(script);
+    registry.emplace<ScriptComponent>(mutantEntity, scriptComponent);
+
 }
 
 void SponzaLayer::OnEvent(Event& event)

@@ -6,6 +6,7 @@
 #include "Components/AnimationComponent.hpp"
 #include "Components/ColliderComponent.hpp"
 #include "Components/MeshComponent.hpp"
+#include "Components/ScriptComponent.hpp"
 #include "Components/SkinComponent.hpp"
 #include "Components/TransformComponent.hpp"
 
@@ -17,7 +18,8 @@ using ComponentsWithGui = std::tuple<
     MeshComponent,
     ColliderComponent,
     AnimationComponent,
-    SkinComponent
+    SkinComponent,
+    ScriptComponent
 >;
 
 class EntityComponentSystem
