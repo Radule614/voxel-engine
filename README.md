@@ -10,6 +10,9 @@ git clone --recursive https://github.com/Radule614/voxel-engine
 
 Run `premake5 vs2022` and open `VoxelEngine.sln` in Visual Studio.
 
+### Animations and skinning
+<img width="2559" height="1367" alt="image" src="https://github.com/user-attachments/assets/9fd38160-bebd-40a6-a95d-d649dd0eabce" />
+
 ### PBR Lighting
 <img width="1735" height="1239" alt="image" src="https://github.com/user-attachments/assets/bde1149b-c8ea-420e-bbb0-530d7a19846b" />
 
