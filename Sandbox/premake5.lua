@@ -19,6 +19,7 @@ project "Sandbox"
 
 	includedirs
 	{
+        "src",
 		"../OpenGLCore/vendor/spdlog/include",
 		"../OpenGLCore/src",
 		"../OpenGLCore/vendor",

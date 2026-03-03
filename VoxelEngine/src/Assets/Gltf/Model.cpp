@@ -48,7 +48,7 @@ void Model::Load()
 
     for (const int32_t node: scene.nodes)
     {
-        GLCORE_ASSERT((node >= 0) && (node < model.nodes.size()));
+        GLCORE_ASSERT((node >= 0) && (node < model.nodes.size()), "node vector length invalid");
 
         LoadNodes(model.nodes[node]);
     }
@@ -77,7 +77,7 @@ void Model::LoadNodes(const tinygltf::Node& node)
 
     for (const int32_t childNode: node.children)
     {
-        GLCORE_ASSERT(node.children[i] >= 0 && node.children[i] < model.nodes.size());
+        GLCORE_ASSERT(node.children[childNode] >= 0 && node.children[childNode] < model.nodes.size(), "node children length invalid");
 
         LoadNodes(model.nodes[childNode]);
     }
@@ -201,7 +201,7 @@ GLuint Model::LoadTexture(const int32_t textureIndex)
     else if (image.component == 3) format = GL_RGB;
     else if (image.component == 4) format = GL_RGBA;
     else
-        GLCORE_ASSERT(false);
+        GLCORE_ASSERT(false, "");
 
     glTexImage2D(GL_TEXTURE_2D,
                  0,

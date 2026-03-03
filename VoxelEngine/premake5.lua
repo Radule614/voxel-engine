@@ -19,7 +19,10 @@ project "VoxelEngine"
 		"src/**.hpp",
 		"src/**.cpp",
 		"vendor/PerlinNoise/**.hpp",
-		"vendor/Entt/**.hpp"
+		"vendor/Entt/**.hpp",
+		"vendor/AssetUtils/**.hpp",
+		"vendor/AssetUtils/**.cpp",
+		"vendor/MagicEnum/**.hpp"
 	}
 
 	includedirs
@@ -30,10 +33,13 @@ project "VoxelEngine"
 		"../OpenGLCore/%{IncludeDir.glm}",
 		"../OpenGLCore/%{IncludeDir.Glad}",
 		"../OpenGLCore/%{IncludeDir.ImGui}",
+		"../OpenGLCore/%{IncludeDir.ImGui}",
+		"../OpenGLCore/%{IncludeDir.stb_image}",
 		"%{IncludeDir.JoltPhysics}",
 		"%{IncludeDir.PerlinNoise}",
 		"%{IncludeDir.Entt}",
-		"%{IncludeDir.AssetUtils}"
+		"%{IncludeDir.AssetUtils}",
+		"%{IncludeDir.MagicEnum}"
 	}
 
 	links

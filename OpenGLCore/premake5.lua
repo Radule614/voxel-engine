@@ -44,6 +44,11 @@ project "OpenGLCore"
 		"opengl32.lib"
 	}
 
+    defines
+    {
+        'ROOT_SHADER_PATH="assets/shaders"'
+    }
+
 	filter "system:windows"
 		systemversion "latest"
 

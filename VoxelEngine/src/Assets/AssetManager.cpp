@@ -101,7 +101,7 @@ Model* AssetManager::LoadModel(std::string filename)
     else
         LOG_INFO("Loaded glTF: {0}", filename)
 
-    GLCORE_ASSERT(gltfModel != nullptr)
+    GLCORE_ASSERT(gltfModel != nullptr, "gltf model is null")
 
     return new Model(gltfModel);
 }
