@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EngineState.hpp"
+#include "entt.hpp"
 
 namespace VoxelEngine
 {
@@ -17,6 +18,13 @@ public:
     void OnUpdate(GLCore::Timestep ts) override;
 
 private:
+    void DrawSceneViewer();
+    void DrawComponentViewer() const;
+    void DrawNode(entt::entity entity);
+
+private:
     EngineState& m_State;
+
+    entt::entity m_SelectedEntity = entt::null;
 };
 }

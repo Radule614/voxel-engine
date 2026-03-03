@@ -6,8 +6,9 @@
 
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
+#include "Ecs/ModelEntity.hpp"
 #include "Ecs/Components/ColliderComponent.hpp"
-#include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 
 using namespace JPH;
@@ -28,11 +29,14 @@ Enemy::Enemy(const glm::vec3 position)
 
     m_Character = std::unique_ptr<Character>(character);
 
+    ColliderComponent collider(character->GetBodyID(),
+                               character->GetShape()->GetType(),
+                               character->GetShape()->GetSubType());
+
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    m_Entity = registry.create();
-    registry.emplace<MeshComponent>(m_Entity, *capsuleModel);
-    registry.emplace<TransformComponent>(m_Entity, TransformComponent{});
-    registry.emplace<ColliderComponent>(m_Entity, ColliderComponent(character->GetBodyID()));
+    m_Entity = CreateEntityFromModel(*capsuleModel);
+    registry.emplace<ColliderComponent>(m_Entity, collider);
+    registry.get<MetadataComponent>(m_Entity).Name = "Enemy";
 }
 
 Enemy::~Enemy() = default;

@@ -21,15 +21,14 @@ namespace VoxelEngine
 VoxelLayer::VoxelLayer(EngineState& state)
     : Layer("VoxelLayer"),
       m_EngineState(state),
-      m_ColliderPositions({})
-{
-    m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f));
-
-    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    m_TerrainEntityId = registry.create();
-}
+      m_ColliderPositions({}) { m_VoxelShape = ShapeFactory().CreateBoxShape(glm::vec3(0.5f)); }
 
 VoxelLayer::~VoxelLayer() = default;
+
+void VoxelLayer::Init(WorldSettings&& settings)
+{
+    m_World = std::make_unique<World>(m_EngineState.CameraController, std::move(settings));
+}
 
 void VoxelLayer::OnAttach()
 {
@@ -37,10 +36,7 @@ void VoxelLayer::OnAttach()
     m_World->StartGeneration();
 }
 
-void VoxelLayer::OnDetach()
-{
-    m_World->StopGeneration();
-}
+void VoxelLayer::OnDetach() { m_World->StopGeneration(); }
 
 void VoxelLayer::OnEvent(Event& event)
 {
@@ -85,19 +81,8 @@ void VoxelLayer::OnUpdate(const Timestep ts)
 
 void VoxelLayer::OnImGuiRender()
 {
-    constexpr ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                                             ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar |
-                                             ImGuiWindowFlags_NoMove;
-    const auto& io = ImGui::GetIO();
-
-    if (!m_EngineState.MenuActive)
-        return;
-
-    ImGui::SetNextWindowSize(ImVec2(400.0, 600.0));
-    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 400.0, 0));
-
-    ImGui::Begin("Terrain", nullptr, windowFlags);
-    ImGui::Text("Terrain Settings");
+    ImGui::Begin("Voxel Layer");
+    ImGui::Text("Voxel Layer");
 
     const char* polygonModes[] = {"Fill", "Line"};
     ImGui::Combo("Polygon Mode", &m_UIState.PolygonMode, polygonModes, IM_ARRAYSIZE(polygonModes));
@@ -122,11 +107,6 @@ void VoxelLayer::OnImGuiRender()
     ImGui::End();
 }
 
-void VoxelLayer::Init(WorldSettings&& settings)
-{
-    m_World = std::make_unique<World>(m_EngineState.CameraController, std::move(settings));
-}
-
 void VoxelLayer::ApplyState() const
 {
     Config::PolygonMode = m_UIState.PolygonMode == 0 ? GL_FILL : GL_LINE;
@@ -136,10 +116,9 @@ void VoxelLayer::ApplyState() const
 
 void VoxelLayer::ResetWorld() const
 {
-    m_World->GetLock().lock();
+    std::lock_guard lock(m_World->GetLock());
     m_World->StopGeneration();
     m_World->Reset();
-    m_World->GetLock().unlock();
 }
 
 void VoxelLayer::RemoveDistantChunks() const
@@ -175,35 +154,40 @@ void VoxelLayer::CreateTerrainCollider() const
     PhysicsSystem& physicsSystem = PhysicsEngine::Instance().GetSystem();
     BodyInterface& bodyInterface = physicsSystem.GetBodyInterface();
 
-    // TODO: Change this to mutable compound shape since it's constantly changed
+    // TODO: Change this to mutable compound shape since it's frequently changed
     StaticCompoundShapeSettings compoundSettings{};
 
     for (auto position: m_ColliderPositions)
         compoundSettings.AddShape(JoltUtils::GlmToJoltVec3(position), Quat::sIdentity(), m_VoxelShape);
-    const ShapeRefC shape = compoundSettings.Create().Get();
 
-    ColliderComponent* collider = nullptr;
-    if (const auto c = registry.try_get<ColliderComponent>(m_TerrainEntityId))
-    {
-        bodyInterface.RemoveBody(c->BodyId);
-        bodyInterface.DestroyBody(c->BodyId);
-        collider = c;
-    }
-    else { collider = &registry.emplace<ColliderComponent>(m_TerrainEntityId); }
+    const ShapeRefC shape = compoundSettings.Create().Get();
 
     auto bodySettings = BodyCreationSettings(shape,
                                              Vec3::sZero(),
                                              Quat::sIdentity(),
                                              EMotionType::Static,
                                              Layers::NON_MOVING);
+
     bodySettings.mEnhancedInternalEdgeRemoval = true;
-    collider->BodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
+    BodyID bodyId = bodyInterface.CreateAndAddBody(bodySettings, EActivation::DontActivate);
+
+    ColliderComponent* collider = registry.try_get<ColliderComponent>(m_World->GetEntity());
+    if (collider != nullptr)
+    {
+        bodyInterface.RemoveBody(collider->BodyId);
+        bodyInterface.DestroyBody(collider->BodyId);
+        collider->BodyId = bodyId;
+    }
+    else
+    {
+        registry.emplace<ColliderComponent>(m_World->GetEntity(), bodyId, shape->GetType(), shape->GetSubType());
+    }
 }
 
-void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
+void VoxelLayer::OnColliderLocationChanged(const glm::vec3 worldPosition)
 {
     auto& chunkMap = m_World->GetChunkMap();
-    if (!chunkMap.contains(World::GlobalToChunkSpace(pos)))
+    if (!chunkMap.contains(World::GlobalToChunkSpace(worldPosition)))
         return;
 
     constexpr int32_t r = 2;
@@ -213,18 +197,19 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 pos)
         {
             for (int32_t y = -r; y <= r; ++y)
             {
-                auto p = glm::i32vec3(glm::round(pos)) + glm::i32vec3(x, y, z);
-                auto [chunkPosition, voxelPosition] = World::GlobalToWorldSpace(p);
+                auto position = glm::i32vec3(glm::round(worldPosition)) + glm::i32vec3(x, y, z);
+                auto [chunkPosition, voxelPosition] = World::GlobalToWorldSpace(position);
 
                 auto it = chunkMap.find(chunkPosition);
-                if (it == chunkMap.end() || !InRange(p.y, 0, CHUNK_HEIGHT - 1))
+                if (it == chunkMap.end() || !InRange(position.y, 0, CHUNK_HEIGHT - 1))
                     continue;
 
-                Voxel& v = it->second->GetVoxelFromGrid(voxelPosition);
-                if (v.GetVoxelType() == AIR || m_ColliderPositions.contains(p))
+                Voxel& voxel = it->second->GetVoxelFromGrid(voxelPosition);
+
+                if (voxel.GetVoxelType() == AIR || m_ColliderPositions.contains(position))
                     continue;
 
-                m_ColliderPositions.insert(p);
+                m_ColliderPositions.insert(position);
             }
         }
     }
@@ -277,14 +262,8 @@ void VoxelLayer::PollChunkRenderQueue() const
 {
     auto& chunks = m_World->GetRenderQueue();
 
-    if (!m_World->GetLock().try_lock())
+    if (chunks.empty() || !m_World->GetLock().try_lock())
         return;
-
-    if (chunks.empty())
-    {
-        m_World->GetLock().unlock();
-        return;
-    }
 
     auto it = chunks.begin();
     while (it != chunks.end())

@@ -4,6 +4,9 @@
 #include <ranges>
 #include <utility>
 #include <vector>
+#include "../../Ecs/Ecs.hpp"
+#include "../../Ecs/Components/TransformComponent.hpp"
+#include "../../Ecs/Components/MetadataComponent.hpp"
 
 namespace VoxelEngine
 {
@@ -16,6 +19,11 @@ World::World(
       m_Lock(std::mutex()),
       m_Settings(std::move(settings))
 {
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    m_Entity = registry.create();
+
+    registry.emplace<TransformComponent>(m_Entity);
+    registry.emplace<MetadataComponent>(m_Entity, "Voxel World");
 }
 
 World::~World() { StopGeneration(); }
@@ -70,6 +78,9 @@ void World::GenerateWorld()
         std::vector<std::thread> threads = {};
 
         for (auto position: batch)
+            m_ChunkMap.emplace(position, std::make_unique<Chunk>(*this, position, *m_Settings.m_Biome));
+
+        for (auto position: batch)
             threads.emplace_back([this, position] { this->GenerateChunk(position); });
 
         for (auto& thread: threads)
@@ -80,11 +91,9 @@ void World::GenerateWorld()
     }
 }
 
-void World::GenerateChunk(Position2D position)
+void World::GenerateChunk(const Position2D position)
 {
-    auto [it, _] = m_ChunkMap.emplace(position, std::make_unique<Chunk>(*this, position, *m_Settings.m_Biome));
-
-    Chunk& chunk = *it->second;
+    Chunk& chunk = *m_ChunkMap[position];
 
     chunk.GetLock().lock();
 
@@ -93,7 +102,8 @@ void World::GenerateChunk(Position2D position)
     auto deferredQueueMap = m_DeferredUpdateQueueMap.find(position);
     if (deferredQueueMap != m_DeferredUpdateQueueMap.end())
     {
-        m_Lock.lock();
+        std::lock_guard lock(m_Lock);
+
         auto& deferredQueue = deferredQueueMap->second;
 
         while (!deferredQueue.empty())
@@ -106,7 +116,6 @@ void World::GenerateChunk(Position2D position)
 
             deferredQueue.pop();
         }
-        m_Lock.unlock();
     }
 
     std::map<Position2D, Chunk*> neighbours{};
@@ -122,12 +131,13 @@ void World::GenerateChunk(Position2D position)
     for (const auto& neighbour: neighbours | std::views::values)
         neighbour->GetLock().unlock();
 
-    chunk.GetLock().unlock();
+    chunk.GetLock().unlock(); {
+        std::lock_guard lock(m_Lock);
 
-    m_RenderQueue.insert({chunk.GetPosition(), &chunk});
-
-    for (const auto& neighbour: neighbours | std::views::values)
-        m_RenderQueue.insert({neighbour->GetPosition(), neighbour});
+        m_RenderQueue.insert({chunk.GetPosition(), &chunk});
+        for (const auto& neighbour: neighbours | std::views::values)
+            m_RenderQueue.insert({neighbour->GetPosition(), neighbour});
+    }
 }
 
 void World::SyncMeshWithNeighbour(Chunk& chunk, std::map<Position2D, Chunk*>& neighbours)
@@ -261,6 +271,8 @@ std::map<Position2D, Chunk*>& World::GetRenderQueue() { return m_RenderQueue; }
 std::mutex& World::GetLock() { return m_Lock; }
 
 std::map<Position2D, std::queue<Voxel> >& World::GetDeferredUpdateQueueMap() { return m_DeferredUpdateQueueMap; }
+
+entt::entity World::GetEntity() const { return m_Entity; }
 
 Position2D World::GlobalToChunkSpace(const glm::i32vec3& pos)
 {

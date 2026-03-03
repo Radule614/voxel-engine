@@ -24,6 +24,9 @@ public:
     void Set(const std::string& uniform, const T& value) const;
 
     template<typename T>
+    void Set(const T& value) const;
+
+    template<typename T>
     void Set(const std::string& uniform, const T& value, int32_t index) const;
 
 private:

@@ -1,10 +1,11 @@
 #include "BallLayer.hpp"
 #include "Physics/PhysicsEngine.hpp"
 #include "Assets/AssetManager.hpp"
+#include "Ecs/ModelEntity.hpp"
 #include "Ecs/Components/CameraComponent.hpp"
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/ColliderComponent.hpp"
-#include "Ecs/Components/MeshComponent.hpp"
+#include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Enemy/Enemy.hpp"
 #include "Physics/Utils/BodyBuilder.hpp"
@@ -32,12 +33,10 @@ void BallLayer::OnAttach()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    TransformComponent transform{};
-    transform.Scale = glm::vec3(1.0f);
-
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto entity = registry.create();
-    registry.emplace<TransformComponent>(entity, transform);
+    registry.emplace<TransformComponent>(entity);
+    registry.emplace<MetadataComponent>(entity, "Player");
 
     const auto& cameraController = m_State.CameraController;
     if (!cameraController->IsFreeFly())
@@ -59,7 +58,7 @@ void BallLayer::OnEvent(Event& event)
     EventDispatcher dispatcher(event);
     dispatcher.Dispatch<KeyPressedEvent>(
         [&](const KeyPressedEvent& e) {
-            if (e.GetKeyCode() == VE_KEY_T)
+            if (e.GetKeyCode() == VE_KEY_T && !m_State.MenuActive)
             {
                 const PerspectiveCamera& camera = m_State.CameraController->GetCamera();
                 const glm::vec3 front = camera.GetFront();
@@ -75,14 +74,17 @@ void BallLayer::OnEvent(Event& event)
 
                 BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
                 bodyInterface.AddLinearVelocity(bodyId, 20 * Vec3(front.x, front.y, front.z));
-                TransformComponent transform{};
-                transform.Scale = glm::vec3(0.4);
 
                 auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-                const auto entity = registry.create();
-                registry.emplace<MeshComponent>(entity, AssetManager::Instance().GetSphereModel());
-                registry.emplace<TransformComponent>(entity, transform);
-                registry.emplace<ColliderComponent>(entity, ColliderComponent(bodyId));
+
+                const auto entity = CreateEntityFromModel(AssetManager::Instance().GetSphereModel());
+                registry.emplace<ColliderComponent>(entity, bodyId, shape->GetType(), shape->GetSubType());
+                registry.get<MetadataComponent>(entity).Name = "Ball";
+
+                auto& transform = registry.get<TransformComponent>(entity);
+                transform.LocalScale = glm::vec3(0.4f);
+                transform.IsDirty = true;
+
                 m_SphereEntities.emplace_back(entity, 0);
             }
             return false;
@@ -91,19 +93,26 @@ void BallLayer::OnEvent(Event& event)
 
 void BallLayer::OnUpdate(const Timestep ts)
 {
+    if (m_State.MenuActive)
+        return;
+
     for (auto it = m_SphereEntities.begin(); it != m_SphereEntities.end();)
     {
         const entt::entity& sphere = it->first;
         float_t& accumulatedTime = it->second;
         accumulatedTime += ts;
+
         if (accumulatedTime > 10.0f)
         {
+            auto& ecs = EntityComponentSystem::Instance();
+            auto& collider = ecs.GetEntityRegistry().view<ColliderComponent>().get<ColliderComponent>(sphere);
+
             BodyInterface& bodyInterface = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
-            auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-            auto& collider = registry.view<ColliderComponent>().get<ColliderComponent>(sphere);
             bodyInterface.RemoveBody(collider.BodyId);
             bodyInterface.DestroyBody(collider.BodyId);
-            registry.destroy(sphere);
+
+            ecs.DestroyEntityRecursive(sphere);
+
             it = m_SphereEntities.erase(it);
         }
         else

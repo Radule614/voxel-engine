@@ -12,6 +12,8 @@
 #include "../../Ecs/Components/LightComponent.hpp"
 #include "../../Ecs/Components/TerrainMeshComponent.hpp"
 #include "../../Ecs/Components/TransformComponent.hpp"
+#include "../../Ecs/Components/MetadataComponent.hpp"
+#include "../../Ecs/Components/ParentComponent.hpp"
 
 namespace VoxelEngine
 {
@@ -33,16 +35,23 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     m_BorderMeshes.insert({BACK, {}});
     m_BorderMeshes.insert({LEFT, {}});
 
-    m_EntityId = EntityComponentSystem::Instance().SafeCreateEntity();
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    m_EntityId = registry.create();
 
     auto worldPosition = glm::vec3(0.0f);
     worldPosition.x = m_Position.x * CHUNK_WIDTH;
     worldPosition.z = m_Position.y * CHUNK_WIDTH;
 
     TransformComponent transform{};
-    transform.Position = worldPosition;
+    transform.LocalPosition = worldPosition;
 
-    EntityComponentSystem::Instance().GetEntityRegistry().emplace<TransformComponent>(m_EntityId, transform);
+    registry.emplace<TransformComponent>(m_EntityId, transform);
+    registry.emplace<MetadataComponent>(m_EntityId, "Chunk");
+
+    ParentComponent parent(world.GetEntity());
+    parent.AddChild(m_EntityId);
+
+    registry.emplace<ParentComponent>(m_EntityId, parent);
 }
 
 Chunk::~Chunk()
@@ -77,6 +86,12 @@ Chunk::~Chunk()
         glDeleteVertexArrays(1, &terrainMesh.VertexArray);
 
         registry.remove<TerrainMeshComponent>(m_EntityId);
+    }
+
+    if (registry.all_of<ParentComponent>(m_EntityId))
+    {
+        registry.get<ParentComponent>(m_EntityId).RemoveChild(m_EntityId);
+        registry.remove<ParentComponent>(m_EntityId);
     }
 
     if (registry.valid(m_EntityId))
@@ -152,7 +167,7 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
             {
                 auto& chunk = m_World.GetChunkMap().at(chunkPosition);
 
-                chunk->GetLock().lock();
+                std::lock_guard lock(chunk->GetLock());
 
                 auto& voxelGrid = chunk->GetVoxelGrid();
                 Voxel& voxel = voxelGrid[voxelPosition.GetX()][voxelPosition.GetZ()][voxelPosition.GetY()];
@@ -160,22 +175,19 @@ void Chunk::AddStructures(const std::vector<Structure>& structures)
                 voxel.SetPosition(voxelPosition);
                 changedChunks.insert(chunk.get());
 
-                chunk->GetLock().unlock();
-
                 continue;
             }
             deferredQueueMap[chunkPosition].emplace(voxelType, voxelPosition);
         }
     }
 
-    m_World.GetLock().lock();
-    for (auto& c: changedChunks)
+
+    std::lock_guard lock(m_World.GetLock());
+    for (auto& chunk: changedChunks)
     {
-        c->GetLock().lock();
-        c->GenerateMesh();
-        c->GetLock().unlock();
+        std::lock_guard chunkLock(chunk->GetLock());
+        chunk->GenerateMesh();
     }
-    m_World.GetLock().unlock();
 }
 
 void Chunk::GenerateMesh()
@@ -348,11 +360,9 @@ void Chunk::DetermineVoxelFeatures(Voxel& voxel, size_t x, size_t z, int32_t h)
 
     if (!m_BiomeTypes.contains(biomeType))
     {
-        m_BiomeLock.lock();
+        std::lock_guard lock(m_BiomeLock);
 
         m_BiomeTypes.insert(biomeType);
-
-        m_BiomeLock.unlock();
     }
 }
 
@@ -360,13 +370,15 @@ void Chunk::CreateTerrainMeshComponent() const
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
-    const Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png", "Diffuse");
+    const Texture albedoTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas.png");
+    const Texture roughnessTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas_roughness.png");
+    const Texture normalTexture = AssetManager::Instance().LoadTexture("assets/textures/atlas_normal.png");
 
     Material terrainMaterial{};
-    terrainMaterial.AlbedoFactor = glm::vec4(1.0f);
-    terrainMaterial.AlbedoTextureId = albedoTexture.id;
-    terrainMaterial.MetallicFactor = 0.0f;
-    terrainMaterial.RoughnessFactor = 0.85f;
+
+    terrainMaterial.AlbedoTextureId = albedoTexture.Id;
+    terrainMaterial.MetallicRoughnessTextureId = roughnessTexture.Id;
+    terrainMaterial.NormalTextureId = normalTexture.Id;
 
     TerrainMeshComponent terrainMeshComponent(m_Position, terrainMaterial);
 
@@ -392,6 +404,13 @@ void Chunk::CreateTerrainMeshComponent() const
                           GL_FALSE,
                           sizeof(VoxelVertex),
                           reinterpret_cast<void*>(offsetof(VoxelVertex, TexCoords)));
+    glEnableVertexAttribArray(3);
+    glVertexAttribPointer(3,
+                          4,
+                          GL_FLOAT,
+                          GL_FALSE,
+                          sizeof(VoxelVertex),
+                          reinterpret_cast<void*>(offsetof(VoxelVertex, Tangent)));
 
     glCreateBuffers(1, &terrainMeshComponent.IndexBuffer);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainMeshComponent.IndexBuffer);
@@ -472,7 +491,7 @@ void Chunk::AddPointLight(const glm::vec3 position, const glm::vec3 color)
     const glm::vec3 globalPosition = (glm::vec3) GetWorldPosition() + position;
 
     PointLight pointLight(globalPosition, color);
-    registry.emplace<LightComponent>(entityId, std::move(pointLight));
+    registry.emplace<LightComponent>(entityId, pointLight);
     m_Entities.push_back(entityId);
 }
 

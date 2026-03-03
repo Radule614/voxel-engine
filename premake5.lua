@@ -27,6 +27,7 @@ IncludeDir["JoltPhysics"] = "vendor/JoltPhysics"
 IncludeDir["PerlinNoise"] = "vendor/PerlinNoise"
 IncludeDir["Entt"] = "vendor/Entt"
 IncludeDir["AssetUtils"] = "vendor/AssetUtils"
+IncludeDir["MagicEnum"] = "vendor/MagicEnum"
 
 -- Projects
 group "Dependencies"

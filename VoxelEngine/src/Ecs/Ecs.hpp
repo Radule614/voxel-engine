@@ -17,6 +17,8 @@ public:
     entt::registry& GetEntityRegistry() const;
     entt::entity SafeCreateEntity();
 
+    void DestroyEntityRecursive(entt::entity entity) const;
+
 private:
     EntityComponentSystem();
 

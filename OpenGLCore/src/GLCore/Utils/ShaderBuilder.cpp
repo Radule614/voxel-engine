@@ -6,12 +6,18 @@
 #include "ShaderBuilder.hpp"
 
 #include <ranges>
+#include <filesystem>
+
+#ifndef ROOT_SHADER_PATH
+#error "ROOT_SHADER_PATH is not defined"
+#endif
 
 namespace VoxelEngine
 {
 
-static GLuint CompileShader(GLenum type, const std::string& source);
 static std::string ReadFileAsString(const std::string& filepath);
+static std::string ResolveIncludes(const std::string& source);
+static GLuint CompileShader(GLenum type, const std::string& source);
 
 ShaderBuilder::ShaderBuilder() : m_Program(0)
 {
@@ -19,7 +25,7 @@ ShaderBuilder::ShaderBuilder() : m_Program(0)
 
 ShaderBuilder& ShaderBuilder::AddShader(GLenum type, const std::string& shaderPath)
 {
-    const std::string shaderSource = ReadFileAsString(shaderPath);
+    const std::string shaderSource = ResolveIncludes(ReadFileAsString(shaderPath));
     const GLuint shader = CompileShader(type, shaderSource);
 
     if (m_Program == 0)
@@ -68,6 +74,46 @@ GLCore::Utils::Shader* ShaderBuilder::Build()
     return shader;
 }
 
+static std::string ResolveIncludes(const std::string& source)
+{
+    static std::unordered_map<std::string, std::string> LoadedIncludes{};
+
+    std::stringstream result;
+    std::istringstream input(source);
+    std::string line;
+
+    while (std::getline(input, line))
+    {
+        if (line.find("#include") != std::string::npos)
+        {
+            const size_t firstQuote = line.find('"');
+            const size_t lastQuote = line.find_last_of('"');
+
+            if (firstQuote != std::string::npos && lastQuote != std::string::npos && firstQuote != lastQuote)
+            {
+                std::string includeName = line.substr(firstQuote + 1, lastQuote - firstQuote - 1);
+
+                if (LoadedIncludes.contains(includeName))
+                {
+                    result << LoadedIncludes[includeName];
+
+                    continue;
+                }
+
+                std::string includeSource = ReadFileAsString(includeName);
+                LoadedIncludes[includeName] = includeSource;
+                result << includeSource;
+
+                continue;
+            }
+        }
+
+        result << line << "\n";
+    }
+
+    return result.str();
+}
+
 static GLuint CompileShader(GLenum type, const std::string& source)
 {
     GLuint shader = glCreateShader(type);
@@ -91,8 +137,10 @@ static GLuint CompileShader(GLenum type, const std::string& source)
 
 static std::string ReadFileAsString(const std::string& filepath)
 {
+    std::filesystem::path fullPath = std::filesystem::current_path() / ROOT_SHADER_PATH / filepath;
+
     std::string result;
-    std::ifstream in(filepath, std::ios::in | std::ios::binary);
+    std::ifstream in(fullPath, std::ios::in | std::ios::binary);
 
     if (in)
     {

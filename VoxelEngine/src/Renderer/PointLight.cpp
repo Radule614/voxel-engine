@@ -17,11 +17,11 @@ PointLight::PointLight(const glm::vec3 position, const glm::vec3 color)
 
 std::vector<glm::mat4> PointLight::CalculateShadowTransforms() const
 {
-    static float_t aspect = (float_t) Config::ShadowWidth / (float_t) Config::ShadowHeight;
+    static float_t aspect = (float_t) Config::PointShadowWidth / (float_t) Config::PointShadowHeight;
     static glm::mat4 shadowProjection = glm::perspective(glm::radians(90.0f),
                                                          aspect,
-                                                         Config::ShadowNearPlane,
-                                                         Config::ShadowFarPlane);
+                                                         Config::PointShadowNearPlane,
+                                                         Config::PointShadowFarPlane);
 
     std::vector<glm::mat4> shadowTransforms{};
     shadowTransforms.push_back(shadowProjection * glm::lookAt(Position,

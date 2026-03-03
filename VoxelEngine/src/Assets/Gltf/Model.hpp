@@ -9,7 +9,8 @@
 #include "../RenderPrimitive.hpp"
 #include "tiny_gltf.hpp"
 #include "glad/glad.h"
-#include "GLCore/Utils/Shader.hpp"
+#include "../Animation.hpp"
+#include "../Skin.hpp"
 
 namespace VoxelEngine
 {
@@ -21,26 +22,29 @@ public:
     ~Model();
 
     void Load();
-    void Draw(const GLCore::Utils::Shader& shader, const glm::mat4& modelMatrix) const;
+
+    const tinygltf::Model& GetRawModel() const;
+    const std::vector<RenderPrimitive>& GetMeshPrimitives(int32_t meshIndex) const;
+    const std::vector<Animation>& GetAnimations() const;
+    const std::vector<Skin>& GetSkins() const;
 
 private:
     void LoadNodes(const tinygltf::Node& node);
     void LoadMesh(const tinygltf::Mesh& mesh, int32_t meshIndex);
 
-    void DrawNodes(const GLCore::Utils::Shader& shader, glm::mat4 modelMatrix, const tinygltf::Node& node) const;
-    void DrawMesh(const GLCore::Utils::Shader& shader,
-                  const glm::mat4& modelMatrix,
-                  const tinygltf::Mesh& mesh,
-                  int32_t meshIndex) const;
-
     GLuint LoadBuffer(int32_t bufferViewIndex);
     GLuint LoadTexture(int32_t textureIndex);
 
-    std::unique_ptr<tinygltf::Model> m_GltfModel;
+    void LoadAnimations();
+    void LoadSkins();
 
+private:
+    std::unique_ptr<tinygltf::Model> m_GltfModel;
     std::map<int32_t, GLuint> m_AllocatedBuffers;
     std::map<int32_t, GLuint> m_Textures;
     std::map<int32_t, std::vector<RenderPrimitive> > m_MeshPrimitiveMap;
+    std::vector<Animation> m_Animations{};
+    std::vector<Skin> m_Skins{};
 };
 
 }
