@@ -50,7 +50,7 @@ void SponzaLayer::OnAttach()
     // brainStemTransform.IsDirty = true;
 
     const entt::entity lightEntity = registry.create();
-    PointLight pointLight(glm::vec3(0, 0.5, 3), glm::vec3(0, 0.5, 1));
+    PointLight pointLight(glm::vec3(0, 0.5, 3), glm::vec3(1));
     registry.emplace<LightComponent>(lightEntity, pointLight);
 
     // static Model* paladinModel = AssetManager::Instance().LoadModel("assets/models/Paladin.glb");
@@ -68,6 +68,5 @@ void SponzaLayer::OnAttach()
     ScriptComponent& scriptComponent = registry.emplace<ScriptComponent>(mutantEntity);
     scriptComponent.Scripts.emplace_back(std::make_unique<MutantScript>());
 }
-
 
 }
