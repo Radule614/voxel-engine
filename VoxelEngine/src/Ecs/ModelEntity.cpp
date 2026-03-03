@@ -9,6 +9,7 @@
 #include "Components/MetadataComponent.hpp"
 #include "Components/ParentComponent.hpp"
 #include "Components/SkinComponent.hpp"
+#include "Components/TransformComponent.hpp"
 
 namespace VoxelEngine
 {

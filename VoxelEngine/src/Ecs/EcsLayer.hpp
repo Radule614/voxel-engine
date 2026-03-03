@@ -15,9 +15,11 @@ class EcsLayer final : public GLCore::Layer
 {
 public:
     explicit EcsLayer(EngineState& state);
+    ~EcsLayer() override = default;
 
     void OnAttach() override;
     void OnUpdate(GLCore::Timestep ts) override;
+    void OnEvent(GLCore::Event& event) override;
 
 private:
     EngineState& m_State;

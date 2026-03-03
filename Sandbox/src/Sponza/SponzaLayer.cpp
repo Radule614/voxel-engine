@@ -10,6 +10,7 @@
 #include "Ecs/Components/LightComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "glm/ext/quaternion_trigonometric.hpp"
+#include "Scripts/MutantScript.hpp"
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -49,22 +50,23 @@ void SponzaLayer::OnAttach()
     // brainStemTransform.IsDirty = true;
 
     const entt::entity lightEntity = registry.create();
-    PointLight pointLight(glm::vec3(0, 0.5, 3), glm::vec3(0, 0.5, 1));
+    PointLight pointLight(glm::vec3(0, 0.5, 3), glm::vec3(1));
     registry.emplace<LightComponent>(lightEntity, pointLight);
 
-    static Model* paladinModel = AssetManager::Instance().LoadModel("assets/models/Paladin.glb");
-    const auto paladinEntity = CreateEntityFromModel(*paladinModel);
-    auto& paladinTransform = registry.get<TransformComponent>(paladinEntity);
-    paladinTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
-    paladinTransform.IsDirty = true;
-}
+    // static Model* paladinModel = AssetManager::Instance().LoadModel("assets/models/Paladin.glb");
+    // const auto paladinEntity = CreateEntityFromModel(*paladinModel);
+    // auto& paladinTransform = registry.get<TransformComponent>(paladinEntity);
+    // paladinTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
+    // paladinTransform.IsDirty = true;
 
-void SponzaLayer::OnEvent(Event& event)
-{
-    EventDispatcher dispatcher(event);
-    dispatcher.Dispatch<KeyPressedEvent>(
-        [&](const KeyPressedEvent& e) { return false; });
-}
+    static Model* mutantModel = AssetManager::Instance().LoadModel("assets/models/Mutant.glb");
+    const auto mutantEntity = CreateEntityFromModel(*mutantModel);
+    auto& mutantTransform = registry.get<TransformComponent>(mutantEntity);
+    mutantTransform.LocalPosition = glm::vec3(0, -1.0f, 0);
+    mutantTransform.IsDirty = true;
 
+    ScriptComponent& scriptComponent = registry.emplace<ScriptComponent>(mutantEntity);
+    scriptComponent.Scripts.emplace_back(std::make_unique<MutantScript>());
+}
 
 }

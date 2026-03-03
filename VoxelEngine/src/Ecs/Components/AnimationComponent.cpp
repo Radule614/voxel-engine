@@ -24,12 +24,20 @@ void AnimationComponent::DrawGui()
         ImGui::TableNextRow();
 
         ImGui::TableSetColumnIndex(0);
-        ImGui::TextUnformatted("Animation");
+        ImGui::TextUnformatted(Name.c_str());
 
         ImGui::TableSetColumnIndex(1);
         ImGui::SetNextItemWidth(-FLT_MIN);
         if (ImGui::Button(IsActive ? "Deactivate" : "Activate"))
+        {
+            if (!IsActive)
+            {
+                for (auto& animation: Animations)
+                    animation.IsActive = false;
+            }
+
             IsActive = !IsActive;
+        }
 
         ImGui::PopID();
     }

@@ -16,7 +16,6 @@ public:
     ~SponzaLayer() override;
 
     void OnAttach() override;
-    void OnEvent(GLCore::Event& event) override;
 
 private:
     VoxelEngine::EngineState& m_State;
