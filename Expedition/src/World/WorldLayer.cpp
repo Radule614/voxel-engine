@@ -1,11 +1,13 @@
 #include "WorldLayer.hpp"
 
+#include "Enemy/EnemyComponent.hpp"
 #include "Enemy/EnemyScript.hpp"
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/ModelEntity.hpp"
 #include "Ecs/Components/CameraComponent.hpp"
 #include "Ecs/Components/CharacterComponent.hpp"
+#include "Ecs/Components/ColliderComponent.hpp"
 #include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/ScriptComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
@@ -56,20 +58,21 @@ void WorldLayer::SpawnEnemy(const glm::vec3 position)
 {
     static Model* capsuleModel = AssetManager::Instance().LoadModel("assets/models/capsule/Capsule.glb");
 
-    auto character = CharacterBuilder()
+    JPH::Character* raw = CharacterBuilder()
         .SetHeight(2.0f)
         .SetRadius(0.5f)
         .SetPosition(position)
-        .BuildAndAddVirtual();
+        .BuildAndAdd();
 
-    auto controller = std::make_unique<CharacterController>(std::move(character));
-    controller->m_CharacterSpeed = 4.0f;
-    controller->m_GravityStrength = 3.0f;
+    const ColliderComponent collider(raw->GetBodyID(),
+                                     raw->GetShape()->GetType(),
+                                     raw->GetShape()->GetSubType());
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto enemy = CreateEntityFromModel(*capsuleModel);
     registry.get<MetadataComponent>(enemy).Name = "Enemy";
-    registry.emplace<CharacterComponent>(enemy, std::move(controller));
+    registry.emplace<ColliderComponent>(enemy, collider);
+    registry.emplace<EnemyComponent>(enemy, raw);
 
     auto& scriptComponent = registry.emplace<ScriptComponent>(enemy);
     scriptComponent.Scripts.emplace_back(std::make_unique<EnemyScript>());

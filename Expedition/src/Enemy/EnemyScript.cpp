@@ -1,4 +1,5 @@
 #include "EnemyScript.hpp"
+#include "EnemyComponent.hpp"
 
 #include "Ecs/Components/CameraComponent.hpp"
 #include "Ecs/Components/CharacterComponent.hpp"
@@ -16,40 +17,51 @@ EnemyScript::EnemyScript() : Script("Enemy Script")
 
 void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 {
-    auto& registry = context.Registry;
+    auto& registry  = context.Registry;
     auto& transform = registry.get<TransformComponent>(context.Entity);
-    auto& character = registry.get<CharacterComponent>(context.Entity);
+    auto& enemy     = registry.get<EnemyComponent>(context.Entity);
 
-    // Find player (entity with CameraComponent + CharacterComponent)
+    JPH::Character& character = *enemy.Character;
+
+    // Refresh ground state after the physics step that just ran
+    character.PostSimulation(0.05f);
+
+    // Accumulate gravity when airborne; reset on landing
+    if (character.GetGroundState() == JPH::Character::EGroundState::OnGround)
+        enemy.VerticalVelocity = 0.0f;
+    else
+        enemy.VerticalVelocity -= m_Gravity * ts.GetSeconds();
+
+    // Find the player entity
     glm::vec3 playerPos = transform.WorldPosition;
-    bool foundPlayer = false;
+    bool foundPlayer    = false;
 
     for (const auto view = registry.view<TransformComponent, CharacterComponent, CameraComponent>();
          const auto playerEntity : view)
     {
-        playerPos = registry.get<TransformComponent>(playerEntity).WorldPosition;
-        foundPlayer = true;
+        playerPos    = registry.get<TransformComponent>(playerEntity).WorldPosition;
+        foundPlayer  = true;
         break;
     }
 
-    if (!foundPlayer)
+    // Chase logic
+    JPH::Vec3 horizontal = JPH::Vec3::sZero();
+    if (foundPlayer)
     {
-        character.Controller->HandleInput(JPH::Vec3::sZero(), false, ts.GetSeconds());
-        return;
+        glm::vec3 dir    = playerPos - transform.WorldPosition;
+        dir.y            = 0.0f;
+        const float dist = glm::length(dir);
+
+        if (dist <= m_ChaseRadius && dist > 0.001f)
+        {
+            dir      = glm::normalize(dir) * m_ChaseSpeed;
+            horizontal = JPH::Vec3(dir.x, 0.0f, dir.z);
+        }
     }
 
-    glm::vec3 dir = playerPos - transform.WorldPosition;
-    dir.y = 0.0f;
-    const float distance = glm::length(dir);
-
-    if (distance > m_ChaseRadius || distance < 0.001f)
-    {
-        character.Controller->HandleInput(JPH::Vec3::sZero(), false, ts.GetSeconds());
-        return;
-    }
-
-    dir = glm::normalize(dir) * m_ChaseSpeed;
-    character.Controller->HandleInput(JPH::Vec3(dir.x, dir.y, dir.z), false, ts.GetSeconds());
+    // Keep the body awake and apply velocity
+    character.Activate();
+    character.SetLinearVelocity(JPH::Vec3(horizontal.GetX(), enemy.VerticalVelocity, horizontal.GetZ()));
 }
 
 void EnemyScript::OnEvent(Event& event, ScriptContext context)
