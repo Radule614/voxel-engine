@@ -6,13 +6,16 @@
 namespace Expedition
 {
 
-class EnemyLayer : public GLCore::Layer
+class WorldLayer : public GLCore::Layer
 {
 public:
-    explicit EnemyLayer(VoxelEngine::EngineState& state);
+    explicit WorldLayer(VoxelEngine::EngineState& state);
     void OnAttach() override;
 
 private:
+    void SpawnPlayer();
+    void SpawnEnemy(glm::vec3 position);
+
     VoxelEngine::EngineState& m_State;
 };
 

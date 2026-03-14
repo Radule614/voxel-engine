@@ -1,6 +1,5 @@
 #include "ExpeditionApp.hpp"
-#include "Enemy/EnemyLayer.hpp"
-#include "Player/PlayerLayer.hpp"
+#include "World/WorldLayer.hpp"
 #include "Terrain/VoxelLayer.hpp"
 #include "Terrain/Biome/Biome.hpp"
 
@@ -21,8 +20,7 @@ void ExpeditionApp::Setup()
     auto* voxelLayer = new VoxelLayer(m_State);
     voxelLayer->Init(std::move(settings));
     PushLayer(voxelLayer);
-    PushLayer(new PlayerLayer(m_State));
-    PushLayer(new EnemyLayer(m_State));
+    PushLayer(new WorldLayer(m_State));
 }
 
 }
