@@ -1,4 +1,5 @@
 #include "ExpeditionApp.hpp"
+#include "Player/PlayerLayer.hpp"
 #include "Terrain/VoxelLayer.hpp"
 #include "Terrain/Biome/Biome.hpp"
 
@@ -9,9 +10,9 @@ using namespace VoxelEngine;
 
 void ExpeditionApp::Setup()
 {
-    m_State.CameraController->SetFreeFly(true);
-    m_State.CameraController->GetCamera().SetPosition({ 0.0f, 70.0f, 0.0f });
-    m_State.CameraController->SetSpeed(10.0f);
+    m_State.CameraController->SetFreeFly(false);
+    m_State.CameraController->GetCamera().SetPosition({ 0.0f, 120.0f, 0.0f });
+    m_State.CameraController->SetSpeed(15.0f);
 
     WorldSettings settings{};
     settings.m_Biome = std::make_unique<Biome>(6512u);
@@ -19,6 +20,7 @@ void ExpeditionApp::Setup()
     auto* voxelLayer = new VoxelLayer(m_State);
     voxelLayer->Init(std::move(settings));
     PushLayer(voxelLayer);
+    PushLayer(new PlayerLayer(m_State));
 }
 
 }
