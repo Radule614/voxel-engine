@@ -39,7 +39,7 @@ static glm::mat4 CaptureViews[] =
 
 static DirectionalLight DirLight(glm::vec3(0.0f, -1.0f, 0.3f), 2.0f, glm::vec3(1.0f, 0.97f, 0.92f));
 
-Renderer::Renderer() : m_ShadeType(Full)
+Renderer::Renderer() : m_ShadeType(Preview)
 {
     m_PointDepthShader = ShaderBuilder()
             .AddShader(GL_VERTEX_SHADER, "shadows/point_shadows_depth.vert.glsl")
@@ -395,8 +395,8 @@ void Renderer::RenderPass(const PerspectiveCamera& camera) const
     shader.Set("u_CameraPosition", camera.GetPosition());
     shader.Set("u_ShadowFarPlane", Config::PointShadowFarPlane);
 
-    // shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition()));
-    // shader.Set(DirLight);
+    shader.Set("u_LightSpaceMatrix", DirLight.GetLightSpaceTransform(camera.GetPosition()));
+    shader.Set(DirLight);
 
     shader.Set<int32_t>("u_ShadeType", m_ShadeType);
 
