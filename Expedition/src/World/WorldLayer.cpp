@@ -28,7 +28,7 @@ WorldLayer::WorldLayer(EngineState& state)
 void WorldLayer::OnAttach()
 {
     SpawnPlayer();
-    SpawnEnemy({5.0f, 80.0f, 5.0f});
+    SpawnEnemy({5.0f, 120.0f, 5.0f});
 }
 
 void WorldLayer::SpawnPlayer()
