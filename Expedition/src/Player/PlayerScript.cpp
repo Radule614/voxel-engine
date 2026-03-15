@@ -60,6 +60,9 @@ void PlayerScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     for (auto it = m_Balls.begin(); it != m_Balls.end();)
     {
+        it->Age += ts.GetSeconds();
+        if (it->Age < 0.2f) { ++it; continue; }
+
         const JPH::RVec3 pos = bi.GetCenterOfMassPosition(it->BodyId);
 
         JPH::AllHitCollisionCollector<JPH::CollideShapeBodyCollector> collector;
