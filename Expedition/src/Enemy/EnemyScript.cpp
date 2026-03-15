@@ -45,33 +45,45 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     }
 
     // Chase logic
-    JPH::Vec3 horizontal = JPH::Vec3::sZero();
-    bool isChasing       = false;
+    JPH::Vec3 horizontal  = JPH::Vec3::sZero();
+    bool isChasing        = false;
+    glm::vec3 faceDir     = glm::vec3(0.0f, 0.0f, 1.0f);
     if (foundPlayer)
     {
         glm::vec3 dir    = playerPos - transform.WorldPosition;
         dir.y            = 0.0f;
         const float dist = glm::length(dir);
 
-        if (dist <= m_ChaseRadius && dist > 0.001f)
+        if (dist > 0.001f)
+            faceDir = glm::normalize(dir);
+
+        if (dist <= m_ChaseRadius && dist > m_StopRadius)
         {
-            dir        = glm::normalize(dir) * m_ChaseSpeed;
-            horizontal = JPH::Vec3(dir.x, 0.0f, dir.z);
+            horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
             isChasing  = true;
         }
     }
 
-    // Drive animation on the child model entity
+    // Drive animation and rotation on the child model entity
     if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
     {
         for (const auto child : children->Entities)
         {
+            auto* childTransform = registry.try_get<TransformComponent>(child);
+            if (childTransform)
+            {
+                childTransform->LocalRotation = glm::angleAxis(atan2(faceDir.x, faceDir.z), glm::vec3(0, 1, 0));
+                childTransform->IsDirty = true;
+            }
+
             if (auto* anim = registry.try_get<AnimationComponent>(child))
             {
                 for (auto& clip : anim->Animations)
                     clip.IsActive = (clip.Name == "run") && isChasing;
-                break;
             }
+
+            if (childTransform)
+                break;
         }
     }
 
