@@ -68,6 +68,40 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         }
     }
 
+    // If an attack is in progress, lock state until the clip finishes
+    if (m_AttackPlaying)
+    {
+        bool attackDone = false;
+        if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
+        {
+            for (const auto child : children->Entities)
+            {
+                if (const auto* anim = registry.try_get<AnimationComponent>(child))
+                {
+                    for (const auto& clip : anim->Animations)
+                    {
+                        if (clip.Name == "attack")
+                        {
+                            attackDone = clip.Time >= clip.Duration;
+                            break;
+                        }
+                    }
+                }
+                if (registry.try_get<TransformComponent>(child))
+                    break;
+            }
+        }
+
+        if (attackDone)
+            m_AttackPlaying = false;
+        else
+            state = State::Attacking;
+    }
+
+    // Start tracking a new attack
+    if (state == State::Attacking && !m_AttackPlaying)
+        m_AttackPlaying = true;
+
     // Drive animation and rotation on the child model entity
     if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
     {
@@ -91,7 +125,11 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                         (clip.Name == "attack" && state == State::Attacking);
 
                     if (stateChanged && shouldBeActive)
+                    {
                         clip.Time = 0.0f;
+                        if (clip.Name == "attack")
+                            clip.ShouldRepeat = false;
+                    }
 
                     clip.IsActive = shouldBeActive;
                 }
