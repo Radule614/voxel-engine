@@ -4,6 +4,7 @@
 
 #include "ModelEntity.hpp"
 
+#include "EcsUtils.hpp"
 #include "Components/AnimationComponent.hpp"
 #include "Components/MeshComponent.hpp"
 #include "Components/MetadataComponent.hpp"
@@ -55,9 +56,7 @@ static void CreateNodes(const Model& model,
     entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     const entt::entity childEntity = registry.create();
-    ParentComponent parent(parentEntity);
-    parent.AddChild(childEntity);
-    registry.emplace<ParentComponent>(childEntity, parent);
+    AddChildToEntity(parentEntity, childEntity);
 
     const tinygltf::Model& gltfModel = model.GetRawModel();
     const tinygltf::Node& node = gltfModel.nodes[nodeIndex];

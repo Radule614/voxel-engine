@@ -14,6 +14,7 @@
 #include "../../Ecs/Components/TransformComponent.hpp"
 #include "../../Ecs/Components/MetadataComponent.hpp"
 #include "../../Ecs/Components/ParentComponent.hpp"
+#include "../../Ecs/EcsUtils.hpp"
 
 namespace VoxelEngine
 {
@@ -48,10 +49,7 @@ Chunk::Chunk(World& world, const Position2D position, const Biome& biome)
     registry.emplace<TransformComponent>(m_EntityId, transform);
     registry.emplace<MetadataComponent>(m_EntityId, "Chunk");
 
-    ParentComponent parent(world.GetEntity());
-    parent.AddChild(m_EntityId);
-
-    registry.emplace<ParentComponent>(m_EntityId, parent);
+    AddChildToEntity(world.GetEntity(), m_EntityId);
 }
 
 Chunk::~Chunk()
@@ -90,8 +88,8 @@ Chunk::~Chunk()
 
     if (registry.all_of<ParentComponent>(m_EntityId))
     {
-        registry.get<ParentComponent>(m_EntityId).RemoveChild(m_EntityId);
-        registry.remove<ParentComponent>(m_EntityId);
+        const entt::entity parent = registry.get<ParentComponent>(m_EntityId).Entity;
+        RemoveChildFromEntity(parent, m_EntityId);
     }
 
     if (registry.valid(m_EntityId))

@@ -53,6 +53,8 @@ void Application::OnEvent(Event& e)
 
 void Application::Run()
 {
+    m_LastFrameTime = static_cast<float_t>(glfwGetTime());
+
     while (m_Running)
     {
         const auto time = static_cast<float_t>(glfwGetTime());

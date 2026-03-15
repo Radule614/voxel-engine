@@ -3,6 +3,7 @@
 
 #include <queue>
 
+#include "EcsUtils.hpp"
 #include "Components/ParentComponent.hpp"
 
 namespace VoxelEngine
@@ -39,7 +40,7 @@ void EntityComponentSystem::DestroyEntityRecursive(const entt::entity entity) co
 
     const ParentComponent* parent = registry.try_get<ParentComponent>(entity);
     if (parent != nullptr)
-        parent->RemoveChild(entity);
+        RemoveChildFromEntity(parent->Entity, entity);
 
     std::queue<entt::entity> queue;
     queue.push(entity);
