@@ -4,6 +4,7 @@
 #include "Enemy/EnemyScript.hpp"
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
+#include "Ecs/EcsUtils.hpp"
 #include "Ecs/ModelEntity.hpp"
 #include "Ecs/Components/CameraComponent.hpp"
 #include "Ecs/Components/CharacterComponent.hpp"
@@ -56,8 +57,16 @@ void WorldLayer::SpawnPlayer()
 
 void WorldLayer::SpawnEnemy(const glm::vec3 position)
 {
-    static Model* mutantModel = AssetManager::Instance().LoadModel("assets/models/Mutant.glb");
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
+    // Visual child: Mutant model
+    static Model* mutantModel = AssetManager::Instance().LoadModel("assets/models/Mutant.glb");
+    const auto modelEntity = CreateEntityFromModel(*mutantModel);
+    auto& modelTransform = registry.get<TransformComponent>(modelEntity);
+    modelTransform.LocalPosition = glm::vec3(0.0f, -1.0f, 0.0f);
+    modelTransform.IsDirty = true;
+
+    // Physics parent
     JPH::Character* raw = CharacterBuilder()
         .SetHeight(2.0f)
         .SetRadius(0.5f)
@@ -68,14 +77,16 @@ void WorldLayer::SpawnEnemy(const glm::vec3 position)
                                      raw->GetShape()->GetType(),
                                      raw->GetShape()->GetSubType());
 
-    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    const auto enemy = CreateEntityFromModel(*mutantModel);
-    registry.get<MetadataComponent>(enemy).Name = "Enemy";
-    registry.emplace<ColliderComponent>(enemy, collider);
-    registry.emplace<EnemyComponent>(enemy, raw);
+    const auto parent = registry.create();
+    registry.emplace<TransformComponent>(parent);
+    registry.emplace<MetadataComponent>(parent, "Enemy");
+    registry.emplace<ColliderComponent>(parent, collider);
+    registry.emplace<EnemyComponent>(parent, raw);
 
-    auto& scriptComponent = registry.emplace<ScriptComponent>(enemy);
+    auto& scriptComponent = registry.emplace<ScriptComponent>(parent);
     scriptComponent.Scripts.emplace_back(std::make_unique<EnemyScript>());
+
+    AddChildToEntity(parent, modelEntity);
 }
 
 }
