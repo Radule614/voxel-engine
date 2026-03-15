@@ -82,7 +82,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                     {
                         if (clip.Name == "attack")
                         {
-                            attackDone = clip.Time >= clip.Duration;
+                            attackDone = !clip.ShouldRepeat && !clip.IsActive;
                             break;
                         }
                     }
