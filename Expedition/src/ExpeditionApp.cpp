@@ -11,7 +11,7 @@ using namespace VoxelEngine;
 void ExpeditionApp::Setup()
 {
     m_State.CameraController->SetFreeFly(false);
-    m_State.CameraController->GetCamera().SetPosition({ 0.0f, 120.0f, 0.0f });
+    m_State.CameraController->GetCamera().SetPosition({ 0.0f, 80.0f, 0.0f });
     m_State.CameraController->SetSpeed(15.0f);
 
     WorldSettings settings{};

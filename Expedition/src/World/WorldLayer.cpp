@@ -27,7 +27,7 @@ WorldLayer::WorldLayer(EngineState& state)
 void WorldLayer::OnAttach()
 {
     SpawnPlayer();
-    SpawnEnemy({5.0f, 120.0f, 5.0f});
+    SpawnEnemy({5.0f, 80.0f, 5.0f});
 }
 
 void WorldLayer::SpawnPlayer()
@@ -56,7 +56,7 @@ void WorldLayer::SpawnPlayer()
 
 void WorldLayer::SpawnEnemy(const glm::vec3 position)
 {
-    static Model* capsuleModel = AssetManager::Instance().LoadModel("assets/models/capsule/Capsule.glb");
+    static Model* mutantModel = AssetManager::Instance().LoadModel("assets/models/Mutant.glb");
 
     JPH::Character* raw = CharacterBuilder()
         .SetHeight(2.0f)
@@ -69,7 +69,7 @@ void WorldLayer::SpawnEnemy(const glm::vec3 position)
                                      raw->GetShape()->GetSubType());
 
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
-    const auto enemy = CreateEntityFromModel(*capsuleModel);
+    const auto enemy = CreateEntityFromModel(*mutantModel);
     registry.get<MetadataComponent>(enemy).Name = "Enemy";
     registry.emplace<ColliderComponent>(enemy, collider);
     registry.emplace<EnemyComponent>(enemy, raw);
