@@ -68,4 +68,11 @@ void EnemyScript::OnEvent(Event& event, ScriptContext context)
 {
 }
 
+void EnemyScript::OnDetach(ScriptContext context)
+{
+    auto& enemy = context.Registry.get<EnemyComponent>(context.Entity);
+    if (enemy.Character)
+        enemy.Character->RemoveFromPhysicsSystem();
+}
+
 }

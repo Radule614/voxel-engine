@@ -10,6 +10,7 @@ struct EnemyScript : VoxelEngine::Script
     explicit EnemyScript();
     void OnUpdate(GLCore::Timestep ts, VoxelEngine::ScriptContext context) override;
     void OnEvent(GLCore::Event& event, VoxelEngine::ScriptContext context) override;
+    void OnDetach(VoxelEngine::ScriptContext context) override;
 
 private:
     float m_ChaseSpeed  = 4.0f;
