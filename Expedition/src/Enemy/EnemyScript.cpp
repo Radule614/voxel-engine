@@ -45,9 +45,9 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     }
 
     // Chase logic
-    JPH::Vec3 horizontal  = JPH::Vec3::sZero();
-    enum class State { Idle, Chasing, Attacking } state = State::Idle;
-    glm::vec3 faceDir     = glm::vec3(0.0f, 0.0f, 1.0f);
+    JPH::Vec3 horizontal = JPH::Vec3::sZero();
+    State     state      = State::Idle;
+    glm::vec3 faceDir    = glm::vec3(0.0f, 0.0f, 1.0f);
     if (foundPlayer)
     {
         glm::vec3 dir    = playerPos - transform.WorldPosition;
@@ -82,12 +82,18 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
             if (auto* anim = registry.try_get<AnimationComponent>(child))
             {
+                const bool stateChanged = state != m_LastState;
                 for (auto& clip : anim->Animations)
                 {
-                    clip.IsActive =
+                    const bool shouldBeActive =
                         (clip.Name == "idle"   && state == State::Idle)     ||
                         (clip.Name == "run"    && state == State::Chasing)  ||
                         (clip.Name == "attack" && state == State::Attacking);
+
+                    if (stateChanged && shouldBeActive)
+                        clip.Time = 0.0f;
+
+                    clip.IsActive = shouldBeActive;
                 }
             }
 
@@ -95,6 +101,8 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                 break;
         }
     }
+
+    m_LastState = state;
 
     // Keep the body awake and apply velocity
     character.Activate();
