@@ -11,50 +11,40 @@
 #include "Timestep.hpp"
 #include "../ImGui/ImGuiLayer.hpp"
 #include "KeyCodes.hpp"
+
 namespace GLCore
 {
 class Application
 {
 public:
-	Application(const std::string& name = "Voxel Engine", uint32_t width = 1920, uint32_t height = 1080);
-	virtual ~Application() = default;
+    Application(const std::string& name = "Voxel Engine", uint32_t width = 1920, uint32_t height = 1080);
+    virtual ~Application() = default;
 
-	virtual void Run();
+    virtual void Run();
 
-	void OnEvent(Event& e);
-	void PushLayer(Layer* layer);
-	void PushOverlay(Layer* layer);
-	void AppendToWindowTitle(const std::string& text) const;
+    void OnEvent(Event& e);
+    void PushLayer(Layer* layer);
+    void PushOverlay(Layer* layer);
+    void AppendToWindowTitle(const std::string& text) const;
+    void PopAllLayers();
 
-	inline Window& GetWindow()
-	{
-		return *m_Window;
-	}
-	inline static Application& Get()
-	{
-		return *s_Instance;
-	}
+    inline Window& GetWindow() { return *m_Window; }
 
-	inline void Stop()
-	{
-		m_Running = false;
-	}
+    inline static Application& Get() { return *s_Instance; }
 
-	inline void RaiseEvent(Event& event)
-	{
-		return m_Window->RaiseEvent(event);
-	}
+    inline void Stop() { m_Running = false; }
 
+    inline void RaiseEvent(Event& event) { return m_Window->RaiseEvent(event); }
 
 private:
-	bool OnWindowClose(WindowCloseEvent& e);
+    bool OnWindowClose(WindowCloseEvent& e);
 
 private:
-	std::unique_ptr<Window> m_Window;
-	bool m_Running = true;
-	LayerStack m_LayerStack;
-	float m_LastFrameTime = 0.0f;
-	ImGuiLayer* m_ImGuiLayer;
-	static Application* s_Instance;
+    std::unique_ptr<Window> m_Window;
+    bool m_Running = true;
+    LayerStack m_LayerStack;
+    float m_LastFrameTime = 0.0f;
+    ImGuiLayer* m_ImGuiLayer;
+    static Application* s_Instance;
 };
-} 
+}

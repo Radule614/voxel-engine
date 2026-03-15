@@ -16,6 +16,7 @@ public:
     void PushOverlay(Layer *layer);
     void PopLayer(Layer *layer);
     void PopOverlay(Layer *layer);
+    void PopAllLayers();
 
     std::vector<Layer *>::iterator begin()
     {
@@ -30,4 +31,5 @@ private:
     std::vector<Layer *> m_Layers;
     uint32_t m_LayerInsertIndex = 0;
 };
+
 } 

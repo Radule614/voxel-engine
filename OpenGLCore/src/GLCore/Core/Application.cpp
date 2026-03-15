@@ -36,6 +36,8 @@ void Application::AppendToWindowTitle(const std::string& text) const
     glfwSetWindowTitle((GLFWwindow*) m_Window->GetNativeWindow(), title.c_str());
 }
 
+void Application::PopAllLayers() { m_LayerStack.PopAllLayers(); }
+
 void Application::OnEvent(Event& e)
 {
     EventDispatcher dispatcher(e);
