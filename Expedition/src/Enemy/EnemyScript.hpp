@@ -21,7 +21,8 @@ private:
     float m_ChaseRadius = 30.0f;
     float m_StopRadius  = 1.5f;
     float m_Gravity     = 9.8f * 3.0f; // matches mGravityFactor = 3 in CharacterBuilder
-    State m_LastState   = State::Idle;
+    State m_LastState     = State::Idle;
+    bool  m_AttackPlaying = false;
 };
 
 }
