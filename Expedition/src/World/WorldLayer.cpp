@@ -30,7 +30,7 @@ void WorldLayer::OnAttach()
 {
     SpawnPlayer();
 
-    constexpr int   enemyCount = 10;
+    constexpr int   enemyCount = 50;
     constexpr float radius     = 10.0f;
     constexpr float y          = 120.0f;
     for (int i = 0; i < enemyCount; ++i)
