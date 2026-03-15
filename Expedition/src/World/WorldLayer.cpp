@@ -29,7 +29,15 @@ WorldLayer::WorldLayer(EngineState& state)
 void WorldLayer::OnAttach()
 {
     SpawnPlayer();
-    SpawnEnemy({5.0f, 120.0f, 5.0f});
+
+    constexpr int   enemyCount = 5;
+    constexpr float radius     = 10.0f;
+    constexpr float y          = 120.0f;
+    for (int i = 0; i < enemyCount; ++i)
+    {
+        const float angle = glm::two_pi<float>() * static_cast<float>(i) / static_cast<float>(enemyCount);
+        SpawnEnemy({ glm::cos(angle) * radius, y, glm::sin(angle) * radius });
+    }
 }
 
 void WorldLayer::SpawnPlayer()
