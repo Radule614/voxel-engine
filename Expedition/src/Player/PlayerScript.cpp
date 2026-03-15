@@ -15,6 +15,7 @@
 
 #include "Jolt/Physics/Collision/BroadPhase/BroadPhaseQuery.h"
 #include "Jolt/Physics/Collision/CollideShape.h"
+#include "Jolt/Physics/Collision/CollisionCollectorImpl.h"
 
 using namespace VoxelEngine;
 using namespace GLCore;
