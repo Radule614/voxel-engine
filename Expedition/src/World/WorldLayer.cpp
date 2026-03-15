@@ -2,6 +2,7 @@
 
 #include "Enemy/EnemyComponent.hpp"
 #include "Enemy/EnemyScript.hpp"
+#include "Player/PlayerScript.hpp"
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/EcsUtils.hpp"
@@ -53,6 +54,9 @@ void WorldLayer::SpawnPlayer()
 
     registry.emplace<CharacterComponent>(player, std::move(controller));
     registry.emplace<CameraComponent>(player, cam);
+
+    auto& scriptComponent = registry.emplace<ScriptComponent>(player);
+    scriptComponent.Scripts.emplace_back(std::make_unique<PlayerScript>());
 }
 
 void WorldLayer::SpawnEnemy(const glm::vec3 position)

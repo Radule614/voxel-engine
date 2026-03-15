@@ -95,7 +95,10 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         if (attackDone)
             m_AttackPlaying = false;
         else
-            state = State::Attacking;
+        {
+            state      = State::Attacking;
+            horizontal = JPH::Vec3::sZero();
+        }
     }
 
     // Start tracking a new attack
