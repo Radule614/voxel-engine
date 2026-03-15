@@ -64,11 +64,14 @@ void PlayerScript::OnUpdate(const Timestep ts, ScriptContext context)
         const JPH::RMat44 transform = bi.GetCenterOfMassTransform(it->BodyId);
         const JPH::RefConst<JPH::Shape> shape = bi.GetShape(it->BodyId);
 
+        JPH::CollideShapeSettings collideSettings;
+        collideSettings.mMaxSeparationDistance = 0.1f;
+
         JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
         JPH::IgnoreSingleBodyFilter bodyFilter(it->BodyId);
         physSystem.GetNarrowPhaseQuery().CollideShape(
             shape, JPH::Vec3::sReplicate(1.0f), transform,
-            JPH::CollideShapeSettings{}, JPH::RVec3::sZero(),
+            collideSettings, JPH::RVec3::sZero(),
             collector, {}, {}, bodyFilter);
 
         if (!collector.mHits.empty())
