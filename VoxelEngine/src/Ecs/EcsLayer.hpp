@@ -18,6 +18,7 @@ public:
     ~EcsLayer() override = default;
 
     void OnAttach() override;
+    void OnDetach() override;
     void OnUpdate(GLCore::Timestep ts) override;
     void OnEvent(GLCore::Event& event) override;
 

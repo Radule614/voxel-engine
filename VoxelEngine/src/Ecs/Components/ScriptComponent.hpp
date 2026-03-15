@@ -30,8 +30,9 @@ public:
 
     std::string GetName() const { return m_Name; }
 
-    virtual void OnUpdate(GLCore::Timestep ts, ScriptContext context) = 0;
-    virtual void OnEvent(GLCore::Event& event, ScriptContext context) = 0;
+    virtual void OnUpdate(GLCore::Timestep ts, ScriptContext context);
+    virtual void OnEvent(GLCore::Event& event, ScriptContext context);
+    virtual void OnDetach(ScriptContext context);
 
 private:
     const std::string m_Name;

@@ -9,6 +9,18 @@
 namespace VoxelEngine
 {
 
+void Script::OnUpdate(GLCore::Timestep ts, ScriptContext context)
+{
+}
+
+void Script::OnEvent(GLCore::Event& event, ScriptContext context)
+{
+}
+
+void Script::OnDetach(ScriptContext context)
+{
+}
+
 std::string ScriptComponent::GetName() { return "Script Component"; }
 
 void ScriptComponent::DrawGui()
