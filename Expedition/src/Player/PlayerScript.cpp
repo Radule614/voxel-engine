@@ -13,9 +13,10 @@
 #include "GLCore/Core/Input.hpp"
 #include "GLCore/Events/KeyEvent.hpp"
 
-#include "Jolt/Physics/Collision/BroadPhase/BroadPhaseQuery.h"
+#include "Jolt/Physics/Collision/NarrowPhaseQuery.h"
 #include "Jolt/Physics/Collision/CollideShape.h"
 #include "Jolt/Physics/Collision/CollisionCollectorImpl.h"
+#include "Jolt/Physics/Body/BodyFilter.h"
 
 using namespace VoxelEngine;
 using namespace GLCore;
@@ -60,15 +61,17 @@ void PlayerScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     for (auto it = m_Balls.begin(); it != m_Balls.end();)
     {
-        it->Age += ts.GetSeconds();
-        if (it->Age < 0.2f) { ++it; continue; }
+        const JPH::RMat44 transform = bi.GetCenterOfMassTransform(it->BodyId);
+        const JPH::RefConst<JPH::Shape> shape = bi.GetShape(it->BodyId);
 
-        const JPH::RVec3 pos = bi.GetCenterOfMassPosition(it->BodyId);
+        JPH::AllHitCollisionCollector<JPH::CollideShapeCollector> collector;
+        JPH::IgnoreSingleBodyFilter bodyFilter(it->BodyId);
+        physSystem.GetNarrowPhaseQuery().CollideShape(
+            shape, JPH::Vec3::sReplicate(1.0f), transform,
+            JPH::CollideShapeSettings{}, JPH::RVec3::sZero(),
+            collector, {}, {}, bodyFilter);
 
-        JPH::AllHitCollisionCollector<JPH::CollideShapeBodyCollector> collector;
-        physSystem.GetBroadPhaseQuery().CollideSphere(JPH::Vec3(pos), 0.4f, collector);
-
-        if (collector.mHits.size() > 1)
+        if (!collector.mHits.empty())
         {
             bi.RemoveBody(it->BodyId);
             bi.DestroyBody(it->BodyId);

@@ -22,7 +22,7 @@ private:
     bool  m_Attacking      = false;
     float m_SavedSpeed     = 0.0f;
 
-    struct BallEntry { entt::entity Entity; JPH::BodyID BodyId; float Age = 0.0f; };
+    struct BallEntry { entt::entity Entity; JPH::BodyID BodyId; };
     std::vector<BallEntry> m_Balls;
 };
 
