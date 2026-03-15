@@ -11,7 +11,7 @@
 #include "Physics/Utils/BodyBuilder.hpp"
 #include "Physics/Utils/ShapeFactory.hpp"
 #include "GLCore/Core/Input.hpp"
-#include "GLCore/Events/KeyEvent.h"
+#include "GLCore/Events/KeyEvent.hpp"
 
 #include "Jolt/Physics/Collision/BroadPhase/BroadPhaseQuery.h"
 #include "Jolt/Physics/Collision/CollideShape.h"
