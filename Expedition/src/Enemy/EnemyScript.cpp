@@ -46,6 +46,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     // Chase logic
     JPH::Vec3 horizontal = JPH::Vec3::sZero();
+    bool isChasing       = false;
     if (foundPlayer)
     {
         glm::vec3 dir    = playerPos - transform.WorldPosition;
@@ -54,8 +55,23 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
         if (dist <= m_ChaseRadius && dist > 0.001f)
         {
-            dir      = glm::normalize(dir) * m_ChaseSpeed;
+            dir        = glm::normalize(dir) * m_ChaseSpeed;
             horizontal = JPH::Vec3(dir.x, 0.0f, dir.z);
+            isChasing  = true;
+        }
+    }
+
+    // Drive animation on the child model entity
+    if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
+    {
+        for (const auto child : children->Entities)
+        {
+            if (auto* anim = registry.try_get<AnimationComponent>(child))
+            {
+                for (auto& clip : anim->Animations)
+                    clip.IsActive = (clip.Name == "run") && isChasing;
+                break;
+            }
         }
     }
 

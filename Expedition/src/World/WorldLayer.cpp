@@ -63,7 +63,7 @@ void WorldLayer::SpawnEnemy(const glm::vec3 position)
     static Model* mutantModel = AssetManager::Instance().LoadModel("assets/models/Mutant.glb");
     const auto modelEntity = CreateEntityFromModel(*mutantModel);
     auto& modelTransform = registry.get<TransformComponent>(modelEntity);
-    modelTransform.LocalPosition = glm::vec3(0.0f, -1.0f, 0.0f);
+    modelTransform.LocalPosition = glm::vec3(0.0f, -1.5f, 0.0f);
     modelTransform.IsDirty = true;
 
     // Physics parent

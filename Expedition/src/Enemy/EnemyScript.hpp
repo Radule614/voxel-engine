@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Ecs/Components/AnimationComponent.hpp"
+#include "Ecs/Components/ChildrenComponent.hpp"
 #include "Ecs/Components/ScriptComponent.hpp"
 
 namespace Expedition
