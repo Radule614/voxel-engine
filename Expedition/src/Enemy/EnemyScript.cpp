@@ -46,7 +46,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     // Chase logic
     JPH::Vec3 horizontal  = JPH::Vec3::sZero();
-    bool isChasing        = false;
+    enum class State { Idle, Chasing, Attacking } state = State::Idle;
     glm::vec3 faceDir     = glm::vec3(0.0f, 0.0f, 1.0f);
     if (foundPlayer)
     {
@@ -57,10 +57,14 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         if (dist > 0.001f)
             faceDir = glm::normalize(dir);
 
-        if (dist <= m_ChaseRadius && dist > m_StopRadius)
+        if (dist <= m_StopRadius)
+        {
+            state = State::Attacking;
+        }
+        else if (dist <= m_ChaseRadius)
         {
             horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
-            isChasing  = true;
+            state      = State::Chasing;
         }
     }
 
@@ -79,7 +83,12 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             if (auto* anim = registry.try_get<AnimationComponent>(child))
             {
                 for (auto& clip : anim->Animations)
-                    clip.IsActive = (clip.Name == "run") && isChasing;
+                {
+                    clip.IsActive =
+                        (clip.Name == "idle"   && state == State::Idle)     ||
+                        (clip.Name == "run"    && state == State::Chasing)  ||
+                        (clip.Name == "attack" && state == State::Attacking);
+                }
             }
 
             if (childTransform)
