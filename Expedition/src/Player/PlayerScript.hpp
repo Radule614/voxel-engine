@@ -3,7 +3,7 @@
 #include "Ecs/Components/ScriptComponent.hpp"
 #include "Physics/PhysicsEngine.hpp"
 
-#include <entt/entt.hpp>
+#include "entt.hpp"
 #include <vector>
 
 namespace Expedition
