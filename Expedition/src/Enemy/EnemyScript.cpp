@@ -62,7 +62,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         {
             state = State::Attacking;
         }
-        else if (dist <= m_ChaseRadius)
+        else
         {
             horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
             state      = State::Chasing;

@@ -16,9 +16,10 @@ public:
     void OnImGuiRender() override;
 
 private:
-    void SpawnPlayer();
-    void SpawnEnemy(glm::vec3 position);
-    void SpawnHealthBar(entt::entity enemyParent);
+    void      SpawnPlayer();
+    void      SpawnEnemy(glm::vec3 position);
+    void      SpawnHealthBar(entt::entity enemyParent);
+    glm::vec3 RandomSpawnNearPlayer(float minR, float maxR) const;
 
     VoxelEngine::EngineState& m_State;
 };

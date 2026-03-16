@@ -1,5 +1,7 @@
 #include "ExpeditionLayer.hpp"
 
+#include <cstdlib>
+#include <algorithm>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -29,6 +31,15 @@ namespace Expedition
 
 using namespace VoxelEngine;
 
+namespace
+{
+    constexpr int   MaxEnemies     = 10;
+    constexpr float SpawnRadius    = 35.0f;
+    constexpr float LeashDistance  = 55.0f;
+    constexpr float MinRespawnDist = 20.0f;
+    constexpr float MaxRespawnDist = 35.0f;
+}
+
 ExpeditionLayer::ExpeditionLayer(EngineState& state)
     : GLCore::Layer("ExpeditionLayer"), m_State(state)
 {
@@ -39,12 +50,11 @@ void ExpeditionLayer::OnAttach()
     SpawnPlayer();
 
     constexpr int   enemyCount = 3;
-    constexpr float radius     = 10.0f;
     constexpr float y          = 120.0f;
     for (int i = 0; i < enemyCount; ++i)
     {
         const float angle = glm::two_pi<float>() * static_cast<float>(i) / static_cast<float>(enemyCount);
-        SpawnEnemy({ glm::cos(angle) * radius, y, glm::sin(angle) * radius });
+        SpawnEnemy({ glm::cos(angle) * SpawnRadius, y, glm::sin(angle) * SpawnRadius });
     }
 }
 
@@ -168,6 +178,17 @@ void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
+    // Find player position
+    glm::vec3 playerPos = glm::vec3(0.0f);
+    bool      hasPlayer = false;
+    for (auto [e, tc, cc] : registry.view<TransformComponent, CharacterComponent>().each())
+    {
+        playerPos = tc.WorldPosition;
+        hasPlayer = true;
+        break;
+    }
+
+    // Collect dead enemies
     std::vector<entt::entity> dead;
     for (auto [entity, health, enemy] : registry.view<HealthComponent, EnemyComponent>().each())
     {
@@ -175,6 +196,7 @@ void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
             dead.push_back(entity);
     }
 
+    // Award spoils for kills
     if (!dead.empty())
     {
         for (auto [e, spoils, character] : registry.view<SpoilsComponent, CharacterComponent>().each())
@@ -184,6 +206,28 @@ void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
         }
     }
 
+    // Collect enemies that are too far (leash)
+    if (hasPlayer)
+    {
+        for (auto [entity, tc, enemy] : registry.view<TransformComponent, EnemyComponent>().each())
+        {
+            const float dx   = tc.WorldPosition.x - playerPos.x;
+            const float dz   = tc.WorldPosition.z - playerPos.z;
+            const float dist = glm::sqrt(dx * dx + dz * dz);
+            if (dist > LeashDistance)
+            {
+                if (std::find(dead.begin(), dead.end(), entity) == dead.end())
+                    dead.push_back(entity);
+            }
+        }
+    }
+
+    // How many to respawn: clamp to MaxEnemies
+    const int liveCount  = static_cast<int>(registry.view<EnemyComponent>().size());
+    const int toRemove   = static_cast<int>(dead.size());
+    const int afterKills = liveCount - toRemove;
+    const int toRespawn  = std::min(toRemove, MaxEnemies - afterKills);
+
     for (const auto entity : dead)
     {
         auto& enemy = registry.get<EnemyComponent>(entity);
@@ -191,6 +235,26 @@ void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
             enemy.Character->RemoveFromPhysicsSystem();
         EntityComponentSystem::Instance().DestroyEntityRecursive(entity);
     }
+
+    if (hasPlayer)
+    {
+        for (int i = 0; i < toRespawn; ++i)
+            SpawnEnemy(RandomSpawnNearPlayer(MinRespawnDist, MaxRespawnDist));
+    }
+}
+
+glm::vec3 ExpeditionLayer::RandomSpawnNearPlayer(const float minR, const float maxR) const
+{
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+    glm::vec3 pPos = glm::vec3(0.0f, 120.0f, 0.0f);
+    for (auto [e, tc, cc] : registry.view<TransformComponent, CharacterComponent>().each())
+    {
+        pPos = tc.WorldPosition;
+        break;
+    }
+    const float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * glm::two_pi<float>();
+    const float dist  = minR + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxR - minR);
+    return { pPos.x + glm::cos(angle) * dist, pPos.y, pPos.z + glm::sin(angle) * dist };
 }
 
 void ExpeditionLayer::OnImGuiRender()
