@@ -56,7 +56,7 @@ void PlayerScript::OnUpdate(const Timestep ts, ScriptContext context)
         {
             for (const auto& hit : collector.mHits)
             {
-                for (auto [entity, health, collider] : registry.view<HealthComponent, ColliderComponent, EnemyComponent>().each())
+                for (auto [entity, health, collider, enemy] : registry.view<HealthComponent, ColliderComponent, EnemyComponent>().each())
                 {
                     if (collider.BodyId == hit.mBodyID2)
                     {
