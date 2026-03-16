@@ -1,5 +1,6 @@
 #include "HealthBarScript.hpp"
 
+#include <glm/gtc/quaternion.hpp>
 #include "Health/HealthComponent.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/Components/CameraComponent.hpp"
