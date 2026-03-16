@@ -1,6 +1,7 @@
 #include "WorldLayer.hpp"
 
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include "Enemy/EnemyComponent.hpp"
 #include "Enemy/EnemyScript.hpp"
@@ -183,6 +184,12 @@ void WorldLayer::OnUpdate(const GLCore::Timestep ts)
 
 void WorldLayer::OnImGuiRender()
 {
+    // Draw directly onto the Viewport window's draw list so the HUD
+    // stays inside the game panel regardless of editor layout.
+    ImGuiWindow* viewport = ImGui::FindWindowByName("Viewport");
+    if (!viewport)
+        return;
+
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
     float current = 0.0f;
@@ -201,28 +208,27 @@ void WorldLayer::OnImGuiRender()
     constexpr float padX = 20.0f;
     constexpr float padY = 20.0f;
 
-    const ImGuiIO& io = ImGui::GetIO();
-    ImGui::SetNextWindowPos({ padX, io.DisplaySize.y - padY - barH - 10.0f });
-    ImGui::SetNextWindowSize({ barW + 20.0f, barH + 20.0f });
-    ImGui::SetNextWindowBgAlpha(0.0f);
-    ImGui::Begin("##hud_health", nullptr,
-        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs |
-        ImGuiWindowFlags_NoNav        | ImGuiWindowFlags_NoMove   |
-        ImGuiWindowFlags_NoSavedSettings);
+    const ImVec2 vMin = viewport->InnerRect.Min;
+    const ImVec2 vMax = viewport->InnerRect.Max;
+
+    const ImVec2 pos = {
+        vMin.x + padX,
+        vMax.y - padY - barH
+    };
+
+    ImDrawList* draw = viewport->DrawList;
 
     // Background (dark red)
-    const ImVec2 pos  = ImGui::GetCursorScreenPos();
-    ImDrawList*  draw = ImGui::GetWindowDrawList();
-    draw->AddRectFilled({ pos.x, pos.y }, { pos.x + barW, pos.y + barH },
+    draw->AddRectFilled(pos, { pos.x + barW, pos.y + barH },
         IM_COL32(120, 20, 20, 220), 4.0f);
 
-    // Green fill
+    // Fill (green → yellow → red)
     if (pct > 0.0f)
     {
         const ImVec4 col = pct > 0.5f
             ? ImVec4(0.1f + (1.0f - pct) * 1.8f, 0.85f, 0.1f, 1.0f)
             : ImVec4(0.85f, pct * 1.7f, 0.1f, 1.0f);
-        draw->AddRectFilled({ pos.x, pos.y }, { pos.x + barW * pct, pos.y + barH },
+        draw->AddRectFilled(pos, { pos.x + barW * pct, pos.y + barH },
             ImGui::ColorConvertFloat4ToU32(col), 4.0f);
     }
 
@@ -230,8 +236,6 @@ void WorldLayer::OnImGuiRender()
     char buf[32];
     snprintf(buf, sizeof(buf), "HP  %.0f / %.0f", current, max);
     draw->AddText({ pos.x + 6.0f, pos.y + 3.0f }, IM_COL32(255, 255, 255, 220), buf);
-
-    ImGui::End();
 }
 
 }
