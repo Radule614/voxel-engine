@@ -2,6 +2,7 @@
 
 #include <GLCore.hpp>
 #include "EngineState.hpp"
+#include "entt.hpp"
 
 namespace Expedition
 {
