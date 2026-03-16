@@ -103,9 +103,10 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         }
     }
 
-    // On attack completion, deal damage to the player
-    if (wasAttacking && !m_AttackPlaying)
+    // Start tracking a new attack; deal damage to the player when attack begins
+    if (state == State::Attacking && !m_AttackPlaying)
     {
+        m_AttackPlaying = true;
         for (const auto view = registry.view<HealthComponent, CharacterComponent, CameraComponent>();
              const auto playerEntity : view)
         {
@@ -113,10 +114,6 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             break;
         }
     }
-
-    // Start tracking a new attack
-    if (state == State::Attacking && !m_AttackPlaying)
-        m_AttackPlaying = true;
 
     // Drive animation and rotation on the child model entity
     if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
