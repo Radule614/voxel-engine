@@ -4,6 +4,7 @@
 #include <imgui_internal.h>
 
 #include "Enemy/EnemyComponent.hpp"
+#include "Spoils/SpoilsComponent.hpp"
 #include "Enemy/EnemyScript.hpp"
 #include "Enemy/HealthBarScript.hpp"
 #include "Health/HealthComponent.hpp"
@@ -70,6 +71,7 @@ void ExpeditionLayer::SpawnPlayer()
     registry.emplace<CharacterComponent>(player, std::move(controller));
     registry.emplace<CameraComponent>(player, cam);
     registry.emplace<HealthComponent>(player);
+    registry.emplace<SpoilsComponent>(player);
 
     auto& scriptComponent = registry.emplace<ScriptComponent>(player);
     scriptComponent.Scripts.emplace_back(std::make_unique<PlayerScript>());
@@ -173,6 +175,15 @@ void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
             dead.push_back(entity);
     }
 
+    if (!dead.empty())
+    {
+        for (auto [e, spoils, character] : registry.view<SpoilsComponent, CharacterComponent>().each())
+        {
+            spoils.Add(50 * static_cast<int>(dead.size()));
+            break;
+        }
+    }
+
     for (const auto entity : dead)
     {
         auto& enemy = registry.get<EnemyComponent>(entity);
@@ -236,6 +247,17 @@ void ExpeditionLayer::OnImGuiRender()
     char buf[32];
     snprintf(buf, sizeof(buf), "HP  %.0f / %.0f", current, max);
     draw->AddText({ pos.x + 6.0f, pos.y + 3.0f }, IM_COL32(255, 255, 255, 220), buf);
+
+    // Spoils
+    int spoilsAmt = 0;
+    for (auto [e, spoils, character] : registry.view<SpoilsComponent, CharacterComponent>().each())
+    {
+        spoilsAmt = spoils.Amount;
+        break;
+    }
+    char spoilsBuf[32];
+    snprintf(spoilsBuf, sizeof(spoilsBuf), "Spoils: %d", spoilsAmt);
+    draw->AddText({ pos.x, pos.y - 20.0f }, IM_COL32(255, 215, 0, 220), spoilsBuf);
 }
 
 }
