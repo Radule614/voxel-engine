@@ -1,5 +1,6 @@
 #include "PlayerScript.hpp"
 
+#include "Health/HealthComponent.hpp"
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/ModelEntity.hpp"
@@ -52,6 +53,18 @@ void PlayerScript::OnUpdate(const Timestep ts, ScriptContext context)
 
         if (!collector.mHits.empty())
         {
+            for (const auto& hit : collector.mHits)
+            {
+                for (auto [entity, health, collider] : registry.view<HealthComponent, ColliderComponent>().each())
+                {
+                    if (collider.BodyId == hit.mBodyID2)
+                    {
+                        health.TakeDamage(34.0f);
+                        break;
+                    }
+                }
+            }
+
             bi.RemoveBody(it->BodyId);
             bi.DestroyBody(it->BodyId);
             EntityComponentSystem::Instance().DestroyEntityRecursive(it->Entity);

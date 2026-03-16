@@ -4,6 +4,7 @@
 #include "Ecs/Components/CameraComponent.hpp"
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
+#include "Health/HealthComponent.hpp"
 
 using namespace VoxelEngine;
 using namespace GLCore;
@@ -69,6 +70,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     }
 
     // If an attack is in progress, lock state until the clip finishes
+    const bool wasAttacking = m_AttackPlaying;
     if (m_AttackPlaying)
     {
         bool attackDone = false;
@@ -98,6 +100,17 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         {
             state      = State::Attacking;
             horizontal = JPH::Vec3::sZero();
+        }
+    }
+
+    // On attack completion, deal damage to the player
+    if (wasAttacking && !m_AttackPlaying)
+    {
+        for (const auto view = registry.view<HealthComponent, CharacterComponent, CameraComponent>();
+             const auto playerEntity : view)
+        {
+            registry.get<HealthComponent>(playerEntity).TakeDamage(10.0f);
+            break;
         }
     }
 

@@ -2,6 +2,7 @@
 
 #include "Enemy/EnemyComponent.hpp"
 #include "Enemy/EnemyScript.hpp"
+#include "Health/HealthComponent.hpp"
 #include "Player/PlayerScript.hpp"
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
@@ -62,6 +63,7 @@ void WorldLayer::SpawnPlayer()
 
     registry.emplace<CharacterComponent>(player, std::move(controller));
     registry.emplace<CameraComponent>(player, cam);
+    registry.emplace<HealthComponent>(player);
 
     auto& scriptComponent = registry.emplace<ScriptComponent>(player);
     scriptComponent.Scripts.emplace_back(std::make_unique<PlayerScript>());
@@ -94,11 +96,32 @@ void WorldLayer::SpawnEnemy(const glm::vec3 position)
     registry.emplace<MetadataComponent>(parent, "Enemy");
     registry.emplace<ColliderComponent>(parent, collider);
     registry.emplace<EnemyComponent>(parent, raw);
+    registry.emplace<HealthComponent>(parent);
 
     auto& scriptComponent = registry.emplace<ScriptComponent>(parent);
     scriptComponent.Scripts.emplace_back(std::make_unique<EnemyScript>());
 
     AddChildToEntity(parent, modelEntity);
+}
+
+void WorldLayer::OnUpdate(const GLCore::Timestep ts)
+{
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    std::vector<entt::entity> dead;
+    for (auto [entity, health, enemy] : registry.view<HealthComponent, EnemyComponent>().each())
+    {
+        if (health.IsDead())
+            dead.push_back(entity);
+    }
+
+    for (const auto entity : dead)
+    {
+        auto& enemy = registry.get<EnemyComponent>(entity);
+        if (enemy.Character)
+            enemy.Character->RemoveFromPhysicsSystem();
+        EntityComponentSystem::Instance().DestroyEntityRecursive(entity);
+    }
 }
 
 }
