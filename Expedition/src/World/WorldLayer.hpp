@@ -16,6 +16,7 @@ public:
 private:
     void SpawnPlayer();
     void SpawnEnemy(glm::vec3 position);
+    void SpawnHealthBar(entt::entity enemyParent);
 
     VoxelEngine::EngineState& m_State;
 };

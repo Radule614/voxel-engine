@@ -2,8 +2,11 @@
 
 #include "Enemy/EnemyComponent.hpp"
 #include "Enemy/EnemyScript.hpp"
+#include "Enemy/HealthBarScript.hpp"
 #include "Health/HealthComponent.hpp"
 #include "Player/PlayerScript.hpp"
+#include "Assets/Material.hpp"
+#include "Ecs/Components/MeshComponent.hpp"
 #include "Assets/AssetManager.hpp"
 #include "Ecs/Ecs.hpp"
 #include "Ecs/EcsUtils.hpp"
@@ -102,6 +105,56 @@ void WorldLayer::SpawnEnemy(const glm::vec3 position)
     scriptComponent.Scripts.emplace_back(std::make_unique<EnemyScript>());
 
     AddChildToEntity(parent, modelEntity);
+    SpawnHealthBar(parent);
+}
+
+void WorldLayer::SpawnHealthBar(const entt::entity enemyParent)
+{
+    auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    constexpr float barWidth  = 1.2f;
+    constexpr float barHeight = 0.12f;
+    constexpr float yOffset   = 2.8f;
+
+    // Root entity — no mesh, just holds the billboard rotation and Y offset
+    const auto root = registry.create();
+    auto& rootT = registry.emplace<TransformComponent>(root);
+    rootT.LocalPosition = glm::vec3(0.0f, yOffset, 0.0f);
+    rootT.IsDirty = true;
+    AddChildToEntity(enemyParent, root);
+
+    // Background quad (red)
+    auto bgMesh = MeshComponent::CreateQuadMesh();
+    auto& bgPrims = const_cast<std::vector<RenderPrimitive>&>(bgMesh.Primitives);
+    bgPrims[0].Material.AlbedoFactor    = glm::vec4(0.85f, 0.1f, 0.1f, 1.0f);
+    bgPrims[0].Material.MetallicFactor  = 0.0f;
+    bgPrims[0].Material.RoughnessFactor = 1.0f;
+
+    const auto bg = registry.create();
+    auto& bgT = registry.emplace<TransformComponent>(bg);
+    bgT.LocalScale = glm::vec3(barWidth, barHeight, 1.0f);
+    bgT.IsDirty = true;
+    registry.emplace<MeshComponent>(bg, bgMesh.Name, bgMesh.Primitives);
+    AddChildToEntity(root, bg);
+
+    // Fill quad (green, child of bg so z-offset is in bg's local space)
+    auto fillMesh = MeshComponent::CreateQuadMesh();
+    auto& fillPrims = const_cast<std::vector<RenderPrimitive>&>(fillMesh.Primitives);
+    fillPrims[0].Material.AlbedoFactor    = glm::vec4(0.1f, 0.85f, 0.1f, 1.0f);
+    fillPrims[0].Material.MetallicFactor  = 0.0f;
+    fillPrims[0].Material.RoughnessFactor = 1.0f;
+
+    const auto fill = registry.create();
+    auto& fillT = registry.emplace<TransformComponent>(fill);
+    fillT.LocalScale    = glm::vec3(barWidth, barHeight * 0.8f, 1.0f);
+    fillT.LocalPosition = glm::vec3(0.0f, 0.0f, 0.001f);
+    fillT.IsDirty = true;
+    registry.emplace<MeshComponent>(fill, fillMesh.Name, fillMesh.Primitives);
+    AddChildToEntity(bg, fill);
+
+    // Attach script to enemy parent
+    auto& sc = registry.get<ScriptComponent>(enemyParent);
+    sc.Scripts.emplace_back(std::make_unique<HealthBarScript>(root, fill, barWidth));
 }
 
 void WorldLayer::OnUpdate(const GLCore::Timestep ts)
