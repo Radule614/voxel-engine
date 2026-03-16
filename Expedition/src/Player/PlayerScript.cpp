@@ -102,7 +102,7 @@ void PlayerScript::OnEvent(Event& event, ScriptContext context)
         const glm::vec3  front    = camera.GetFront();
         const glm::vec3  spawnPos = camera.GetPosition() + front * 2.0f;
 
-        const JPH::ShapeRefC shape{ ShapeFactory().CreateSphereShape(0.4f) };
+        const JPH::ShapeRefC shape{ ShapeFactory().CreateSphereShape(0.15f) };
         const JPH::BodyID bodyId = BodyBuilder()
             .SetShape(shape)
             .SetPosition(spawnPos)
@@ -111,14 +111,14 @@ void PlayerScript::OnEvent(Event& event, ScriptContext context)
             .BuildAndAdd();
 
         JPH::BodyInterface& bi = PhysicsEngine::Instance().GetSystem().GetBodyInterface();
-        bi.AddLinearVelocity(bodyId, 20.0f * JPH::Vec3(front.x, front.y, front.z));
+        bi.AddLinearVelocity(bodyId, 35.0f * JPH::Vec3(front.x, front.y, front.z));
 
         const auto ballEntity = CreateEntityFromModel(AssetManager::Instance().GetSphereModel());
         context.Registry.emplace<ColliderComponent>(ballEntity, bodyId, shape->GetType(), shape->GetSubType());
         context.Registry.get<MetadataComponent>(ballEntity).Name = "Ball";
 
         auto& t = context.Registry.get<TransformComponent>(ballEntity);
-        t.LocalScale = glm::vec3(0.4f);
+        t.LocalScale = glm::vec3(0.15f);
         t.IsDirty    = true;
 
         m_Balls.push_back({ ballEntity, bodyId });
