@@ -4,7 +4,6 @@
 #include "Ecs/Ecs.hpp"
 #include "Ecs/ModelEntity.hpp"
 #include "Ecs/Components/CameraComponent.hpp"
-#include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/ColliderComponent.hpp"
 #include "Ecs/Components/MetadataComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
@@ -31,29 +30,6 @@ PlayerScript::PlayerScript() : Script("Player Script")
 void PlayerScript::OnUpdate(const Timestep ts, ScriptContext context)
 {
     auto& registry = context.Registry;
-    auto* charComp = registry.try_get<CharacterComponent>(context.Entity);
-    if (!charComp)
-        return;
-
-    auto& controller = *charComp->Controller;
-
-    // --- Player attack (LMB) movement lock ---
-    if (m_Attacking)
-    {
-        m_AttackTimer -= ts.GetSeconds();
-        if (m_AttackTimer <= 0.0f)
-        {
-            m_Attacking                 = false;
-            controller.m_CharacterSpeed = m_SavedSpeed;
-        }
-    }
-    else if (Input::IsMouseButtonPressed(0))
-    {
-        m_Attacking                 = true;
-        m_AttackTimer               = m_AttackDuration;
-        m_SavedSpeed                = controller.m_CharacterSpeed;
-        controller.m_CharacterSpeed = 0.0f;
-    }
 
     // --- Ball collision check and cleanup ---
     auto& physSystem = PhysicsEngine::Instance().GetSystem();

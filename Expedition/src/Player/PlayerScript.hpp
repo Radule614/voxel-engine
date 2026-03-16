@@ -17,11 +17,6 @@ struct PlayerScript : VoxelEngine::Script
     void OnDetach(VoxelEngine::ScriptContext context) override;
 
 private:
-    float m_AttackDuration = 0.8f;
-    float m_AttackTimer    = 0.0f;
-    bool  m_Attacking      = false;
-    float m_SavedSpeed     = 0.0f;
-
     struct BallEntry { entt::entity Entity; JPH::BodyID BodyId; };
     std::vector<BallEntry> m_Balls;
 };
