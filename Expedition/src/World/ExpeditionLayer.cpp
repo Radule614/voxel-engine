@@ -1,4 +1,4 @@
-#include "WorldLayer.hpp"
+#include "ExpeditionLayer.hpp"
 
 #include <imgui.h>
 #include <imgui_internal.h>
@@ -28,12 +28,12 @@ namespace Expedition
 
 using namespace VoxelEngine;
 
-WorldLayer::WorldLayer(EngineState& state)
-    : GLCore::Layer("WorldLayer"), m_State(state)
+ExpeditionLayer::ExpeditionLayer(EngineState& state)
+    : GLCore::Layer("ExpeditionLayer"), m_State(state)
 {
 }
 
-void WorldLayer::OnAttach()
+void ExpeditionLayer::OnAttach()
 {
     SpawnPlayer();
 
@@ -47,7 +47,7 @@ void WorldLayer::OnAttach()
     }
 }
 
-void WorldLayer::SpawnPlayer()
+void ExpeditionLayer::SpawnPlayer()
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
     const auto player = registry.create();
@@ -75,7 +75,7 @@ void WorldLayer::SpawnPlayer()
     scriptComponent.Scripts.emplace_back(std::make_unique<PlayerScript>());
 }
 
-void WorldLayer::SpawnEnemy(const glm::vec3 position)
+void ExpeditionLayer::SpawnEnemy(const glm::vec3 position)
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
@@ -111,7 +111,7 @@ void WorldLayer::SpawnEnemy(const glm::vec3 position)
     SpawnHealthBar(parent);
 }
 
-void WorldLayer::SpawnHealthBar(const entt::entity enemyParent)
+void ExpeditionLayer::SpawnHealthBar(const entt::entity enemyParent)
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
@@ -162,7 +162,7 @@ void WorldLayer::SpawnHealthBar(const entt::entity enemyParent)
     sc.Scripts.emplace_back(std::make_unique<HealthBarScript>(root, fill, barWidth));
 }
 
-void WorldLayer::OnUpdate(const GLCore::Timestep ts)
+void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
 {
     auto& registry = EntityComponentSystem::Instance().GetEntityRegistry();
 
@@ -182,7 +182,7 @@ void WorldLayer::OnUpdate(const GLCore::Timestep ts)
     }
 }
 
-void WorldLayer::OnImGuiRender()
+void ExpeditionLayer::OnImGuiRender()
 {
     // Draw directly onto the Viewport window's draw list so the HUD
     // stays inside the game panel regardless of editor layout.
