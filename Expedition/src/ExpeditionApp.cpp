@@ -1,5 +1,5 @@
 #include "ExpeditionApp.hpp"
-#include "World/ExpeditionLayer.hpp"
+#include "ExpeditionLayer.hpp"
 #include "Terrain/VoxelLayer.hpp"
 #include "Terrain/Biome/Biome.hpp"
 
