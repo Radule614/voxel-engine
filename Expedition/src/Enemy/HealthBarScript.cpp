@@ -59,8 +59,10 @@ void HealthBarScript::OnUpdate(const Timestep ts, ScriptContext context)
     auto* fillT = registry.try_get<TransformComponent>(m_FillEntity);
     if (fillT)
     {
-        fillT->LocalScale.x    = m_BarWidth * pct;
-        fillT->LocalPosition.x = -m_BarWidth * (1.0f - pct) / 2.0f;
+        // Fill is in bg's local space (bg already has barWidth scale),
+        // so scale and position are normalized 0-1 values
+        fillT->LocalScale.x    = pct;
+        fillT->LocalPosition.x = -(1.0f - pct) / 2.0f;
         fillT->IsDirty         = true;
     }
 }

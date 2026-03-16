@@ -146,7 +146,9 @@ void WorldLayer::SpawnHealthBar(const entt::entity enemyParent)
 
     const auto fill = registry.create();
     auto& fillT = registry.emplace<TransformComponent>(fill);
-    fillT.LocalScale    = glm::vec3(barWidth, barHeight * 0.8f, 1.0f);
+    // Scale is in bg's local space (bg is already {barWidth, barHeight}),
+    // so {1, 0.8, 1} means "same width as bg, 80% height"
+    fillT.LocalScale    = glm::vec3(1.0f, 0.8f, 1.0f);
     fillT.LocalPosition = glm::vec3(0.0f, 0.0f, 0.001f);
     fillT.IsDirty = true;
     registry.emplace<MeshComponent>(fill, fillMesh.Name, fillMesh.Primitives);
