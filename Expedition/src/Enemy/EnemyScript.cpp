@@ -12,49 +12,98 @@ using namespace GLCore;
 namespace Expedition
 {
 
+// ── State → animation mapping ───────────────────────────────────────
+struct StateInfo
+{
+    const char* clipName;
+    bool        loops;
+    bool        freezeMove;
+};
+
+static constexpr StateInfo kStateInfo[] = {
+    /* Idle      */ { "idle",   true,  false },
+    /* Chasing   */ { "run",    true,  false },
+    /* Attacking */ { "attack", false, true  },
+    /* Dying     */ { "death",  false, true  },
+};
+
+// ── Helpers ─────────────────────────────────────────────────────────
+AnimationComponent* EnemyScript::FindAnimComponent(
+    entt::registry& registry, entt::entity entity)
+{
+    const auto* children = registry.try_get<ChildrenComponent>(entity);
+    if (!children)
+        return nullptr;
+
+    for (const auto child : children->Entities)
+    {
+        if (auto* anim = registry.try_get<AnimationComponent>(child))
+            return anim;
+        if (registry.try_get<TransformComponent>(child))
+            break;
+    }
+    return nullptr;
+}
+
+bool EnemyScript::IsClipFinished(AnimationComponent* anim, const char* name)
+{
+    if (!anim)
+        return false;
+    for (const auto& clip : anim->Animations)
+    {
+        if (clip.Name == name)
+            return !clip.ShouldRepeat && !clip.IsActive;
+    }
+    return false;
+}
+
+void EnemyScript::ActivateClip(AnimationComponent* anim,
+                               const char* name, bool loops)
+{
+    if (!anim)
+        return;
+    for (auto& clip : anim->Animations)
+    {
+        if (clip.Name == name)
+        {
+            clip.Time         = 0.0f;
+            clip.ShouldRepeat = loops;
+            clip.IsActive     = true;
+        }
+        else
+        {
+            clip.IsActive = false;
+        }
+    }
+}
+
+// ── Constructor ─────────────────────────────────────────────────────
 EnemyScript::EnemyScript() : Script("Enemy Script")
 {
 }
 
+// ── OnUpdate ────────────────────────────────────────────────────────
 void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 {
     auto& registry = context.Registry;
     auto& enemy    = registry.get<EnemyComponent>(context.Entity);
+    auto& health   = registry.get<HealthComponent>(context.Entity);
+    auto* anim     = FindAnimComponent(registry, context.Entity);
 
-    // --- Death handling ---
-    auto& health = registry.get<HealthComponent>(context.Entity);
-
-    if (enemy.IsDying)
+    // ── Dying: wait for animation, then signal removal ──────────
+    if (m_State == State::Dying)
     {
-        // Wait for death animation to finish
-        if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
-        {
-            for (const auto child : children->Entities)
-            {
-                if (const auto* anim = registry.try_get<AnimationComponent>(child))
-                {
-                    for (const auto& clip : anim->Animations)
-                    {
-                        if (clip.Name == "death")
-                        {
-                            if (!clip.ShouldRepeat && !clip.IsActive)
-                                enemy.ReadyToRemove = true;
-                            break;
-                        }
-                    }
-                }
-                if (registry.try_get<TransformComponent>(child))
-                    break;
-            }
-        }
+        if (IsClipFinished(anim, kStateInfo[static_cast<int>(State::Dying)].clipName))
+            enemy.ReadyToRemove = true;
         return;
     }
 
+    // ── Just died: enter Dying state ────────────────────────────
     if (health.IsDead())
     {
+        m_State = State::Dying;
         enemy.IsDying = true;
 
-        // Remove from physics so corpse doesn't block anything
         if (enemy.Character)
         {
             enemy.Character->SetLinearVelocity(JPH::Vec3::sZero());
@@ -62,129 +111,96 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             enemy.Character = nullptr;
         }
 
-        // Start death animation, deactivate all others
-        if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
-        {
-            for (const auto child : children->Entities)
-            {
-                if (auto* anim = registry.try_get<AnimationComponent>(child))
-                {
-                    for (auto& clip : anim->Animations)
-                    {
-                        if (clip.Name == "death")
-                        {
-                            clip.Time         = 0.0f;
-                            clip.ShouldRepeat = false;
-                            clip.IsActive     = true;
-                        }
-                        else
-                        {
-                            clip.IsActive = false;
-                        }
-                    }
-                }
-                if (registry.try_get<TransformComponent>(child))
-                    break;
-            }
-        }
+        ActivateClip(anim,
+                     kStateInfo[static_cast<int>(State::Dying)].clipName,
+                     kStateInfo[static_cast<int>(State::Dying)].loops);
         return;
     }
 
+    // ── Physics / gravity ───────────────────────────────────────
     auto& transform = registry.get<TransformComponent>(context.Entity);
     JPH::Character& character = *enemy.Character;
 
-    // Refresh ground state after the physics step that just ran
     character.PostSimulation(0.05f);
 
-    // Accumulate gravity when airborne; reset on landing
     if (character.GetGroundState() == JPH::Character::EGroundState::OnGround)
         enemy.VerticalVelocity = 0.0f;
     else
         enemy.VerticalVelocity -= m_Gravity * ts.GetSeconds();
 
-    // Find the player entity
+    // ── Find player ─────────────────────────────────────────────
     glm::vec3 playerPos = transform.WorldPosition;
     bool foundPlayer    = false;
 
     for (const auto view = registry.view<TransformComponent, CharacterComponent, CameraComponent>();
          const auto playerEntity : view)
     {
-        playerPos    = registry.get<TransformComponent>(playerEntity).WorldPosition;
-        foundPlayer  = true;
+        playerPos   = registry.get<TransformComponent>(playerEntity).WorldPosition;
+        foundPlayer = true;
         break;
     }
 
-    // Chase logic
+    // ── Compute desired state from distance ─────────────────────
     JPH::Vec3 horizontal = JPH::Vec3::sZero();
-    State     state      = State::Idle;
-    glm::vec3 faceDir    = glm::vec3(0.0f, 0.0f, 1.0f);
+    State     desiredState = State::Idle;
+    glm::vec3 faceDir      = glm::vec3(0.0f, 0.0f, 1.0f);
+
     if (foundPlayer)
     {
-        glm::vec3 dir    = playerPos - transform.WorldPosition;
-        dir.y            = 0.0f;
+        glm::vec3 dir = playerPos - transform.WorldPosition;
+        dir.y         = 0.0f;
         const float dist = glm::length(dir);
 
         if (dist > 0.001f)
             faceDir = glm::normalize(dir);
 
         if (dist <= m_StopRadius)
-        {
-            state = State::Attacking;
-        }
+            desiredState = State::Attacking;
         else
         {
-            horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
-            state      = State::Chasing;
+            horizontal   = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
+            desiredState = State::Chasing;
         }
     }
 
-    // If an attack is in progress, lock state until the clip finishes
-    const bool wasAttacking = m_AttackPlaying;
-    if (m_AttackPlaying)
+    // ── State transitions ───────────────────────────────────────
+    const State prevState = m_State;
+
+    if (m_State == State::Attacking)
     {
-        bool attackDone = false;
-        if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
+        // Lock until attack clip finishes
+        if (IsClipFinished(anim, kStateInfo[static_cast<int>(State::Attacking)].clipName))
+            m_State = desiredState;
+        else
+            horizontal = JPH::Vec3::sZero();
+    }
+    else
+    {
+        m_State = desiredState;
+    }
+
+    // ── Enter-state actions ─────────────────────────────────────
+    if (m_State != prevState)
+    {
+        const auto& info = kStateInfo[static_cast<int>(m_State)];
+        ActivateClip(anim, info.clipName, info.loops);
+
+        // Deal damage on entering Attacking
+        if (m_State == State::Attacking)
         {
-            for (const auto child : children->Entities)
+            for (const auto view = registry.view<HealthComponent, CharacterComponent, CameraComponent>();
+                 const auto playerEntity : view)
             {
-                if (const auto* anim = registry.try_get<AnimationComponent>(child))
-                {
-                    for (const auto& clip : anim->Animations)
-                    {
-                        if (clip.Name == "attack")
-                        {
-                            attackDone = !clip.ShouldRepeat && !clip.IsActive;
-                            break;
-                        }
-                    }
-                }
-                if (registry.try_get<TransformComponent>(child))
-                    break;
+                registry.get<HealthComponent>(playerEntity).TakeDamage(10.0f);
+                break;
             }
         }
-
-        if (attackDone)
-            m_AttackPlaying = false;
-        else
-        {
-            state      = State::Attacking;
-            horizontal = JPH::Vec3::sZero();
-        }
     }
 
-    // Start tracking a new attack; deal damage to the player when attack begins
-    if (state == State::Attacking && !m_AttackPlaying)
-    {
-        m_AttackPlaying = true;
-        for (const auto view = registry.view<HealthComponent, CharacterComponent, CameraComponent>();
-             const auto playerEntity : view)
-        {
-            registry.get<HealthComponent>(playerEntity).TakeDamage(10.0f);
-            break;
-        }
-    }
+    if (kStateInfo[static_cast<int>(m_State)].freezeMove)
+        horizontal = JPH::Vec3::sZero();
 
-    // Drive animation and rotation on the child model entity
+    // ── Rotation ────────────────────────────────────────────────
     if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
     {
         for (const auto child : children->Entities)
@@ -192,41 +208,18 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             auto* childTransform = registry.try_get<TransformComponent>(child);
             if (childTransform)
             {
-                childTransform->LocalRotation = glm::angleAxis(atan2(faceDir.x, faceDir.z), glm::vec3(0, 1, 0));
+                childTransform->LocalRotation = glm::angleAxis(
+                    atan2(faceDir.x, faceDir.z), glm::vec3(0, 1, 0));
                 childTransform->IsDirty = true;
-            }
-
-            if (auto* anim = registry.try_get<AnimationComponent>(child))
-            {
-                const bool stateChanged = state != m_LastState;
-                for (auto& clip : anim->Animations)
-                {
-                    const bool shouldBeActive =
-                        (clip.Name == "idle"   && state == State::Idle)     ||
-                        (clip.Name == "run"    && state == State::Chasing)  ||
-                        (clip.Name == "attack" && state == State::Attacking);
-
-                    if (stateChanged && shouldBeActive)
-                    {
-                        clip.Time = 0.0f;
-                        if (clip.Name == "attack")
-                            clip.ShouldRepeat = false;
-                    }
-
-                    clip.IsActive = shouldBeActive;
-                }
-            }
-
-            if (childTransform)
                 break;
+            }
         }
     }
 
-    m_LastState = state;
-
-    // Keep the body awake and apply velocity
+    // ── Apply velocity ──────────────────────────────────────────
     character.Activate();
-    character.SetLinearVelocity(JPH::Vec3(horizontal.GetX(), enemy.VerticalVelocity, horizontal.GetZ()));
+    character.SetLinearVelocity(
+        JPH::Vec3(horizontal.GetX(), enemy.VerticalVelocity, horizontal.GetZ()));
 }
 
 void EnemyScript::OnEvent(Event& event, ScriptContext context)
