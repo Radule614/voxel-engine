@@ -99,10 +99,10 @@ void ExpeditionLayer::SpawnEnemy(const glm::vec3 position)
     modelTransform.LocalScale    = glm::vec3(2.0f);
     modelTransform.IsDirty = true;
 
-    // Physics parent — capsule total height = height + 2*radius = 2.0 + 1.0 = 3.0
+    // Physics parent — capsule total height = height + 2*radius = 2.0 + 1.5 = 3.5
     JPH::Character* raw = CharacterBuilder()
         .SetHeight(2.0f)
-        .SetRadius(0.5f)
+        .SetRadius(0.75f)
         .SetPosition(position)
         .BuildAndAdd();
 
