@@ -5,6 +5,7 @@
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Health/HealthComponent.hpp"
+#include "Navigation/Pathfinder.hpp"
 
 using namespace VoxelEngine;
 using namespace GLCore;
@@ -154,19 +155,59 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     if (foundPlayer)
     {
-        glm::vec3 dir = playerPos - transform.WorldPosition;
-        dir.y         = 0.0f;
-        const float dist = glm::length(dir);
+        glm::vec3 dirToPlayer = playerPos - transform.WorldPosition;
+        dirToPlayer.y         = 0.0f;
+        const float distToPlayer = glm::length(dirToPlayer);
 
-        if (dist > 0.001f)
-            faceDir = glm::normalize(dir);
+        if (distToPlayer > 0.001f)
+            faceDir = glm::normalize(dirToPlayer);
 
-        if (dist <= m_StopRadius)
+        if (distToPlayer <= m_StopRadius)
+        {
             desiredState = State::Attacking;
+            m_Path.clear();
+        }
         else
         {
-            horizontal   = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
             desiredState = State::Chasing;
+
+            // Recalculate path periodically
+            m_PathTimer += ts.GetSeconds();
+            if (m_Path.empty() || m_PathTimer >= m_RethinkTime)
+            {
+                m_Path = Pathfinder().FindPath(transform.WorldPosition, playerPos);
+                m_PathIndex = 0;
+                m_PathTimer = 0.0f;
+            }
+
+            // Follow path waypoints
+            if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
+            {
+                glm::vec3 toWaypoint = m_Path[m_PathIndex] - transform.WorldPosition;
+                toWaypoint.y = 0.0f;
+                const float wpDist = glm::length(toWaypoint);
+
+                if (wpDist < m_WaypointDist)
+                {
+                    ++m_PathIndex;
+                    // Recalculate direction to next waypoint
+                    if (m_PathIndex < static_cast<int>(m_Path.size()))
+                    {
+                        toWaypoint = m_Path[m_PathIndex] - transform.WorldPosition;
+                        toWaypoint.y = 0.0f;
+                    }
+                }
+
+                if (m_PathIndex < static_cast<int>(m_Path.size()))
+                {
+                    const float len = glm::length(toWaypoint);
+                    if (len > 0.001f)
+                        faceDir = glm::normalize(toWaypoint);
+                }
+            }
+            // else: no path → faceDir stays as direct-to-player (fallback)
+
+            horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
         }
     }
 

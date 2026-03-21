@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "Ecs/Components/AnimationComponent.hpp"
 #include "Ecs/Components/ChildrenComponent.hpp"
 #include "Ecs/Components/ScriptComponent.hpp"
@@ -33,6 +34,13 @@ private:
     glm::vec3 m_LastPosition  = glm::vec3(0.0f);
     bool      m_HasLastPos    = false;
     State     m_State         = State::Idle;
+
+    // A* pathfinding
+    std::vector<glm::vec3> m_Path;
+    int   m_PathIndex   = 0;
+    float m_PathTimer   = 0.0f;
+    float m_RethinkTime = 0.5f;
+    float m_WaypointDist = 1.5f;
 };
 
 }
