@@ -25,6 +25,8 @@
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Physics/Character/CharacterBuilder.hpp"
 #include "Physics/Character/CharacterController.hpp"
+#include "Config.hpp"
+#include "Terrain/Voxel/VoxelConstants.hpp"
 #include "Terrain/World/World.hpp"
 
 namespace Expedition
@@ -258,7 +260,33 @@ glm::vec3 ExpeditionLayer::RandomSpawnNearPlayer(const float minR, const float m
     }
     const float angle = static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * glm::two_pi<float>();
     const float dist  = minR + static_cast<float>(rand()) / static_cast<float>(RAND_MAX) * (maxR - minR);
-    return { pPos.x + glm::cos(angle) * dist, pPos.y, pPos.z + glm::sin(angle) * dist };
+
+    const float spawnX = pPos.x + glm::cos(angle) * dist;
+    const float spawnZ = pPos.z + glm::sin(angle) * dist;
+
+    // Find the terrain surface by scanning from the top of the chunk downward
+    const int ix = static_cast<int>(std::floor(spawnX));
+    const int iz = static_cast<int>(std::floor(spawnZ));
+    auto [chunkPos, voxelPos] = World::GlobalToWorldSpace(glm::i32vec3(ix, 0, iz));
+    const auto& chunkMap = m_World.GetChunkMap();
+    auto it = chunkMap.find(chunkPos);
+
+    float spawnY = pPos.y; // fallback to player Y
+    if (it != chunkMap.end())
+    {
+        for (int y = CHUNK_HEIGHT - 1; y >= 0; --y)
+        {
+            auto [cp, vp] = World::GlobalToWorldSpace(glm::i32vec3(ix, y, iz));
+            const auto& voxel = it->second->GetVoxelFromGrid(vp);
+            if (voxel.GetVoxelType() != AIR)
+            {
+                spawnY = static_cast<float>(y + 1); // stand on top
+                break;
+            }
+        }
+    }
+
+    return { spawnX, spawnY, spawnZ };
 }
 
 void ExpeditionLayer::OnImGuiRender()
