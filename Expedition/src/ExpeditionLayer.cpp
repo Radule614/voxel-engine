@@ -280,7 +280,7 @@ glm::vec3 ExpeditionLayer::RandomSpawnNearPlayer(const float minR, const float m
             const auto& voxel = it->second->GetVoxelFromGrid(vp);
             if (voxel.GetVoxelType() != AIR)
             {
-                spawnY = static_cast<float>(y + 1); // stand on top
+                spawnY = static_cast<float>(y + 2);
                 break;
             }
         }
