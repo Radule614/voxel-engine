@@ -12,7 +12,8 @@
 #include "Physics/Utils/BodyBuilder.hpp"
 #include "Physics/Utils/ShapeFactory.hpp"
 #include "GLCore/Core/Input.hpp"
-#include "GLCore/Events/KeyEvent.hpp"
+#include "GLCore/Events/MouseEvent.hpp"
+#include "GLCore/Core/MouseButtonCodes.hpp"
 
 #include "Jolt/Physics/Collision/NarrowPhaseQuery.h"
 #include "Jolt/Physics/Collision/CollideShape.h"
@@ -79,9 +80,9 @@ void PlayerScript::OnUpdate(const Timestep ts, ScriptContext context)
 void PlayerScript::OnEvent(Event& event, ScriptContext context)
 {
     EventDispatcher dispatcher(event);
-    dispatcher.Dispatch<KeyPressedEvent>([&](const KeyPressedEvent& e)
+    dispatcher.Dispatch<MouseButtonPressedEvent>([&](const MouseButtonPressedEvent& e)
     {
-        if (e.GetKeyCode() != VE_KEY_T)
+        if (e.GetMouseButton() != VE_MOUSE_BUTTON_LEFT)
             return false;
 
         auto* camComp = context.Registry.try_get<CameraComponent>(context.Entity);
