@@ -190,9 +190,14 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     if (m_State == State::Jumping)
     {
-        // Land → resume desired state
-        if (isGrounded)
+        if (!isGrounded)
+            m_WasAirborne = true;
+        // Only land after having been airborne
+        if (isGrounded && m_WasAirborne)
+        {
             m_State = desiredState;
+            m_WasAirborne = false;
+        }
     }
     else if (m_State == State::Attacking)
     {
