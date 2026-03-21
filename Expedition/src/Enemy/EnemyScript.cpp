@@ -125,9 +125,15 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     character.PostSimulation(0.05f);
 
     if (character.GetGroundState() == JPH::Character::EGroundState::OnGround)
-        enemy.VerticalVelocity = 0.0f;
+    {
+        // Don't zero velocity while jumping — the impulse needs to persist
+        if (m_State != State::Jumping)
+            enemy.VerticalVelocity = 0.0f;
+    }
     else
+    {
         enemy.VerticalVelocity -= m_Gravity * ts.GetSeconds();
+    }
 
     // ── Find player ─────────────────────────────────────────────
     glm::vec3 playerPos = transform.WorldPosition;
