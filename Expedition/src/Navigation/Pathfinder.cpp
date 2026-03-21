@@ -41,18 +41,29 @@ bool Pathfinder::GetGroundHeight(float worldX, float worldZ, float& outY) const
 bool Pathfinder::IsBlocked(glm::vec3 from, glm::vec3 to) const
 {
     auto& system = PhysicsEngine::Instance().GetSystem();
-    glm::vec3 dir = to - from;
-    if (glm::length(dir) < 0.01f) return false;
 
-    // Cast at waist height above ground
-    JPH::RRayCast ray(
-        JPH::RVec3(from.x, from.y + 1.0f, from.z),
-        JPH::Vec3(dir.x, dir.y, dir.z));
+    // Flatten direction to XZ only — don't let height differences angle the ray
+    glm::vec3 dir(to.x - from.x, 0.0f, to.z - from.z);
+    const float len = glm::length(dir);
+    if (len < 0.01f) return false;
 
-    JPH::RayCastResult hit;
     JPH::SpecifiedBroadPhaseLayerFilter bpFilter(BroadPhaseLayers::NON_MOVING);
-    if (system.GetNarrowPhaseQuery().CastRay(ray, hit, bpFilter))
-        return hit.mFraction < 1.0f;
+
+    // Cast at multiple heights to catch tree trunks, walls, etc.
+    constexpr float offsets[] = { 0.3f, 1.0f, 1.7f };
+    for (float yOff : offsets)
+    {
+        JPH::RRayCast ray(
+            JPH::RVec3(from.x, from.y + yOff, from.z),
+            JPH::Vec3(dir.x, 0.0f, dir.z));
+
+        JPH::RayCastResult hit;
+        if (system.GetNarrowPhaseQuery().CastRay(ray, hit, bpFilter))
+        {
+            if (hit.mFraction < 1.0f)
+                return true;
+        }
+    }
     return false;
 }
 
