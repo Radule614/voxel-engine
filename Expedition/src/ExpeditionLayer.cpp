@@ -95,14 +95,14 @@ void ExpeditionLayer::SpawnEnemy(const glm::vec3 position)
     static Model* mutantModel = AssetManager::Instance().LoadModel("assets/models/Mutant.glb");
     const auto modelEntity = CreateEntityFromModel(*mutantModel);
     auto& modelTransform = registry.get<TransformComponent>(modelEntity);
-    modelTransform.LocalPosition = glm::vec3(0.0f, -0.9f, 0.0f);
+    modelTransform.LocalPosition = glm::vec3(0.0f, -1.3f, 0.0f);
     modelTransform.LocalScale    = glm::vec3(2.0f);
     modelTransform.IsDirty = true;
 
-    // Physics parent — capsule total height = height + 2*radius = 1.0 + 0.8 = 1.8
+    // Physics parent — capsule total height = height + 2*radius = 1.6 + 1.0 = 2.6
     JPH::Character* raw = CharacterBuilder()
-        .SetHeight(1.0f)
-        .SetRadius(0.4f)
+        .SetHeight(1.6f)
+        .SetRadius(0.5f)
         .SetPosition(position)
         .BuildAndAdd();
 
