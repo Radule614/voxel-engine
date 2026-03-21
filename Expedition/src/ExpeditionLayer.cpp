@@ -95,7 +95,7 @@ void ExpeditionLayer::SpawnEnemy(const glm::vec3 position)
     static Model* mutantModel = AssetManager::Instance().LoadModel("assets/models/Mutant.glb");
     const auto modelEntity = CreateEntityFromModel(*mutantModel);
     auto& modelTransform = registry.get<TransformComponent>(modelEntity);
-    modelTransform.LocalPosition = glm::vec3(0.0f, -2.5f, 0.0f);
+    modelTransform.LocalPosition = glm::vec3(0.0f, -0.9f, 0.0f);
     modelTransform.LocalScale    = glm::vec3(2.0f);
     modelTransform.IsDirty = true;
 
@@ -130,7 +130,7 @@ void ExpeditionLayer::SpawnHealthBar(const entt::entity enemyParent)
 
     constexpr float barWidth  = 1.2f;
     constexpr float barHeight = 0.12f;
-    constexpr float yOffset   = 5.2f;
+    constexpr float yOffset   = 3.6f;
 
     // Root entity — no mesh, just holds the billboard rotation and Y offset
     const auto root = registry.create();
