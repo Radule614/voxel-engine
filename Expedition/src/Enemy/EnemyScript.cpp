@@ -18,10 +18,79 @@ EnemyScript::EnemyScript() : Script("Enemy Script")
 
 void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 {
-    auto& registry  = context.Registry;
-    auto& transform = registry.get<TransformComponent>(context.Entity);
-    auto& enemy     = registry.get<EnemyComponent>(context.Entity);
+    auto& registry = context.Registry;
+    auto& enemy    = registry.get<EnemyComponent>(context.Entity);
 
+    // --- Death handling ---
+    auto& health = registry.get<HealthComponent>(context.Entity);
+
+    if (enemy.IsDying)
+    {
+        // Wait for death animation to finish
+        if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
+        {
+            for (const auto child : children->Entities)
+            {
+                if (const auto* anim = registry.try_get<AnimationComponent>(child))
+                {
+                    for (const auto& clip : anim->Animations)
+                    {
+                        if (clip.Name == "death")
+                        {
+                            if (!clip.ShouldRepeat && !clip.IsActive)
+                                enemy.ReadyToRemove = true;
+                            break;
+                        }
+                    }
+                }
+                if (registry.try_get<TransformComponent>(child))
+                    break;
+            }
+        }
+        return;
+    }
+
+    if (health.IsDead())
+    {
+        enemy.IsDying = true;
+
+        // Remove from physics so corpse doesn't block anything
+        if (enemy.Character)
+        {
+            enemy.Character->SetLinearVelocity(JPH::Vec3::sZero());
+            enemy.Character->RemoveFromPhysicsSystem();
+            enemy.Character = nullptr;
+        }
+
+        // Start death animation, deactivate all others
+        if (const auto* children = registry.try_get<ChildrenComponent>(context.Entity))
+        {
+            for (const auto child : children->Entities)
+            {
+                if (auto* anim = registry.try_get<AnimationComponent>(child))
+                {
+                    for (auto& clip : anim->Animations)
+                    {
+                        if (clip.Name == "death")
+                        {
+                            clip.Time         = 0.0f;
+                            clip.ShouldRepeat = false;
+                            clip.IsActive     = true;
+                        }
+                        else
+                        {
+                            clip.IsActive = false;
+                        }
+                    }
+                }
+                if (registry.try_get<TransformComponent>(child))
+                    break;
+            }
+        }
+        return;
+    }
+
+    auto& transform = registry.get<TransformComponent>(context.Entity);
     JPH::Character& character = *enemy.Character;
 
     // Refresh ground state after the physics step that just ran

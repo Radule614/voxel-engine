@@ -188,11 +188,11 @@ void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
         break;
     }
 
-    // Collect dead enemies
+    // Collect enemies whose death animation has finished
     std::vector<entt::entity> dead;
-    for (auto [entity, health, enemy] : registry.view<HealthComponent, EnemyComponent>().each())
+    for (auto [entity, enemy] : registry.view<EnemyComponent>().each())
     {
-        if (health.IsDead())
+        if (enemy.ReadyToRemove)
             dead.push_back(entity);
     }
 
@@ -206,11 +206,13 @@ void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
         }
     }
 
-    // Collect enemies that are too far (leash)
+    // Collect enemies that are too far (leash) — skip dying enemies
     if (hasPlayer)
     {
         for (auto [entity, tc, enemy] : registry.view<TransformComponent, EnemyComponent>().each())
         {
+            if (enemy.IsDying)
+                continue;
             const float dx   = tc.WorldPosition.x - playerPos.x;
             const float dz   = tc.WorldPosition.z - playerPos.z;
             const float dist = glm::sqrt(dx * dx + dz * dz);
@@ -231,7 +233,7 @@ void ExpeditionLayer::OnUpdate(const GLCore::Timestep ts)
     for (const auto entity : dead)
     {
         auto& enemy = registry.get<EnemyComponent>(entity);
-        if (enemy.Character)
+        if (enemy.Character)  // leash evictions still have physics; ReadyToRemove ones don't
             enemy.Character->RemoveFromPhysicsSystem();
         EntityComponentSystem::Instance().DestroyEntityRecursive(entity);
     }
