@@ -25,6 +25,7 @@ static constexpr StateInfo kStateInfo[] = {
     /* Chasing   */ { "run",    true,  false },
     /* Attacking */ { "attack", false, true  },
     /* Dying     */ { "death",  false, true  },
+    /* Jumping   */ { "jump",   false, false },
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -163,16 +164,48 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         }
     }
 
+    // ── Blocked detection (for jump trigger) ────────────────────
+    const bool isGrounded = character.GetGroundState() == JPH::Character::EGroundState::OnGround;
+
+    if (m_HasLastPos && desiredState == State::Chasing && isGrounded)
+    {
+        const glm::vec3 delta = transform.WorldPosition - m_LastPosition;
+        const float hDist = glm::length(glm::vec2(delta.x, delta.z));
+        // If barely moved despite wanting to chase, accumulate blocked time
+        if (hDist < m_ChaseSpeed * ts.GetSeconds() * 0.3f)
+            m_BlockedTime += ts.GetSeconds();
+        else
+            m_BlockedTime = 0.0f;
+    }
+    else
+    {
+        m_BlockedTime = 0.0f;
+    }
+
+    m_LastPosition = transform.WorldPosition;
+    m_HasLastPos   = true;
+
     // ── State transitions ───────────────────────────────────────
     const State prevState = m_State;
 
-    if (m_State == State::Attacking)
+    if (m_State == State::Jumping)
+    {
+        // Land → resume desired state
+        if (isGrounded)
+            m_State = desiredState;
+    }
+    else if (m_State == State::Attacking)
     {
         // Lock until attack clip finishes
         if (IsClipFinished(anim, kStateInfo[static_cast<int>(State::Attacking)].clipName))
             m_State = desiredState;
         else
             horizontal = JPH::Vec3::sZero();
+    }
+    else if (m_BlockedTime >= m_BlockedThresh && isGrounded)
+    {
+        // Stuck against terrain → jump
+        m_State = State::Jumping;
     }
     else
     {
@@ -184,6 +217,12 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     {
         const auto& info = kStateInfo[static_cast<int>(m_State)];
         ActivateClip(anim, info.clipName, info.loops);
+
+        if (m_State == State::Jumping)
+        {
+            enemy.VerticalVelocity = m_JumpSpeed;
+            m_BlockedTime = 0.0f;
+        }
 
         // Deal damage on entering Attacking
         if (m_State == State::Attacking)

@@ -14,7 +14,7 @@ struct EnemyScript : VoxelEngine::Script
     void OnEvent(GLCore::Event& event, VoxelEngine::ScriptContext context) override;
     void OnDetach(VoxelEngine::ScriptContext context) override;
 
-    enum class State { Idle, Chasing, Attacking, Dying };
+    enum class State { Idle, Chasing, Attacking, Dying, Jumping };
 
 private:
     static VoxelEngine::AnimationComponent* FindAnimComponent(
@@ -23,10 +23,15 @@ private:
     static void ActivateClip(VoxelEngine::AnimationComponent* anim,
                              const char* name, bool loops);
 
-    float m_ChaseSpeed = 4.0f;
-    float m_StopRadius = 1.5f;
-    float m_Gravity    = 9.8f * 3.0f;
-    State m_State      = State::Idle;
+    float     m_ChaseSpeed    = 4.0f;
+    float     m_StopRadius    = 1.5f;
+    float     m_Gravity       = 9.8f * 3.0f;
+    float     m_JumpSpeed     = 10.0f;
+    float     m_BlockedTime   = 0.0f;
+    float     m_BlockedThresh = 0.3f;  // seconds stuck before jumping
+    glm::vec3 m_LastPosition  = glm::vec3(0.0f);
+    bool      m_HasLastPos    = false;
+    State     m_State         = State::Idle;
 };
 
 }
