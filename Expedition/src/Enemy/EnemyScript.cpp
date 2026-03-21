@@ -80,7 +80,8 @@ void EnemyScript::ActivateClip(AnimationComponent* anim,
 }
 
 // ── Constructor ─────────────────────────────────────────────────────
-EnemyScript::EnemyScript() : Script("Enemy Script")
+EnemyScript::EnemyScript(VoxelEngine::World& world)
+    : Script("Enemy Script"), m_World(world)
 {
 }
 
@@ -175,7 +176,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             m_PathTimer += ts.GetSeconds();
             if (m_Path.empty() || m_PathTimer >= m_RethinkTime)
             {
-                m_Path = Pathfinder().FindPath(transform.WorldPosition, playerPos);
+                m_Path = Pathfinder(m_World).FindPath(transform.WorldPosition, playerPos);
                 m_PathIndex = 0;
                 m_PathTimer = 0.0f;
             }

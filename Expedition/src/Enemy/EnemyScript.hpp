@@ -5,12 +5,14 @@
 #include "Ecs/Components/ChildrenComponent.hpp"
 #include "Ecs/Components/ScriptComponent.hpp"
 
+namespace VoxelEngine { class World; }
+
 namespace Expedition
 {
 
 struct EnemyScript : VoxelEngine::Script
 {
-    explicit EnemyScript();
+    explicit EnemyScript(VoxelEngine::World& world);
     void OnUpdate(GLCore::Timestep ts, VoxelEngine::ScriptContext context) override;
     void OnEvent(GLCore::Event& event, VoxelEngine::ScriptContext context) override;
     void OnDetach(VoxelEngine::ScriptContext context) override;
@@ -34,6 +36,8 @@ private:
     glm::vec3 m_LastPosition  = glm::vec3(0.0f);
     bool      m_HasLastPos    = false;
     State     m_State         = State::Idle;
+
+    VoxelEngine::World& m_World;
 
     // A* pathfinding
     std::vector<glm::vec3> m_Path;

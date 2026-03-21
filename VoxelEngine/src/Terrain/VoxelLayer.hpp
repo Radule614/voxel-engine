@@ -30,6 +30,8 @@ public:
     // Must be called before attaching
     void Init(WorldSettings&& settings);
 
+    World& GetWorld() const { return *m_World; }
+
 private:
     struct UIState
     {
@@ -52,6 +54,8 @@ private:
     std::unique_ptr<World> m_World;
     std::unordered_set<glm::i32vec3> m_ColliderPositions;
     float_t timeSinceLastColliderOptimization = 0.0f;
+    bool m_ColliderDirty = false;
+    float_t m_ColliderDirtyTimer = 0.0f;
 
     JPH::ShapeRefC m_VoxelShape;
 };

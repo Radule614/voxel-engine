@@ -5,62 +5,76 @@
 #include <queue>
 #include <unordered_set>
 
-#include "Jolt/Jolt.h"
-#include "Jolt/Physics/Collision/RayCast.h"
-#include "Jolt/Physics/Collision/CastResult.h"
-#include "Jolt/Physics/Collision/NarrowPhaseQuery.h"
-#include "Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h"
-
-#include "Physics/PhysicsEngine.hpp"
-#include "Physics/PhysicsEngineLayers.hpp"
+#include "Terrain/World/World.hpp"
+#include "Terrain/Voxel/VoxelConstants.hpp"
+#include "Config.hpp"
 
 using namespace VoxelEngine;
 
 namespace Expedition
 {
 
-// ── Ray helpers ─────────────────────────────────────────────────────
+Pathfinder::Pathfinder(World& world) : m_World(world) {}
 
-bool Pathfinder::GetGroundHeight(float worldX, float worldZ, float& outY) const
+// ── Voxel helpers ───────────────────────────────────────────────────
+
+bool Pathfinder::IsSolid(int x, int y, int z) const
 {
-    auto& system = PhysicsEngine::Instance().GetSystem();
-    JPH::RRayCast ray(
-        JPH::RVec3(worldX, RayStartY, worldZ),
-        JPH::Vec3(0.0f, -RayLength, 0.0f));
+    if (y < 0 || y >= CHUNK_HEIGHT)
+        return false;
 
-    JPH::RayCastResult hit;
-    JPH::SpecifiedBroadPhaseLayerFilter bpFilter(BroadPhaseLayers::NON_MOVING);
-    if (system.GetNarrowPhaseQuery().CastRay(ray, hit, bpFilter))
+    auto [chunkPos, voxelPos] = World::GlobalToWorldSpace(glm::i32vec3(x, y, z));
+    const auto& chunkMap = m_World.GetChunkMap();
+    auto it = chunkMap.find(chunkPos);
+    if (it == chunkMap.end())
+        return false;
+
+    return it->second->GetVoxelFromGrid(voxelPos).GetVoxelType() != AIR;
+}
+
+bool Pathfinder::GetGroundHeight(float worldX, float worldZ, float searchY, float& outY) const
+{
+    const int ix = static_cast<int>(std::floor(worldX));
+    const int iz = static_cast<int>(std::floor(worldZ));
+    const int startY = static_cast<int>(searchY) + 5; // search a bit above current height
+    const int minY = std::max(0, static_cast<int>(searchY) - 20);
+
+    // Scan downward: find topmost solid voxel with air above
+    for (int y = startY; y >= minY; --y)
     {
-        outY = RayStartY + hit.mFraction * (-RayLength);
-        return true;
+        if (IsSolid(ix, y, iz) && !IsSolid(ix, y + 1, iz))
+        {
+            outY = static_cast<float>(y + 1); // stand on top of this voxel
+            return true;
+        }
     }
     return false;
 }
 
 bool Pathfinder::IsBlocked(glm::vec3 from, glm::vec3 to) const
 {
-    auto& system = PhysicsEngine::Instance().GetSystem();
-
-    // Flatten direction to XZ only — don't let height differences angle the ray
+    // Walk along the XZ line and check for solid voxels at body height
     glm::vec3 dir(to.x - from.x, 0.0f, to.z - from.z);
     const float len = glm::length(dir);
     if (len < 0.01f) return false;
 
-    JPH::SpecifiedBroadPhaseLayerFilter bpFilter(BroadPhaseLayers::NON_MOVING);
+    const glm::vec3 step = dir / len * 0.5f; // sample every 0.5 units
+    const int numSteps = static_cast<int>(len / 0.5f) + 1;
 
-    // Cast at multiple heights to catch tree trunks, walls, etc.
-    constexpr float offsets[] = { 0.3f, 1.0f, 1.7f };
-    for (float yOff : offsets)
+    const float groundY = from.y;
+
+    for (int i = 1; i < numSteps; ++i)
     {
-        JPH::RRayCast ray(
-            JPH::RVec3(from.x, from.y + yOff, from.z),
-            JPH::Vec3(dir.x, 0.0f, dir.z));
+        const float px = from.x + step.x * static_cast<float>(i);
+        const float pz = from.z + step.z * static_cast<float>(i);
+        const int ix = static_cast<int>(std::floor(px));
+        const int iz = static_cast<int>(std::floor(pz));
+        const int iy = static_cast<int>(std::floor(groundY));
 
-        JPH::RayCastResult hit;
-        if (system.GetNarrowPhaseQuery().CastRay(ray, hit, bpFilter))
+        // Check voxels at feet, waist, and head height
+        for (int h = 0; h < EnemyHeight; ++h)
         {
-            if (hit.mFraction < 1.0f)
+            if (IsSolid(ix, iy + h, iz))
                 return true;
         }
     }
@@ -103,7 +117,7 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
     float startY = start.y;
     GetGroundHeight(static_cast<float>(sx) * CellSize + CellSize * 0.5f,
                     static_cast<float>(sz) * CellSize + CellSize * 0.5f,
-                    startY);
+                    start.y, startY);
 
     std::vector<Node> nodes;
     nodes.reserve(MaxSearch);
@@ -190,7 +204,7 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             const float worldX = static_cast<float>(nx) * CellSize + CellSize * 0.5f;
             const float worldZ = static_cast<float>(nz) * CellSize + CellSize * 0.5f;
 
-            if (!GetGroundHeight(worldX, worldZ, neighborY))
+            if (!GetGroundHeight(worldX, worldZ, current.groundY, neighborY))
                 continue; // no ground — void/pit
 
             if (std::abs(neighborY - current.groundY) > maxStepHeight)

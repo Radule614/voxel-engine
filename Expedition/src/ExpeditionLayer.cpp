@@ -25,6 +25,7 @@
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Physics/Character/CharacterBuilder.hpp"
 #include "Physics/Character/CharacterController.hpp"
+#include "Terrain/World/World.hpp"
 
 namespace Expedition
 {
@@ -40,8 +41,8 @@ namespace
     constexpr float MaxRespawnDist = 35.0f;
 }
 
-ExpeditionLayer::ExpeditionLayer(EngineState& state)
-    : GLCore::Layer("ExpeditionLayer"), m_State(state)
+ExpeditionLayer::ExpeditionLayer(EngineState& state, World& world)
+    : GLCore::Layer("ExpeditionLayer"), m_State(state), m_World(world)
 {
 }
 
@@ -118,7 +119,7 @@ void ExpeditionLayer::SpawnEnemy(const glm::vec3 position)
     registry.emplace<HealthComponent>(parent);
 
     auto& scriptComponent = registry.emplace<ScriptComponent>(parent);
-    scriptComponent.Scripts.emplace_back(std::make_unique<EnemyScript>());
+    scriptComponent.Scripts.emplace_back(std::make_unique<EnemyScript>(m_World));
 
     AddChildToEntity(parent, modelEntity);
     SpawnHealthBar(parent);

@@ -4,13 +4,15 @@
 #include "EngineState.hpp"
 #include "entt.hpp"
 
+namespace VoxelEngine { class World; }
+
 namespace Expedition
 {
 
 class ExpeditionLayer : public GLCore::Layer
 {
 public:
-    explicit ExpeditionLayer(VoxelEngine::EngineState& state);
+    ExpeditionLayer(VoxelEngine::EngineState& state, VoxelEngine::World& world);
     void OnAttach() override;
     void OnUpdate(GLCore::Timestep ts) override;
     void OnImGuiRender() override;
@@ -22,6 +24,7 @@ private:
     glm::vec3 RandomSpawnNearPlayer(float minR, float maxR) const;
 
     VoxelEngine::EngineState& m_State;
+    VoxelEngine::World&       m_World;
 };
 
 }

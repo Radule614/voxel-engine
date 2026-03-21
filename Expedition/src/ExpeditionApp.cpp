@@ -20,7 +20,7 @@ void ExpeditionApp::Setup()
     auto* voxelLayer = new VoxelLayer(m_State);
     voxelLayer->Init(std::move(settings));
     PushLayer(voxelLayer);
-    PushLayer(new ExpeditionLayer(m_State));
+    PushLayer(new ExpeditionLayer(m_State, voxelLayer->GetWorld()));
 }
 
 }
