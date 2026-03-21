@@ -81,6 +81,28 @@ bool Pathfinder::IsBlocked(glm::vec3 from, glm::vec3 to) const
     return false;
 }
 
+bool Pathfinder::IsCellWalkable(int cellX, int cellZ, float groundY) const
+{
+    const int iy = static_cast<int>(std::floor(groundY));
+
+    // Check the cell and its neighbors within Padding radius
+    for (int px = -Padding; px <= Padding; ++px)
+    {
+        for (int pz = -Padding; pz <= Padding; ++pz)
+        {
+            const int cx = cellX + px;
+            const int cz = cellZ + pz;
+
+            for (int h = 0; h < EnemyHeight; ++h)
+            {
+                if (IsSolid(cx, iy + h, cz))
+                    return false;
+            }
+        }
+    }
+    return true;
+}
+
 // ── A* ──────────────────────────────────────────────────────────────
 
 struct Node
@@ -170,24 +192,6 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
                 idx = n.parentIdx;
             }
             std::reverse(path.begin(), path.end());
-
-            // Simple path smoothing: skip waypoints with line-of-sight
-            if (path.size() > 2)
-            {
-                std::vector<glm::vec3> smoothed;
-                smoothed.push_back(path[0]);
-                size_t anchor = 0;
-                for (size_t i = 2; i < path.size(); ++i)
-                {
-                    if (IsBlocked(path[anchor], path[i]))
-                    {
-                        smoothed.push_back(path[i - 1]);
-                        anchor = i - 1;
-                    }
-                }
-                smoothed.push_back(path.back());
-                return smoothed;
-            }
             return path;
         }
 
@@ -210,14 +214,9 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             if (std::abs(neighborY - current.groundY) > maxStepHeight)
                 continue; // too steep
 
-            const glm::vec3 curWorld(
-                static_cast<float>(current.x) * CellSize + CellSize * 0.5f,
-                current.groundY,
-                static_cast<float>(current.z) * CellSize + CellSize * 0.5f);
-            const glm::vec3 neighborWorld(worldX, neighborY, worldZ);
-
-            if (IsBlocked(curWorld, neighborWorld))
-                continue; // wall in between
+            // Check the cell is walkable (accounts for enemy body radius)
+            if (!IsCellWalkable(nx, nz, neighborY))
+                continue;
 
             const float newG = current.gCost + dCost[d] * CellSize;
             const float h = glm::length(glm::vec2(

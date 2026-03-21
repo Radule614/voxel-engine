@@ -29,9 +29,14 @@ private:
 
     VoxelEngine::World& m_World;
 
-    static constexpr float CellSize  = 1.0f;
-    static constexpr int   MaxSearch = 500;
-    static constexpr int   EnemyHeight = 4;  // check this many voxels above ground for clearance
+    // Is a cell walkable considering the enemy's body radius?
+    // Checks the cell itself AND neighbors within Padding distance.
+    bool IsCellWalkable(int cellX, int cellZ, float groundY) const;
+
+    static constexpr float CellSize    = 1.0f;
+    static constexpr int   MaxSearch   = 800;
+    static constexpr int   EnemyHeight = 4;   // voxels above ground to check for clearance
+    static constexpr int   Padding     = 1;   // extra cells around path to account for capsule radius
 };
 
 }
