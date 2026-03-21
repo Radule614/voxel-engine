@@ -8,6 +8,7 @@
 #include "Jolt/Jolt.h"
 #include "Jolt/Physics/Collision/RayCast.h"
 #include "Jolt/Physics/Collision/CastResult.h"
+#include "Jolt/Physics/Collision/NarrowPhaseQuery.h"
 #include "Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h"
 
 #include "Physics/PhysicsEngine.hpp"
