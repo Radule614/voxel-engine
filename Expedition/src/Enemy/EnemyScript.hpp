@@ -23,10 +23,10 @@ private:
     static void ActivateClip(VoxelEngine::AnimationComponent* anim,
                              const char* name, bool loops);
 
-    float     m_ChaseSpeed    = 4.0f;
+    float     m_ChaseSpeed    = 6.0f;
     float     m_StopRadius    = 1.5f;
     float     m_Gravity       = 9.8f * 3.0f;
-    float     m_JumpSpeed     = 10.0f;
+    float     m_JumpSpeed     = 15.0f;
     float     m_BlockedTime   = 0.0f;
     float     m_BlockedThresh = 0.3f;  // seconds stuck before jumping
     bool      m_WasAirborne   = false; // true once airborne during a jump
