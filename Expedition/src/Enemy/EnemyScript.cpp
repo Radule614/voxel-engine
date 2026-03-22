@@ -5,6 +5,7 @@
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Health/HealthComponent.hpp"
+#include "Log.hpp"
 
 using namespace VoxelEngine;
 using namespace GLCore;
@@ -181,6 +182,12 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                 m_Path = Pathfinder(m_World).FindPath(transform.WorldPosition, playerPos);
                 m_PathIndex = 0;
                 m_PathTimer = 0.0f;
+
+                int jumpCount = 0;
+                for (const auto& wp : m_Path)
+                    if (wp.needsJump) ++jumpCount;
+                if (jumpCount > 0)
+                    LOG_INFO("A* path: {} waypoints, {} require jump", m_Path.size(), jumpCount);
             }
 
             // Follow path waypoints
@@ -196,7 +203,10 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                     {
                         // Check if next waypoint requires a jump
                         if (m_Path[m_PathIndex].needsJump && isGrounded)
+                        {
                             proactiveJump = true;
+                            LOG_INFO("Proactive jump triggered at waypoint {}", m_PathIndex);
+                        }
 
                         toWaypoint = m_Path[m_PathIndex].position - transform.WorldPosition;
                         toWaypoint.y = 0.0f;
