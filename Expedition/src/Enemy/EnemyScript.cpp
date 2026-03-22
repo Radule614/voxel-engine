@@ -1,6 +1,7 @@
 #include "EnemyScript.hpp"
 #include "EnemyComponent.hpp"
 
+#include <cmath>
 #include "Ecs/Components/CameraComponent.hpp"
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
@@ -184,10 +185,16 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                 m_PathTimer = 0.0f;
 
                 int jumpCount = 0;
+                float minY = 9999.f, maxY = -9999.f;
                 for (const auto& wp : m_Path)
+                {
                     if (wp.needsJump) ++jumpCount;
-                if (jumpCount > 0)
-                    LOG_INFO("A* path: {} waypoints, {} require jump", m_Path.size(), jumpCount);
+                    if (wp.position.y < minY) minY = wp.position.y;
+                    if (wp.position.y > maxY) maxY = wp.position.y;
+                }
+                LOG_INFO("A* path: {} wps, {} jumps, Y range [{:.0f}, {:.0f}], enemy Y={:.0f}, player Y={:.0f}",
+                         m_Path.size(), jumpCount, minY, maxY,
+                         transform.WorldPosition.y, playerPos.y);
             }
 
             // Follow path waypoints
@@ -272,17 +279,27 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     m_LastPosition = transform.WorldPosition;
     m_HasLastPos   = true;
 
+    // ── Jump cooldown tick ─────────────────────────────────────
+    if (m_State != State::Jumping)
+        m_JumpCooldown += ts.GetSeconds();
+
     // ── State transitions ───────────────────────────────────────
     const State prevState = m_State;
 
     if (m_State == State::Jumping)
     {
+        m_JumpTimer += ts.GetSeconds();
+
         if (!isGrounded)
             m_WasAirborne = true;
-        if (isGrounded && m_WasAirborne)
+
+        // Exit: landed after being airborne, OR timed out
+        if ((isGrounded && m_WasAirborne) || m_JumpTimer >= m_JumpTimeout)
         {
             m_State = desiredState;
             m_WasAirborne = false;
+            m_JumpTimer   = 0.0f;
+            m_JumpCooldown = 0.0f;
         }
     }
     else if (m_State == State::Attacking)
@@ -292,14 +309,13 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         else
             horizontal = JPH::Vec3::sZero();
     }
-    else if (proactiveJump)
+    else if (proactiveJump && m_JumpCooldown >= 1.0f)
     {
-        // A* waypoint requires a jump — jump immediately
         m_State = State::Jumping;
     }
-    else if (m_BlockedTime >= m_BlockedThresh && m_RepathedWhileBlocked && isGrounded)
+    else if (m_BlockedTime >= m_BlockedThresh && m_RepathedWhileBlocked
+             && isGrounded && m_JumpCooldown >= 1.0f)
     {
-        // Repath already failed — jump as last resort
         m_State = State::Jumping;
     }
     else
@@ -315,8 +331,18 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
         if (m_State == State::Jumping)
         {
-            enemy.VerticalVelocity = m_JumpSpeed;
-            m_BlockedTime = 0.0f;
+            // Scale jump velocity to height needed (min 8.0 for a reliable hop)
+            float heightNeeded = 2.0f; // default
+            if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
+                heightNeeded = std::max(1.0f,
+                    m_Path[m_PathIndex].position.y - transform.WorldPosition.y);
+            // v = sqrt(2 * g * (h + margin))
+            const float jumpV = std::sqrt(2.0f * m_Gravity * (heightNeeded + 1.0f));
+            enemy.VerticalVelocity = std::min(jumpV, m_JumpSpeed);
+
+            m_BlockedTime  = 0.0f;
+            m_JumpTimer    = 0.0f;
+            m_JumpCooldown = 0.0f;
         }
 
         // Deal damage on entering Attacking
