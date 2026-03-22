@@ -33,7 +33,7 @@ private:
 
     static constexpr float CellSize    = 1.0f;
     static constexpr int   MaxSearch   = 1200;
-    static constexpr int   EnemyHeight = 4;
+    static constexpr int   EnemyHeight = 3;
     static constexpr int   Padding     = 1;
 };
 

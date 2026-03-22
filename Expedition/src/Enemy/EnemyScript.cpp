@@ -229,23 +229,32 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         m_BlockedTime = 0.0f;
     }
 
-    // When stuck, force an immediate repath instead of jumping
+    // When stuck: first repath, if still stuck after second threshold → jump
     if (m_BlockedTime >= m_BlockedThresh && desiredState == State::Chasing)
     {
-        m_Path = Pathfinder(m_World).FindPath(transform.WorldPosition, playerPos);
-        m_PathIndex = 0;
-        m_PathTimer = 0.0f;
-        m_BlockedTime = 0.0f;
-
-        // Re-derive faceDir from the new path
-        if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
+        if (!m_RepathedWhileBlocked)
         {
-            glm::vec3 toWp = m_Path[m_PathIndex] - transform.WorldPosition;
-            toWp.y = 0.0f;
-            if (glm::length(toWp) > 0.001f)
-                faceDir = glm::normalize(toWp);
+            // First attempt: force repath
+            m_Path = Pathfinder(m_World).FindPath(transform.WorldPosition, playerPos);
+            m_PathIndex = 0;
+            m_PathTimer = 0.0f;
+            m_BlockedTime = 0.0f;
+            m_RepathedWhileBlocked = true;
+
+            if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
+            {
+                glm::vec3 toWp = m_Path[m_PathIndex] - transform.WorldPosition;
+                toWp.y = 0.0f;
+                if (glm::length(toWp) > 0.001f)
+                    faceDir = glm::normalize(toWp);
+            }
+            horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
         }
-        horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
+        // else: still stuck after repath → will jump via state transition below
+    }
+    else if (m_BlockedTime < 0.01f)
+    {
+        m_RepathedWhileBlocked = false;
     }
 
     m_LastPosition = transform.WorldPosition;
@@ -270,6 +279,11 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             m_State = desiredState;
         else
             horizontal = JPH::Vec3::sZero();
+    }
+    else if (m_BlockedTime >= m_BlockedThresh && m_RepathedWhileBlocked && isGrounded)
+    {
+        // Repath already failed — jump as last resort
+        m_State = State::Jumping;
     }
     else
     {

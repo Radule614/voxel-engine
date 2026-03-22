@@ -32,7 +32,8 @@ private:
     float     m_JumpSpeed     = 15.0f;
     float     m_BlockedTime   = 0.0f;
     float     m_BlockedThresh = 0.3f;  // seconds stuck before jumping
-    bool      m_WasAirborne   = false; // true once airborne during a jump
+    bool      m_WasAirborne          = false; // true once airborne during a jump
+    bool      m_RepathedWhileBlocked = false; // true after first repath attempt when stuck
     glm::vec3 m_LastPosition  = glm::vec3(0.0f);
     bool      m_HasLastPos    = false;
     State     m_State         = State::Idle;
