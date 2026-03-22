@@ -225,12 +225,6 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             if (closed.count(nKey))
                 continue;
 
-            const float newG = current.gCost + dCost[d] * CellSize;
-
-            auto bestIt = bestG.find(nKey);
-            if (bestIt != bestG.end() && newG >= bestIt->second)
-                continue;
-
             float neighborY = 0.0f;
             const float worldX = static_cast<float>(nx) * CellSize + CellSize * 0.5f;
             const float worldZ = static_cast<float>(nz) * CellSize + CellSize * 0.5f;
@@ -252,6 +246,17 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             if (!IsCellWalkable(nx, nz, neighborY))
                 continue;
 
+            // Penalize height changes so flat paths are preferred,
+            // but vertical transitions are still possible
+            const float heightDiff = std::abs(neighborY - current.groundY);
+            const float newG = current.gCost + dCost[d] * CellSize;
+            const float heightPenalty = heightDiff > 1.5f ? heightDiff * 2.0f : 0.0f;
+            const float totalG = newG + heightPenalty;
+
+            auto bestIt = bestG.find(nKey);
+            if (bestIt != bestG.end() && totalG >= bestIt->second)
+                continue;
+
             const float h = glm::length(glm::vec2(
                 static_cast<float>(gx - nx), static_cast<float>(gz - nz))) * CellSize;
 
@@ -259,11 +264,11 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             neighbor.x         = nx;
             neighbor.z         = nz;
             neighbor.groundY   = neighborY;
-            neighbor.gCost     = newG;
+            neighbor.gCost     = totalG;
             neighbor.hCost     = h;
             neighbor.parentIdx = topIdx;
 
-            bestG[nKey] = newG;
+            bestG[nKey] = totalG;
 
             const int newIdx = static_cast<int>(nodes.size());
             nodes.push_back(neighbor);

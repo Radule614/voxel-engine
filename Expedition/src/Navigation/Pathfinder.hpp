@@ -15,7 +15,7 @@ public:
     explicit Pathfinder(VoxelEngine::World& world);
 
     // Returns world-space waypoints from start to goal. Empty = no path found.
-    std::vector<glm::vec3> FindPath(glm::vec3 start, glm::vec3 goal, float maxStepHeight = 1.5f);
+    std::vector<glm::vec3> FindPath(glm::vec3 start, glm::vec3 goal, float maxStepHeight = 4.0f);
 
 private:
     bool GetGroundHeight(float worldX, float worldZ, float searchY, float& outY);
