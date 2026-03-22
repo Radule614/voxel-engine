@@ -16,76 +16,88 @@ namespace Expedition
 
 Pathfinder::Pathfinder(World& world) : m_World(world) {}
 
-// ── Voxel helpers ───────────────────────────────────────────────────
+// ── Cached chunk lookup ─────────────────────────────────────────────
 
-bool Pathfinder::IsSolid(int x, int y, int z) const
+Chunk* Pathfinder::GetChunk(int chunkX, int chunkZ)
+{
+    const int64_t key = (static_cast<int64_t>(chunkX) << 32) |
+                         static_cast<int64_t>(static_cast<uint32_t>(chunkZ));
+    auto it = m_ChunkCache.find(key);
+    if (it != m_ChunkCache.end())
+        return it->second;
+
+    const Position2D pos(static_cast<int16_t>(chunkX), static_cast<int16_t>(chunkZ));
+    const auto& chunkMap = m_World.GetChunkMap();
+    auto mapIt = chunkMap.find(pos);
+    Chunk* chunk = (mapIt != chunkMap.end()) ? mapIt->second.get() : nullptr;
+    m_ChunkCache[key] = chunk;
+    return chunk;
+}
+
+// ── Voxel helpers (cached) ──────────────────────────────────────────
+
+bool Pathfinder::IsSolid(int x, int y, int z)
 {
     if (y < 0 || y >= CHUNK_HEIGHT)
         return false;
 
-    auto [chunkPos, voxelPos] = World::GlobalToWorldSpace(glm::i32vec3(x, y, z));
-    const auto& chunkMap = m_World.GetChunkMap();
-    auto it = chunkMap.find(chunkPos);
-    if (it == chunkMap.end())
-        return false;
+    // Check cache first
+    // Pack (x, y, z) into a single int64_t: x in high 21 bits, y in mid 8 bits, z in low 21 bits
+    const int64_t key = (static_cast<int64_t>(x & 0x1FFFFF) << 29) |
+                        (static_cast<int64_t>(y & 0xFF) << 21) |
+                         static_cast<int64_t>(z & 0x1FFFFF);
+    auto cacheIt = m_SolidCache.find(key);
+    if (cacheIt != m_SolidCache.end())
+        return cacheIt->second;
 
-    return it->second->GetVoxelFromGrid(voxelPos).GetVoxelType() != AIR;
+    // Compute chunk coordinates
+    const int chunkX = (x >= 0) ? (x / CHUNK_WIDTH) : ((x + 1) / CHUNK_WIDTH - 1);
+    const int chunkZ = (z >= 0) ? (z / CHUNK_WIDTH) : ((z + 1) / CHUNK_WIDTH - 1);
+
+    Chunk* chunk = GetChunk(chunkX, chunkZ);
+    if (!chunk)
+    {
+        m_SolidCache[key] = false;
+        return false;
+    }
+
+    // Local voxel position within chunk
+    int lx = x % CHUNK_WIDTH;
+    int lz = z % CHUNK_WIDTH;
+    if (lx < 0) lx += CHUNK_WIDTH;
+    if (lz < 0) lz += CHUNK_WIDTH;
+
+    const bool solid = chunk->GetVoxelFromGrid(
+        Position3D(glm::i32vec3(lx, y, lz))).GetVoxelType() != AIR;
+
+    m_SolidCache[key] = solid;
+    return solid;
 }
 
-bool Pathfinder::GetGroundHeight(float worldX, float worldZ, float searchY, float& outY) const
+bool Pathfinder::GetGroundHeight(float worldX, float worldZ, float searchY, float& outY)
 {
     const int ix = static_cast<int>(std::floor(worldX));
     const int iz = static_cast<int>(std::floor(worldZ));
-    const int startY = static_cast<int>(searchY) + 5; // search a bit above current height
-    const int minY = std::max(0, static_cast<int>(searchY) - 20);
 
-    // Scan downward: find topmost solid voxel with air above
+    // Narrow scan range: ±4 from current height instead of +5/-20
+    const int startY = std::min(static_cast<int>(searchY) + 4, CHUNK_HEIGHT - 1);
+    const int minY   = std::max(0, static_cast<int>(searchY) - 4);
+
     for (int y = startY; y >= minY; --y)
     {
         if (IsSolid(ix, y, iz) && !IsSolid(ix, y + 1, iz))
         {
-            outY = static_cast<float>(y + 1); // stand on top of this voxel
+            outY = static_cast<float>(y + 1);
             return true;
         }
     }
     return false;
 }
 
-bool Pathfinder::IsBlocked(glm::vec3 from, glm::vec3 to) const
-{
-    // Walk along the XZ line and check for solid voxels at body height
-    glm::vec3 dir(to.x - from.x, 0.0f, to.z - from.z);
-    const float len = glm::length(dir);
-    if (len < 0.01f) return false;
-
-    const glm::vec3 step = dir / len * 0.5f; // sample every 0.5 units
-    const int numSteps = static_cast<int>(len / 0.5f) + 1;
-
-    const float groundY = from.y;
-
-    for (int i = 1; i < numSteps; ++i)
-    {
-        const float px = from.x + step.x * static_cast<float>(i);
-        const float pz = from.z + step.z * static_cast<float>(i);
-        const int ix = static_cast<int>(std::floor(px));
-        const int iz = static_cast<int>(std::floor(pz));
-        const int iy = static_cast<int>(std::floor(groundY));
-
-        // Check voxels at feet, waist, and head height
-        for (int h = 0; h < EnemyHeight; ++h)
-        {
-            if (IsSolid(ix, iy + h, iz))
-                return true;
-        }
-    }
-    return false;
-}
-
-bool Pathfinder::IsCellWalkable(int cellX, int cellZ, float groundY) const
+bool Pathfinder::IsCellWalkable(int cellX, int cellZ, float groundY)
 {
     const int iy = static_cast<int>(std::floor(groundY));
 
-    // Check the cell and its neighbors within Padding radius
     for (int px = -Padding; px <= Padding; ++px)
     {
         for (int pz = -Padding; pz <= Padding; ++pz)
@@ -130,12 +142,15 @@ static int64_t CellKey(int x, int z)
 
 std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, float maxStepHeight)
 {
+    // Clear per-pathfind caches
+    m_ChunkCache.clear();
+    m_SolidCache.clear();
+
     const int sx = static_cast<int>(std::floor(start.x / CellSize));
     const int sz = static_cast<int>(std::floor(start.z / CellSize));
     const int gx = static_cast<int>(std::floor(goal.x / CellSize));
     const int gz = static_cast<int>(std::floor(goal.z / CellSize));
 
-    // Get ground height at start
     float startY = start.y;
     GetGroundHeight(static_cast<float>(sx) * CellSize + CellSize * 0.5f,
                     static_cast<float>(sz) * CellSize + CellSize * 0.5f,
@@ -143,10 +158,13 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
 
     std::vector<Node> nodes;
     nodes.reserve(MaxSearch);
+
+    // Track best gCost per cell to avoid pushing dominated nodes
+    std::unordered_map<int64_t, float> bestG;
+
     std::unordered_set<int64_t> closed;
     std::priority_queue<std::pair<float, int>, std::vector<std::pair<float, int>>, CompareF> open;
 
-    // Start node
     Node startNode;
     startNode.x       = sx;
     startNode.z       = sz;
@@ -156,6 +174,7 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
         static_cast<float>(gx - sx), static_cast<float>(gz - sz))) * CellSize;
     nodes.push_back(startNode);
     open.push({ startNode.fCost(), 0 });
+    bestG[CellKey(sx, sz)] = 0.0f;
 
     constexpr int dx[] = { 1, -1, 0, 0, 1, -1, 1, -1 };
     constexpr int dz[] = { 0, 0, 1, -1, 1, 1, -1, -1 };
@@ -179,7 +198,6 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
         // Goal reached
         if (current.x == gx && current.z == gz)
         {
-            // Reconstruct path
             std::vector<glm::vec3> path;
             int idx = topIdx;
             while (idx >= 0)
@@ -200,8 +218,16 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
         {
             const int nx = current.x + dx[d];
             const int nz = current.z + dz[d];
+            const int64_t nKey = CellKey(nx, nz);
 
-            if (closed.count(CellKey(nx, nz)))
+            if (closed.count(nKey))
+                continue;
+
+            const float newG = current.gCost + dCost[d] * CellSize;
+
+            // Skip if we already found a cheaper path to this cell
+            auto bestIt = bestG.find(nKey);
+            if (bestIt != bestG.end() && newG >= bestIt->second)
                 continue;
 
             float neighborY = 0.0f;
@@ -209,16 +235,23 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             const float worldZ = static_cast<float>(nz) * CellSize + CellSize * 0.5f;
 
             if (!GetGroundHeight(worldX, worldZ, current.groundY, neighborY))
-                continue; // no ground — void/pit
+                continue;
 
             if (std::abs(neighborY - current.groundY) > maxStepHeight)
-                continue; // too steep
+                continue;
 
-            // Check the cell is walkable (accounts for enemy body radius)
+            // For diagonal moves, check that both cardinal neighbors are walkable
+            // (prevents corner-cutting through walls)
+            if (d >= 4)
+            {
+                if (!IsCellWalkable(current.x + dx[d], current.z, current.groundY) ||
+                    !IsCellWalkable(current.x, current.z + dz[d], current.groundY))
+                    continue;
+            }
+
             if (!IsCellWalkable(nx, nz, neighborY))
                 continue;
 
-            const float newG = current.gCost + dCost[d] * CellSize;
             const float h = glm::length(glm::vec2(
                 static_cast<float>(gx - nx), static_cast<float>(gz - nz))) * CellSize;
 
@@ -230,13 +263,15 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             neighbor.hCost     = h;
             neighbor.parentIdx = topIdx;
 
+            bestG[nKey] = newG;
+
             const int newIdx = static_cast<int>(nodes.size());
             nodes.push_back(neighbor);
             open.push({ neighbor.fCost(), newIdx });
         }
     }
 
-    return {}; // no path found
+    return {};
 }
 
 }
