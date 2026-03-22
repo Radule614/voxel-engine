@@ -41,7 +41,7 @@ private:
     static constexpr int   MaxSearch     = 1200;
     static constexpr int   EnemyHeight   = 3;
     static constexpr int   Padding       = 1;
-    static constexpr float MaxWalkStep   = 1.0f;   // height diff for normal walk
+    static constexpr float MaxWalkStep   = 0.5f;   // height diff for normal walk (< 1 block)
     static constexpr float MaxJumpStep   = 4.0f;   // height diff that requires a jump
 };
 
