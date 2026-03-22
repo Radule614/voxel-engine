@@ -74,18 +74,35 @@ bool Pathfinder::GetGroundHeight(float worldX, float worldZ, float searchY, floa
 {
     const int ix = static_cast<int>(std::floor(worldX));
     const int iz = static_cast<int>(std::floor(worldZ));
+    const int sy = static_cast<int>(searchY);
 
-    // Wider scan range to handle terrain variations
-    const int startY = std::min(static_cast<int>(searchY) + 8, CHUNK_HEIGHT - 1);
-    const int minY   = std::max(0, static_cast<int>(searchY) - 12);
+    // Narrow scan: only look ±(MaxJumpStep+1) around the current level.
+    // This avoids finding tree canopy tops as "ground" — tree trunk cells
+    // have no solid-with-air-above near ground level, so they're skipped.
+    const int range = static_cast<int>(MaxJumpStep) + 1;
+    const int lo = std::max(0, sy - range);
+    const int hi = std::min(CHUNK_HEIGHT - 2, sy + range);
 
-    for (int y = startY; y >= minY; --y)
+    int   bestY    = -1;
+    int   bestDist = 999;
+
+    for (int y = lo; y <= hi; ++y)
     {
         if (IsSolid(ix, y, iz) && !IsSolid(ix, y + 1, iz))
         {
-            outY = static_cast<float>(y + 1);
-            return true;
+            const int dist = std::abs((y + 1) - sy);
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                bestY    = y + 1;
+            }
         }
+    }
+
+    if (bestY >= 0)
+    {
+        outY = static_cast<float>(bestY);
+        return true;
     }
     return false;
 }
