@@ -5,7 +5,7 @@
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Health/HealthComponent.hpp"
-#include "Log.hpp"
+#include "GLCore/Core/Log.hpp"
 
 using namespace VoxelEngine;
 using namespace GLCore;
