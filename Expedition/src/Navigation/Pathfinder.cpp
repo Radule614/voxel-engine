@@ -251,11 +251,13 @@ std::vector<Waypoint> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal)
             if (!GetGroundHeight(worldX, worldZ, current.groundY, neighborY))
                 continue;
 
-            const float heightDiff = std::abs(neighborY - current.groundY);
+            const float heightDiff = neighborY - current.groundY;  // positive = uphill
+            const float absHeightDiff = std::abs(heightDiff);
 
-            if (heightDiff > MaxJumpStep)
+            if (absHeightDiff > MaxJumpStep)
                 continue;
 
+            // Only uphill steps need a jump — the capsule can fall down fine
             const bool requiresJump = heightDiff > MaxWalkStep;
 
             // Prevent diagonal corner-cutting

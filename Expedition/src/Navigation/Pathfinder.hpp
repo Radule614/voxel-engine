@@ -38,9 +38,9 @@ private:
     std::unordered_map<int64_t, bool>                m_SolidCache;
 
     static constexpr float CellSize      = 1.0f;
-    static constexpr int   MaxSearch     = 2000;
+    static constexpr int   MaxSearch     = 3000;
     static constexpr int   EnemyHeight   = 3;
-    static constexpr int   Padding       = 0;   // physics capsule handles fine collision
+    static constexpr int   Padding       = 1;   // capsule radius 0.75 needs clearance
     static constexpr float MaxWalkStep   = 0.5f;   // 1-block steps need a jump (capsule can't step over)
     static constexpr float MaxJumpStep   = 4.0f;   // height diff that requires a jump
 };
