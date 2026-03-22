@@ -41,7 +41,7 @@ private:
     static constexpr int   MaxSearch     = 2000;
     static constexpr int   EnemyHeight   = 3;
     static constexpr int   Padding       = 0;   // physics capsule handles fine collision
-    static constexpr float MaxWalkStep   = 1.0f;   // height diff for normal walk (capsule can handle)
+    static constexpr float MaxWalkStep   = 0.5f;   // 1-block steps need a jump (capsule can't step over)
     static constexpr float MaxJumpStep   = 4.0f;   // height diff that requires a jump
 };
 
