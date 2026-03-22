@@ -18,7 +18,7 @@ struct EnemyScript : VoxelEngine::Script
     void OnEvent(GLCore::Event& event, VoxelEngine::ScriptContext context) override;
     void OnDetach(VoxelEngine::ScriptContext context) override;
 
-    enum class State { Idle, Chasing, Attacking, Dying, Jumping };
+    enum class State { Idle, Chasing, Attacking, Dying };
 
 private:
     static VoxelEngine::AnimationComponent* FindAnimComponent(
@@ -30,25 +30,22 @@ private:
     float     m_ChaseSpeed    = 6.0f;
     float     m_StopRadius    = 1.5f;
     float     m_Gravity       = 9.8f * 3.0f;
-    float     m_JumpSpeed     = 15.0f;
+    float     m_ClimbSpeed    = 12.0f;   // vertical velocity for climbing ledges
+    State     m_State         = State::Idle;
+
+    // Blocked detection (triggers repath)
     float     m_BlockedTime   = 0.0f;
-    float     m_BlockedThresh = 0.3f;  // seconds stuck before jumping
-    bool      m_WasAirborne          = false;
-    bool      m_RepathedWhileBlocked = false;
+    float     m_BlockedThresh = 0.5f;
     glm::vec3 m_LastPosition  = glm::vec3(0.0f);
     bool      m_HasLastPos    = false;
-    State     m_State         = State::Idle;
-    float     m_JumpTimer     = 0.0f;   // time spent in Jumping state
-    float     m_JumpTimeout   = 0.8f;   // exit Jumping if stuck this long
-    float     m_JumpCooldown  = 0.0f;   // time since last jump ended
 
     VoxelEngine::World& m_World;
 
     // A* pathfinding
     std::vector<Waypoint> m_Path;
-    int   m_PathIndex   = 0;
-    float m_PathTimer   = 0.0f;
-    float m_RethinkTime = 0.5f;
+    int   m_PathIndex    = 0;
+    float m_PathTimer    = 0.0f;
+    float m_RethinkTime  = 0.5f;
     float m_WaypointDist = 1.5f;
 };
 

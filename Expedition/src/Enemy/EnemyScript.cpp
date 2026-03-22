@@ -6,7 +6,6 @@
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Health/HealthComponent.hpp"
-#include "GLCore/Core/Log.hpp"
 
 using namespace VoxelEngine;
 using namespace GLCore;
@@ -27,7 +26,6 @@ static constexpr StateInfo kStateInfo[] = {
     /* Chasing   */ { "run",    true,  false },
     /* Attacking */ { "attack", false, true  },
     /* Dying     */ { "death",  false, true  },
-    /* Jumping   */ { "jump",   false, false },
 };
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -131,9 +129,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     if (isGrounded)
     {
-        // Don't zero velocity while jumping — the impulse needs to persist
-        if (m_State != State::Jumping)
-            enemy.VerticalVelocity = 0.0f;
+        enemy.VerticalVelocity = 0.0f;
     }
     else
     {
@@ -153,10 +149,9 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     }
 
     // ── Compute desired state from distance ─────────────────────
-    JPH::Vec3 horizontal    = JPH::Vec3::sZero();
-    State     desiredState = State::Idle;
-    glm::vec3 faceDir      = glm::vec3(0.0f, 0.0f, 1.0f);
-    bool      proactiveJump = false;
+    JPH::Vec3 horizontal   = JPH::Vec3::sZero();
+    State     desiredState  = State::Idle;
+    glm::vec3 faceDir       = glm::vec3(0.0f, 0.0f, 1.0f);
 
     if (foundPlayer)
     {
@@ -183,18 +178,6 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                 m_Path = Pathfinder(m_World).FindPath(transform.WorldPosition, playerPos);
                 m_PathIndex = 0;
                 m_PathTimer = 0.0f;
-
-                int jumpCount = 0;
-                float minY = 9999.f, maxY = -9999.f;
-                for (const auto& wp : m_Path)
-                {
-                    if (wp.needsJump) ++jumpCount;
-                    if (wp.position.y < minY) minY = wp.position.y;
-                    if (wp.position.y > maxY) maxY = wp.position.y;
-                }
-                LOG_INFO("A* path: {} wps, {} jumps, Y range [{:.0f}, {:.0f}], enemy Y={:.0f}, player Y={:.0f}",
-                         m_Path.size(), jumpCount, minY, maxY,
-                         transform.WorldPosition.y, playerPos.y);
             }
 
             // Follow path waypoints
@@ -208,13 +191,6 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                     ++m_PathIndex;
                     if (m_PathIndex < static_cast<int>(m_Path.size()))
                     {
-                        // Check if next waypoint requires a jump
-                        if (m_Path[m_PathIndex].needsJump && isGrounded)
-                        {
-                            proactiveJump = true;
-                            LOG_INFO("Proactive jump triggered at waypoint {}", m_PathIndex);
-                        }
-
                         toWaypoint = m_Path[m_PathIndex].position - transform.WorldPosition;
                         toWaypoint.y = 0.0f;
                     }
@@ -230,10 +206,26 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             // else: no path → faceDir stays as direct-to-player (fallback)
 
             horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
+
+            // ── Climbing: apply upward velocity when path goes uphill ──
+            if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size())
+                && isGrounded)
+            {
+                const float heightDiff = m_Path[m_PathIndex].position.y
+                                       - transform.WorldPosition.y;
+                if (heightDiff > 0.3f && heightDiff <= 2.5f)
+                {
+                    // v = sqrt(2 * g * (h + margin)) — just enough to reach the ledge
+                    enemy.VerticalVelocity = std::sqrt(
+                        2.0f * m_Gravity * (heightDiff + 0.5f));
+                    if (enemy.VerticalVelocity > m_ClimbSpeed)
+                        enemy.VerticalVelocity = m_ClimbSpeed;
+                }
+            }
         }
     }
 
-    // ── Blocked detection ───────────────────────────────────────
+    // ── Blocked detection (force repath when stuck) ────────────
     if (m_HasLastPos && desiredState == State::Chasing && isGrounded)
     {
         const glm::vec3 delta = transform.WorldPosition - m_LastPosition;
@@ -248,75 +240,36 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         m_BlockedTime = 0.0f;
     }
 
-    // When stuck: first repath, if still stuck after second threshold → jump
     if (m_BlockedTime >= m_BlockedThresh && desiredState == State::Chasing)
     {
-        if (!m_RepathedWhileBlocked)
-        {
-            // First attempt: force repath
-            m_Path = Pathfinder(m_World).FindPath(transform.WorldPosition, playerPos);
-            m_PathIndex = 0;
-            m_PathTimer = 0.0f;
-            m_BlockedTime = 0.0f;
-            m_RepathedWhileBlocked = true;
+        // Force repath when stuck
+        m_Path = Pathfinder(m_World).FindPath(transform.WorldPosition, playerPos);
+        m_PathIndex = 0;
+        m_PathTimer = 0.0f;
+        m_BlockedTime = 0.0f;
 
-            if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
-            {
-                glm::vec3 toWp = m_Path[m_PathIndex].position - transform.WorldPosition;
-                toWp.y = 0.0f;
-                if (glm::length(toWp) > 0.001f)
-                    faceDir = glm::normalize(toWp);
-            }
-            horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
+        if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
+        {
+            glm::vec3 toWp = m_Path[m_PathIndex].position - transform.WorldPosition;
+            toWp.y = 0.0f;
+            if (glm::length(toWp) > 0.001f)
+                faceDir = glm::normalize(toWp);
         }
-        // else: still stuck after repath → will jump via state transition below
-    }
-    else if (m_BlockedTime < 0.01f)
-    {
-        m_RepathedWhileBlocked = false;
+        horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
     }
 
     m_LastPosition = transform.WorldPosition;
     m_HasLastPos   = true;
 
-    // ── Jump cooldown tick ─────────────────────────────────────
-    if (m_State != State::Jumping)
-        m_JumpCooldown += ts.GetSeconds();
-
     // ── State transitions ───────────────────────────────────────
     const State prevState = m_State;
 
-    if (m_State == State::Jumping)
-    {
-        m_JumpTimer += ts.GetSeconds();
-
-        if (!isGrounded)
-            m_WasAirborne = true;
-
-        // Exit: landed after being airborne, OR timed out
-        if ((isGrounded && m_WasAirborne) || m_JumpTimer >= m_JumpTimeout)
-        {
-            m_State = desiredState;
-            m_WasAirborne = false;
-            m_JumpTimer   = 0.0f;
-            m_JumpCooldown = 0.0f;
-        }
-    }
-    else if (m_State == State::Attacking)
+    if (m_State == State::Attacking)
     {
         if (IsClipFinished(anim, kStateInfo[static_cast<int>(State::Attacking)].clipName))
             m_State = desiredState;
         else
             horizontal = JPH::Vec3::sZero();
-    }
-    else if (proactiveJump)
-    {
-        m_State = State::Jumping;
-    }
-    else if (m_BlockedTime >= m_BlockedThresh && m_RepathedWhileBlocked
-             && isGrounded)
-    {
-        m_State = State::Jumping;
     }
     else
     {
@@ -329,23 +282,6 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         const auto& info = kStateInfo[static_cast<int>(m_State)];
         ActivateClip(anim, info.clipName, info.loops);
 
-        if (m_State == State::Jumping)
-        {
-            // Scale jump velocity to height needed (min 8.0 for a reliable hop)
-            float heightNeeded = 2.0f; // default
-            if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
-                heightNeeded = std::max(1.0f,
-                    m_Path[m_PathIndex].position.y - transform.WorldPosition.y);
-            // v = sqrt(2 * g * (h + margin))
-            const float jumpV = std::sqrt(2.0f * m_Gravity * (heightNeeded + 1.0f));
-            enemy.VerticalVelocity = std::min(jumpV, m_JumpSpeed);
-
-            m_BlockedTime  = 0.0f;
-            m_JumpTimer    = 0.0f;
-            m_JumpCooldown = 0.0f;
-        }
-
-        // Deal damage on entering Attacking
         if (m_State == State::Attacking)
         {
             for (const auto view = registry.view<HealthComponent, CharacterComponent, CameraComponent>();

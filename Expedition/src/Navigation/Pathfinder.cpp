@@ -136,7 +136,6 @@ struct Node
     float hCost = 0.0f;
     float fCost() const { return gCost + hCost; }
     int   parentIdx = -1;
-    bool  needsJump = false;  // transition to this node requires a jump
 };
 
 struct CompareF
@@ -225,8 +224,7 @@ std::vector<Waypoint> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal)
                     glm::vec3(
                         static_cast<float>(n.x) * CellSize + CellSize * 0.5f,
                         n.groundY,
-                        static_cast<float>(n.z) * CellSize + CellSize * 0.5f),
-                    n.needsJump
+                        static_cast<float>(n.z) * CellSize + CellSize * 0.5f)
                 });
                 idx = n.parentIdx;
             }
@@ -252,13 +250,12 @@ std::vector<Waypoint> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal)
                 continue;
 
             const float heightDiff = neighborY - current.groundY;  // positive = uphill
-            const float absHeightDiff = std::abs(heightDiff);
 
-            if (absHeightDiff > MaxJumpStep)
+            // Can climb up to MaxClimbHeight, can fall down any reasonable amount
+            if (heightDiff > MaxClimbHeight)
                 continue;
-
-            // Only uphill steps need a jump — the capsule can fall down fine
-            const bool requiresJump = heightDiff > MaxWalkStep;
+            if (heightDiff < -MaxClimbHeight * 2.0f)  // don't path off cliffs
+                continue;
 
             // Prevent diagonal corner-cutting
             if (d >= 4)
@@ -271,10 +268,10 @@ std::vector<Waypoint> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal)
             if (!IsCellWalkable(nx, nz, neighborY))
                 continue;
 
-            // Penalize jump transitions so flat paths are preferred
+            // Penalize climbing so flat paths are preferred
             const float newG = current.gCost + dCost[d] * CellSize;
-            const float heightPenalty = requiresJump ? heightDiff * 3.0f : 0.0f;
-            const float totalG = newG + heightPenalty;
+            const float climbPenalty = (heightDiff > 0.5f) ? heightDiff * 2.0f : 0.0f;
+            const float totalG = newG + climbPenalty;
 
             auto bestIt = bestG.find(nKey);
             if (bestIt != bestG.end() && totalG >= bestIt->second)
@@ -290,7 +287,6 @@ std::vector<Waypoint> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal)
             neighbor.gCost     = totalG;
             neighbor.hCost     = h;
             neighbor.parentIdx = topIdx;
-            neighbor.needsJump = requiresJump;
 
             bestG[nKey] = totalG;
 
@@ -312,8 +308,7 @@ std::vector<Waypoint> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal)
                 glm::vec3(
                     static_cast<float>(n.x) * CellSize + CellSize * 0.5f,
                     n.groundY,
-                    static_cast<float>(n.z) * CellSize + CellSize * 0.5f),
-                n.needsJump
+                    static_cast<float>(n.z) * CellSize + CellSize * 0.5f)
             });
             idx = n.parentIdx;
         }
