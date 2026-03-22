@@ -129,10 +129,12 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     if (isGrounded)
     {
-        enemy.VerticalVelocity = 0.0f;
+        if (!m_IsClimbing)
+            enemy.VerticalVelocity = 0.0f;
     }
     else
     {
+        m_IsClimbing = false;  // airborne — gravity takes over
         enemy.VerticalVelocity -= m_Gravity * ts.GetSeconds();
     }
 
@@ -208,6 +210,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
 
             // ── Climbing: apply upward velocity when path goes uphill ──
+            m_IsClimbing = false;
             if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size())
                 && isGrounded)
             {
@@ -220,6 +223,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                         2.0f * m_Gravity * (heightDiff + 0.5f));
                     if (enemy.VerticalVelocity > m_ClimbSpeed)
                         enemy.VerticalVelocity = m_ClimbSpeed;
+                    m_IsClimbing = true;
                 }
             }
         }

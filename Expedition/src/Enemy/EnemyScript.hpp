@@ -32,6 +32,7 @@ private:
     float     m_Gravity       = 9.8f * 3.0f;
     float     m_ClimbSpeed    = 12.0f;   // vertical velocity for climbing ledges
     State     m_State         = State::Idle;
+    bool      m_IsClimbing    = false;   // protect climb velocity from gravity reset
 
     // Blocked detection (triggers repath)
     float     m_BlockedTime   = 0.0f;
