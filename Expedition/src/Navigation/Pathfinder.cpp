@@ -76,12 +76,10 @@ bool Pathfinder::GetGroundHeight(float worldX, float worldZ, float searchY, floa
     const int iz = static_cast<int>(std::floor(worldZ));
     const int sy = static_cast<int>(searchY);
 
-    // Narrow scan: only look ±(MaxJumpStep+1) around the current level.
-    // This avoids finding tree canopy tops as "ground" — tree trunk cells
-    // have no solid-with-air-above near ground level, so they're skipped.
-    const int range = static_cast<int>(MaxJumpStep) + 1;
-    const int lo = std::max(0, sy - range);
-    const int hi = std::min(CHUNK_HEIGHT - 2, sy + range);
+    // Scan ±15 around searchY to handle falling enemies / terrain variation.
+    // "Closest to searchY" logic still avoids finding tree canopy tops as ground.
+    const int lo = std::max(0, sy - 15);
+    const int hi = std::min(CHUNK_HEIGHT - 2, sy + 15);
 
     int   bestY    = -1;
     int   bestDist = 999;
