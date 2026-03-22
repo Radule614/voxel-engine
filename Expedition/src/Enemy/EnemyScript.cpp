@@ -309,12 +309,12 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         else
             horizontal = JPH::Vec3::sZero();
     }
-    else if (proactiveJump && m_JumpCooldown >= 1.0f)
+    else if (proactiveJump)
     {
         m_State = State::Jumping;
     }
     else if (m_BlockedTime >= m_BlockedThresh && m_RepathedWhileBlocked
-             && isGrounded && m_JumpCooldown >= 1.0f)
+             && isGrounded)
     {
         m_State = State::Jumping;
     }
