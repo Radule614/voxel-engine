@@ -41,8 +41,6 @@ bool Pathfinder::IsSolid(int x, int y, int z)
     if (y < 0 || y >= CHUNK_HEIGHT)
         return false;
 
-    // Check cache first
-    // Pack (x, y, z) into a single int64_t: x in high 21 bits, y in mid 8 bits, z in low 21 bits
     const int64_t key = (static_cast<int64_t>(x & 0x1FFFFF) << 29) |
                         (static_cast<int64_t>(y & 0xFF) << 21) |
                          static_cast<int64_t>(z & 0x1FFFFF);
@@ -50,7 +48,6 @@ bool Pathfinder::IsSolid(int x, int y, int z)
     if (cacheIt != m_SolidCache.end())
         return cacheIt->second;
 
-    // Compute chunk coordinates
     const int chunkX = (x >= 0) ? (x / CHUNK_WIDTH) : ((x + 1) / CHUNK_WIDTH - 1);
     const int chunkZ = (z >= 0) ? (z / CHUNK_WIDTH) : ((z + 1) / CHUNK_WIDTH - 1);
 
@@ -61,7 +58,6 @@ bool Pathfinder::IsSolid(int x, int y, int z)
         return false;
     }
 
-    // Local voxel position within chunk
     int lx = x % CHUNK_WIDTH;
     int lz = z % CHUNK_WIDTH;
     if (lx < 0) lx += CHUNK_WIDTH;
@@ -79,9 +75,9 @@ bool Pathfinder::GetGroundHeight(float worldX, float worldZ, float searchY, floa
     const int ix = static_cast<int>(std::floor(worldX));
     const int iz = static_cast<int>(std::floor(worldZ));
 
-    // Narrow scan range: ±4 from current height instead of +5/-20
-    const int startY = std::min(static_cast<int>(searchY) + 4, CHUNK_HEIGHT - 1);
-    const int minY   = std::max(0, static_cast<int>(searchY) - 4);
+    // Wider scan range to handle terrain variations
+    const int startY = std::min(static_cast<int>(searchY) + 8, CHUNK_HEIGHT - 1);
+    const int minY   = std::max(0, static_cast<int>(searchY) - 12);
 
     for (int y = startY; y >= minY; --y)
     {
@@ -131,7 +127,7 @@ struct CompareF
 {
     bool operator()(const std::pair<float, int>& a, const std::pair<float, int>& b) const
     {
-        return a.first > b.first; // min-heap
+        return a.first > b.first;
     }
 };
 
@@ -142,7 +138,6 @@ static int64_t CellKey(int x, int z)
 
 std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, float maxStepHeight)
 {
-    // Clear per-pathfind caches
     m_ChunkCache.clear();
     m_SolidCache.clear();
 
@@ -159,9 +154,7 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
     std::vector<Node> nodes;
     nodes.reserve(MaxSearch);
 
-    // Track best gCost per cell to avoid pushing dominated nodes
     std::unordered_map<int64_t, float> bestG;
-
     std::unordered_set<int64_t> closed;
     std::priority_queue<std::pair<float, int>, std::vector<std::pair<float, int>>, CompareF> open;
 
@@ -181,6 +174,8 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
     constexpr float dCost[] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.414f, 1.414f, 1.414f, 1.414f };
 
     int iterations = 0;
+    int bestIdx = 0;           // track node closest to goal
+    float bestHeuristic = startNode.hCost;
 
     while (!open.empty() && iterations < MaxSearch)
     {
@@ -194,6 +189,13 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             continue;
         closed.insert(curKey);
         ++iterations;
+
+        // Track the closest node to goal (for partial path fallback)
+        if (current.hCost < bestHeuristic)
+        {
+            bestHeuristic = current.hCost;
+            bestIdx = topIdx;
+        }
 
         // Goal reached
         if (current.x == gx && current.z == gz)
@@ -225,7 +227,6 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
 
             const float newG = current.gCost + dCost[d] * CellSize;
 
-            // Skip if we already found a cheaper path to this cell
             auto bestIt = bestG.find(nKey);
             if (bestIt != bestG.end() && newG >= bestIt->second)
                 continue;
@@ -240,8 +241,7 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             if (std::abs(neighborY - current.groundY) > maxStepHeight)
                 continue;
 
-            // For diagonal moves, check that both cardinal neighbors are walkable
-            // (prevents corner-cutting through walls)
+            // Prevent diagonal corner-cutting
             if (d >= 4)
             {
                 if (!IsCellWalkable(current.x + dx[d], current.z, current.groundY) ||
@@ -269,6 +269,24 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             nodes.push_back(neighbor);
             open.push({ neighbor.fCost(), newIdx });
         }
+    }
+
+    // No complete path found — return partial path to closest explored node
+    if (bestIdx > 0 && bestHeuristic < startNode.hCost)
+    {
+        std::vector<glm::vec3> path;
+        int idx = bestIdx;
+        while (idx >= 0)
+        {
+            const Node& n = nodes[idx];
+            path.push_back(glm::vec3(
+                static_cast<float>(n.x) * CellSize + CellSize * 0.5f,
+                n.groundY,
+                static_cast<float>(n.z) * CellSize + CellSize * 0.5f));
+            idx = n.parentIdx;
+        }
+        std::reverse(path.begin(), path.end());
+        return path;
     }
 
     return {};

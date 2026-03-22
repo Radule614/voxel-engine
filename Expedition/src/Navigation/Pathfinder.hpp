@@ -32,7 +32,7 @@ private:
     std::unordered_map<int64_t, bool>                m_SolidCache;
 
     static constexpr float CellSize    = 1.0f;
-    static constexpr int   MaxSearch   = 800;
+    static constexpr int   MaxSearch   = 1200;
     static constexpr int   EnemyHeight = 4;
     static constexpr int   Padding     = 1;
 };

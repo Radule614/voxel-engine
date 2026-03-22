@@ -212,14 +212,13 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
         }
     }
 
-    // ── Blocked detection (for jump trigger) ────────────────────
+    // ── Blocked detection ───────────────────────────────────────
     const bool isGrounded = character.GetGroundState() == JPH::Character::EGroundState::OnGround;
 
     if (m_HasLastPos && desiredState == State::Chasing && isGrounded)
     {
         const glm::vec3 delta = transform.WorldPosition - m_LastPosition;
         const float hDist = glm::length(glm::vec2(delta.x, delta.z));
-        // If barely moved despite wanting to chase, accumulate blocked time
         if (hDist < m_ChaseSpeed * ts.GetSeconds() * 0.3f)
             m_BlockedTime += ts.GetSeconds();
         else
@@ -228,6 +227,25 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     else
     {
         m_BlockedTime = 0.0f;
+    }
+
+    // When stuck, force an immediate repath instead of jumping
+    if (m_BlockedTime >= m_BlockedThresh && desiredState == State::Chasing)
+    {
+        m_Path = Pathfinder(m_World).FindPath(transform.WorldPosition, playerPos);
+        m_PathIndex = 0;
+        m_PathTimer = 0.0f;
+        m_BlockedTime = 0.0f;
+
+        // Re-derive faceDir from the new path
+        if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
+        {
+            glm::vec3 toWp = m_Path[m_PathIndex] - transform.WorldPosition;
+            toWp.y = 0.0f;
+            if (glm::length(toWp) > 0.001f)
+                faceDir = glm::normalize(toWp);
+        }
+        horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
     }
 
     m_LastPosition = transform.WorldPosition;
@@ -240,7 +258,6 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     {
         if (!isGrounded)
             m_WasAirborne = true;
-        // Only land after having been airborne
         if (isGrounded && m_WasAirborne)
         {
             m_State = desiredState;
@@ -249,16 +266,10 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     }
     else if (m_State == State::Attacking)
     {
-        // Lock until attack clip finishes
         if (IsClipFinished(anim, kStateInfo[static_cast<int>(State::Attacking)].clipName))
             m_State = desiredState;
         else
             horizontal = JPH::Vec3::sZero();
-    }
-    else if (m_BlockedTime >= m_BlockedThresh && isGrounded)
-    {
-        // Stuck against terrain → jump
-        m_State = State::Jumping;
     }
     else
     {
