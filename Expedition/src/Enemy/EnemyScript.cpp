@@ -5,7 +5,6 @@
 #include "Ecs/Components/CharacterComponent.hpp"
 #include "Ecs/Components/TransformComponent.hpp"
 #include "Health/HealthComponent.hpp"
-#include "Navigation/Pathfinder.hpp"
 
 using namespace VoxelEngine;
 using namespace GLCore;
@@ -126,7 +125,9 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
     character.PostSimulation(0.05f);
 
-    if (character.GetGroundState() == JPH::Character::EGroundState::OnGround)
+    const bool isGrounded = character.GetGroundState() == JPH::Character::EGroundState::OnGround;
+
+    if (isGrounded)
     {
         // Don't zero velocity while jumping — the impulse needs to persist
         if (m_State != State::Jumping)
@@ -150,9 +151,10 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     }
 
     // ── Compute desired state from distance ─────────────────────
-    JPH::Vec3 horizontal = JPH::Vec3::sZero();
+    JPH::Vec3 horizontal    = JPH::Vec3::sZero();
     State     desiredState = State::Idle;
     glm::vec3 faceDir      = glm::vec3(0.0f, 0.0f, 1.0f);
+    bool      proactiveJump = false;
 
     if (foundPlayer)
     {
@@ -184,17 +186,19 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             // Follow path waypoints
             if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
             {
-                glm::vec3 toWaypoint = m_Path[m_PathIndex] - transform.WorldPosition;
+                glm::vec3 toWaypoint = m_Path[m_PathIndex].position - transform.WorldPosition;
                 toWaypoint.y = 0.0f;
-                const float wpDist = glm::length(toWaypoint);
 
-                if (wpDist < m_WaypointDist)
+                if (glm::length(toWaypoint) < m_WaypointDist)
                 {
                     ++m_PathIndex;
-                    // Recalculate direction to next waypoint
                     if (m_PathIndex < static_cast<int>(m_Path.size()))
                     {
-                        toWaypoint = m_Path[m_PathIndex] - transform.WorldPosition;
+                        // Check if next waypoint requires a jump
+                        if (m_Path[m_PathIndex].needsJump && isGrounded)
+                            proactiveJump = true;
+
+                        toWaypoint = m_Path[m_PathIndex].position - transform.WorldPosition;
                         toWaypoint.y = 0.0f;
                     }
                 }
@@ -213,8 +217,6 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
     }
 
     // ── Blocked detection ───────────────────────────────────────
-    const bool isGrounded = character.GetGroundState() == JPH::Character::EGroundState::OnGround;
-
     if (m_HasLastPos && desiredState == State::Chasing && isGrounded)
     {
         const glm::vec3 delta = transform.WorldPosition - m_LastPosition;
@@ -243,7 +245,7 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
 
             if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size()))
             {
-                glm::vec3 toWp = m_Path[m_PathIndex] - transform.WorldPosition;
+                glm::vec3 toWp = m_Path[m_PathIndex].position - transform.WorldPosition;
                 toWp.y = 0.0f;
                 if (glm::length(toWp) > 0.001f)
                     faceDir = glm::normalize(toWp);
@@ -279,6 +281,11 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             m_State = desiredState;
         else
             horizontal = JPH::Vec3::sZero();
+    }
+    else if (proactiveJump)
+    {
+        // A* waypoint requires a jump — jump immediately
+        m_State = State::Jumping;
     }
     else if (m_BlockedTime >= m_BlockedThresh && m_RepathedWhileBlocked && isGrounded)
     {

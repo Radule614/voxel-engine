@@ -121,6 +121,7 @@ struct Node
     float hCost = 0.0f;
     float fCost() const { return gCost + hCost; }
     int   parentIdx = -1;
+    bool  needsJump = false;  // transition to this node requires a jump
 };
 
 struct CompareF
@@ -136,7 +137,7 @@ static int64_t CellKey(int x, int z)
     return (static_cast<int64_t>(x) << 32) | static_cast<int64_t>(static_cast<uint32_t>(z));
 }
 
-std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, float maxStepHeight)
+std::vector<Waypoint> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal)
 {
     m_ChunkCache.clear();
     m_SolidCache.clear();
@@ -200,15 +201,18 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
         // Goal reached
         if (current.x == gx && current.z == gz)
         {
-            std::vector<glm::vec3> path;
+            std::vector<Waypoint> path;
             int idx = topIdx;
             while (idx >= 0)
             {
                 const Node& n = nodes[idx];
-                path.push_back(glm::vec3(
-                    static_cast<float>(n.x) * CellSize + CellSize * 0.5f,
-                    n.groundY,
-                    static_cast<float>(n.z) * CellSize + CellSize * 0.5f));
+                path.push_back({
+                    glm::vec3(
+                        static_cast<float>(n.x) * CellSize + CellSize * 0.5f,
+                        n.groundY,
+                        static_cast<float>(n.z) * CellSize + CellSize * 0.5f),
+                    n.needsJump
+                });
                 idx = n.parentIdx;
             }
             std::reverse(path.begin(), path.end());
@@ -232,8 +236,12 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             if (!GetGroundHeight(worldX, worldZ, current.groundY, neighborY))
                 continue;
 
-            if (std::abs(neighborY - current.groundY) > maxStepHeight)
+            const float heightDiff = std::abs(neighborY - current.groundY);
+
+            if (heightDiff > MaxJumpStep)
                 continue;
+
+            const bool requiresJump = heightDiff > MaxWalkStep;
 
             // Prevent diagonal corner-cutting
             if (d >= 4)
@@ -246,11 +254,9 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             if (!IsCellWalkable(nx, nz, neighborY))
                 continue;
 
-            // Penalize height changes so flat paths are preferred,
-            // but vertical transitions are still possible
-            const float heightDiff = std::abs(neighborY - current.groundY);
+            // Penalize jump transitions so flat paths are preferred
             const float newG = current.gCost + dCost[d] * CellSize;
-            const float heightPenalty = heightDiff > 1.5f ? heightDiff * 2.0f : 0.0f;
+            const float heightPenalty = requiresJump ? heightDiff * 3.0f : 0.0f;
             const float totalG = newG + heightPenalty;
 
             auto bestIt = bestG.find(nKey);
@@ -267,6 +273,7 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
             neighbor.gCost     = totalG;
             neighbor.hCost     = h;
             neighbor.parentIdx = topIdx;
+            neighbor.needsJump = requiresJump;
 
             bestG[nKey] = totalG;
 
@@ -279,15 +286,18 @@ std::vector<glm::vec3> Pathfinder::FindPath(glm::vec3 start, glm::vec3 goal, flo
     // No complete path found — return partial path to closest explored node
     if (bestIdx > 0 && bestHeuristic < startNode.hCost)
     {
-        std::vector<glm::vec3> path;
+        std::vector<Waypoint> path;
         int idx = bestIdx;
         while (idx >= 0)
         {
             const Node& n = nodes[idx];
-            path.push_back(glm::vec3(
-                static_cast<float>(n.x) * CellSize + CellSize * 0.5f,
-                n.groundY,
-                static_cast<float>(n.z) * CellSize + CellSize * 0.5f));
+            path.push_back({
+                glm::vec3(
+                    static_cast<float>(n.x) * CellSize + CellSize * 0.5f,
+                    n.groundY,
+                    static_cast<float>(n.z) * CellSize + CellSize * 0.5f),
+                n.needsJump
+            });
             idx = n.parentIdx;
         }
         std::reverse(path.begin(), path.end());

@@ -9,13 +9,19 @@ namespace VoxelEngine { class World; class Chunk; }
 namespace Expedition
 {
 
+struct Waypoint
+{
+    glm::vec3 position;
+    bool      needsJump = false;
+};
+
 class Pathfinder
 {
 public:
     explicit Pathfinder(VoxelEngine::World& world);
 
     // Returns world-space waypoints from start to goal. Empty = no path found.
-    std::vector<glm::vec3> FindPath(glm::vec3 start, glm::vec3 goal, float maxStepHeight = 4.0f);
+    std::vector<Waypoint> FindPath(glm::vec3 start, glm::vec3 goal);
 
 private:
     bool GetGroundHeight(float worldX, float worldZ, float searchY, float& outY);
@@ -31,10 +37,12 @@ private:
     std::unordered_map<int64_t, VoxelEngine::Chunk*> m_ChunkCache;
     std::unordered_map<int64_t, bool>                m_SolidCache;
 
-    static constexpr float CellSize    = 1.0f;
-    static constexpr int   MaxSearch   = 1200;
-    static constexpr int   EnemyHeight = 3;
-    static constexpr int   Padding     = 1;
+    static constexpr float CellSize      = 1.0f;
+    static constexpr int   MaxSearch     = 1200;
+    static constexpr int   EnemyHeight   = 3;
+    static constexpr int   Padding       = 1;
+    static constexpr float MaxWalkStep   = 1.0f;   // height diff for normal walk
+    static constexpr float MaxJumpStep   = 4.0f;   // height diff that requires a jump
 };
 
 }

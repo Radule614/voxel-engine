@@ -4,6 +4,7 @@
 #include "Ecs/Components/AnimationComponent.hpp"
 #include "Ecs/Components/ChildrenComponent.hpp"
 #include "Ecs/Components/ScriptComponent.hpp"
+#include "Navigation/Pathfinder.hpp"
 
 namespace VoxelEngine { class World; }
 
@@ -41,7 +42,7 @@ private:
     VoxelEngine::World& m_World;
 
     // A* pathfinding
-    std::vector<glm::vec3> m_Path;
+    std::vector<Waypoint> m_Path;
     int   m_PathIndex   = 0;
     float m_PathTimer   = 0.0f;
     float m_RethinkTime = 0.5f;
