@@ -204,11 +204,15 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
             horizontal = JPH::Vec3(faceDir.x * m_ChaseSpeed, 0.0f, faceDir.z * m_ChaseSpeed);
 
             // ── Climbing: teleport up when path goes over a 1–2 block ledge ──
+            // transform.WorldPosition.y is the capsule CENTER, not feet.
+            // Capsule half-height = height/2 + radius = 1.0 + 0.75 = 1.75
+            constexpr float halfHeight = 1.75f;
             if (!m_Path.empty() && m_PathIndex < static_cast<int>(m_Path.size())
                 && isGrounded)
             {
                 const glm::vec3& wp = m_Path[m_PathIndex].position;
-                const float heightDiff = wp.y - transform.WorldPosition.y;
+                const float feetY = transform.WorldPosition.y - halfHeight;
+                const float heightDiff = wp.y - feetY;
                 const float hDist = glm::length(glm::vec2(
                     wp.x - transform.WorldPosition.x,
                     wp.z - transform.WorldPosition.z));
@@ -217,7 +221,9 @@ void EnemyScript::OnUpdate(const Timestep ts, ScriptContext context)
                 {
                     const JPH::RVec3 curPos = character.GetPosition();
                     character.SetPosition(JPH::RVec3(
-                        curPos.GetX(), static_cast<double>(wp.y), curPos.GetZ()));
+                        curPos.GetX(),
+                        static_cast<double>(wp.y + halfHeight),
+                        curPos.GetZ()));
                     enemy.VerticalVelocity = 0.0f;
                 }
             }
