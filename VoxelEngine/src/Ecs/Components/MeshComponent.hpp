@@ -16,6 +16,8 @@ struct MeshComponent : ComponentGui
 
     std::string GetName() override;
     void DrawGui() override;
+
+    static MeshComponent CreateQuadMesh();
 };
 
 }

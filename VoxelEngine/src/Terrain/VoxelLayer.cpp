@@ -190,7 +190,7 @@ void VoxelLayer::OnColliderLocationChanged(const glm::vec3 worldPosition)
     if (!chunkMap.contains(World::GlobalToChunkSpace(worldPosition)))
         return;
 
-    constexpr int32_t r = 2;
+    constexpr int32_t r = 3;
     for (int32_t x = -r; x <= r; ++x)
     {
         for (int32_t z = -r; z <= r; ++z)

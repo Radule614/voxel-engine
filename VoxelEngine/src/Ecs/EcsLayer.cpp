@@ -26,6 +26,17 @@ EcsLayer::EcsLayer(EngineState& state) : m_State(state)
 
 void EcsLayer::OnAttach() { Layer::OnAttach(); }
 
+void EcsLayer::OnDetach()
+{
+    entt::registry& registry = EntityComponentSystem::Instance().GetEntityRegistry();
+
+    for (const entt::entity& entity: registry.view<ScriptComponent>())
+    {
+        for (const auto& script: registry.get<ScriptComponent>(entity).Scripts)
+            script->OnDetach({registry, entity});
+    }
+}
+
 static std::tuple<int32_t, int32_t, float_t> FindAnimationIndices(const std::vector<float>& times,
                                                                   const float_t currentTime)
 {

@@ -36,6 +36,8 @@ void Application::AppendToWindowTitle(const std::string& text) const
     glfwSetWindowTitle((GLFWwindow*) m_Window->GetNativeWindow(), title.c_str());
 }
 
+void Application::PopAllLayers() { m_LayerStack.PopAllLayers(); }
+
 void Application::OnEvent(Event& e)
 {
     EventDispatcher dispatcher(e);
@@ -51,6 +53,8 @@ void Application::OnEvent(Event& e)
 
 void Application::Run()
 {
+    m_LastFrameTime = static_cast<float_t>(glfwGetTime());
+
     while (m_Running)
     {
         const auto time = static_cast<float_t>(glfwGetTime());

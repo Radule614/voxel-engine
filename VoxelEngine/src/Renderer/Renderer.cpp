@@ -450,6 +450,7 @@ void Renderer::DrawTerrain(const TerrainMeshComponent& mesh, const Shader& shade
 {
     shader.Set(mesh.Material);
     shader.SetModel(modelMatrix);
+    shader.Set("u_IsSkinned", false);
 
     glBindVertexArray(mesh.VertexArray);
     glDrawElements(GL_TRIANGLES, mesh.Indices.size(), GL_UNSIGNED_INT, nullptr);

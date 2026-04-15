@@ -21,7 +21,7 @@ public:
 protected:
     virtual void Setup() = 0;
     void Init();
-    static void Shutdown();
+    void Shutdown();
 
 protected:
     EngineState m_State;

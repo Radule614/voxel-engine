@@ -48,6 +48,8 @@ void VoxelEngineApp::Init()
 
 void VoxelEngineApp::Shutdown()
 {
+    PopAllLayers();
+
     EntityComponentSystem::Shutdown();
     PhysicsEngine::Shutdown();
     AssetManager::Shutdown();

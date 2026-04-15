@@ -98,8 +98,8 @@ static TransformComponent GetParentTransform(entt::registry& registry, const ent
     const auto parentComponent = registry.try_get<ParentComponent>(entity);
 
     return parentComponent != nullptr
-                                ? registry.get<TransformComponent>(parentComponent->Entity)
-                                : TransformComponent{};
+               ? registry.get<TransformComponent>(parentComponent->Entity)
+               : TransformComponent{};
 }
 
 static void SyncPhysicsWorldTransform(
