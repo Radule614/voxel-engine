@@ -1,0 +1,47 @@
+project "Expedition"
+	kind "ConsoleApp"
+	language "C++"
+	cppdialect "C++20"
+	staticruntime "on"
+
+	targetdir ("../bin/" .. outputdir)
+	objdir ("../bin-int/" .. outputdir .. "/%{prj.name}")
+
+	debugdir "%{cfg.targetdir}"
+
+	files
+	{
+		"src/**.hpp",
+		"src/**.cpp"
+	}
+
+	includedirs
+	{
+        "src",
+		"../OpenGLCore/vendor/spdlog/include",
+		"../OpenGLCore/src",
+		"../OpenGLCore/vendor",
+		"../OpenGLCore/%{IncludeDir.glm}",
+		"../OpenGLCore/%{IncludeDir.Glad}",
+		"../OpenGLCore/%{IncludeDir.ImGui}",
+		"../VoxelEngine/%{IncludeDir.JoltPhysics}",
+		"../VoxelEngine/%{IncludeDir.PerlinNoise}",
+		"../VoxelEngine/%{IncludeDir.Entt}",
+		"../VoxelEngine/%{IncludeDir.AssetUtils}",
+        "../VoxelEngine/src"
+	}
+
+	links
+	{
+		"OpenGLCore",
+		"JoltPhysics",
+		"VoxelEngine"
+	}
+
+    filter "system:windows"
+        systemversion "latest"
+
+        filter "configurations:Debug"
+            runtime "Debug"
+        filter "configurations:Release"
+            runtime "Release"
